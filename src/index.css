@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .chess-board {
+    @apply shadow-lg rounded-lg overflow-hidden;
+  }
+  
+  .move-highlight {
+    @apply bg-chess-move bg-opacity-50;
+  }
+  
+  .last-move-highlight {
+    @apply bg-chess-highlight bg-opacity-30;
+  }
+}

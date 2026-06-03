@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Pawnsposes - Performance Report</title>
+   <script src="https://cdn.tailwindcss.com"></script>
+   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+   <!-- Libraries for PDF Generation -->
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+   <style>
+       body {
+           font-family: 'Plus Jakarta Sans', sans-serif;
+           background-color: #f0f2f5; /* A light, neutral gray */
+       }
+       .page-container {
+           max-width: 800px;
+           margin: 2rem auto;
+           padding: 1rem; /* Padding for smaller screens */
+       }
+       .page {
+           padding: 2.5rem;
+           border-radius: 6px;
+           background: #ffffff;
+           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+           border-top: 8px solid #064e3b; /* Emerald 900 */
+       }
+       .print-button-container {
+           display: flex;
+           justify-content: center;
+           margin-bottom: 1rem;
+       }
+       .print-button {
+           background-color: #065f46; /* Emerald 700 */
+           color: white;
+           font-bold: 600;
+           padding: 0.75rem 1.5rem;
+           border-radius: 0.5rem;
+           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+           transition: background-color 0.3s ease, box-shadow 0.3s ease;
+           display: inline-flex;
+           align-items: center;
+           justify-content: center;
+           width: auto;
+           min-width: 180px;
+       }
+       .print-button:hover {
+           background-color: #047857; /* Emerald 600 */
+           box-shadow: 0 7px 14px rgba(0,0,0,0.1);
+       }
+       .print-button:disabled {
+           background-color: #9ca3af;
+           cursor: not-allowed;
+       }
+       .section-header {
+           font-size: 1.125rem; /* text-lg */
+           font-weight: 800;
+           color: #064e3b; /* Emerald 900 */
+           text-transform: uppercase;
+           letter-spacing: 0.05em;
+           display: flex;
+           align-items: center;
+           margin-bottom: 1rem;
+       }
+       .section-header i {
+           margin-right: 0.75rem;
+           color: #10b981; /* Emerald 500 */
+       }
+       .highlight-card {
+           border: 1px solid #e5e7eb;
+           border-radius: 0.5rem;
+           padding: 1rem;
+           text-align: center;
+       }
+       .checklist-item {
+           display: flex;
+           align-items: flex-start;
+           padding: 0.75rem;
+           border-radius: 0.5rem;
+           background-color: #f8fafc; /* gray-50 */
+           border: 1px solid #e5e7eb; /* gray-200 */
+       }
+       .move-code {
+           font-family: monospace;
+           background-color: #e5e7eb;
+           padding: 2px 5px;
+           border-radius: 4px;
+           font-size: 0.9em;
+       }
+       .tagline {
+           text-align: center;
+           font-style: italic;
+           color: #4b5563;
+           margin-bottom: 2rem;
+           font-weight: 500;
+       }
+       .rating-bar-bg {
+           background-color: #e5e7eb; /* gray-200 */
+           border-radius: 9999px;
+           height: 8px;
+           overflow: hidden;
+           width: 100%;
+       }
+       .rating-bar {
+           background-color: #10b981; /* Emerald 500 */
+           height: 100%;
+           border-radius: 9999px;
+       }
+       @media print {
+           body, .page-container, .page {
+               margin: 0;
+               box-shadow: none;
+               border: none;
+               border-radius: 0;
+               background-color: #ffffff;
+           }
+           .print-button-container {
+               display: none;
+           }
+           .page {
+               padding: 15mm;
+           }
+       }
+       @media (max-width: 640px) {
+           .page {
+               padding: 1.5rem;
+           }
+           .header {
+               flex-direction: column;
+               align-items: flex-start;
+           }
+           .header > div:last-child {
+               text-align: left;
+               margin-top: 1rem;
+           }
+       }
+   </style>
+</head>
+<body>
+
+   <div class="page-container">
+       <div class="print-button-container">
+           <button onclick="downloadPDF()" id="download-button" class="print-button">
+               <span id="button-text"><i class="fas fa-download mr-2"></i>Download PDF</span>
+           </button>
+       </div>
+
+       <div class="page" id="report-content">
+           <header class="flex justify-between items-start pb-4 header">
+               <div>
+                   <h1 class="text-4xl font-extrabold text-gray-800">Performance Report</h1>
+                   <p class="text-md text-gray-500">Prepared by Pawnsposes</p>
+               </div>
+               <div class="text-right">
+                   <p class="font-semibold text-lg text-gray-800">chesskid999</p>
+                   <p class="text-sm text-gray-500">July 18, 2025</p>
+               </div>
+           </header>
+
+           <main class="mt-6">
+               <div class="tagline">
+                   <p>"Built by a real master coach, not just a graph-spitting bot."</p>
+                   <p>"We don’t just show you what’s wrong — we train you to fix it."</p>
+               </div>
+              
+               <!-- Section 1: At a Glance -->
+               <section class="mb-8 p-6 bg-emerald-50/50 border border-emerald-100 rounded-lg">
+                   <h2 class="section-header"><i class="fas fa-chart-line"></i>Performance Summary</h2>
+                   <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                       <div class="highlight-card bg-green-50 border-green-200">
+                           <h4 class="font-bold text-sm text-green-800">Win Rate</h4>
+                           <p class="text-2xl font-bold text-gray-700 mt-1">60%</p>
+                       </div>
+                       <div class="highlight-card bg-blue-50 border-blue-200">
+                           <h4 class="font-bold text-sm text-blue-800">Average Accuracy</h4>
+                           <p class="text-2xl font-bold text-gray-700 mt-1">72%</p>
+                       </div>
+                       <div class="highlight-card bg-yellow-50 border-yellow-200">
+                           <h4 class="font-bold text-sm text-yellow-800">Most Played</h4>
+                           <p class="text-lg font-bold text-gray-700 mt-1">Italian Game</p>
+                       </div>
+                       <div class="highlight-card bg-red-50 border-red-200">
+                           <h4 class="font-bold text-sm text-red-800">#1 Focus Area</h4>
+                           <p class="text-lg font-bold text-gray-700 mt-1">Plan Formation</p>
+                       </div>
+                   </div>
+                   <div>
+                       <h3 class="font-bold text-gray-800 mb-2">Key Insights:</h3>
+                       <ul class="list-disc list-inside text-sm text-gray-600 space-y-1">
+                           <li>Tends to drift in closed or positional middlegames; needs to proactively create plans.</li>
+                           <li>Can be overly aggressive in the opening, sacrificing material without always calculating fully.</li>
+                           <li>Shows promise in recognizing tactical patterns but needs to deepen calculation ability.</li>
+                       </ul>
+                   </div>
+               </section>
+
+               <!-- Section 2: Deep Dive -->
+               <section class="mb-8">
+                   <h2 class="section-header"><i class="fas fa-magnifying-glass-chart"></i>Recurring Weaknesses</h2>
+                  
+                   <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
+                       <h3 class="font-bold text-gray-800">1. Inefficient Piece Coordination and Prophylactic Thinking</h3>
+                       <p class="text-sm text-gray-600 mt-1">Struggling to foresee opponent's plans, leading to reactive rather than proactive play.</p>
+                       <div class="mt-2 p-3 bg-white border-l-4 border-red-400 rounded">
+                           <p class="text-xs text-gray-500">vs. ambalalchauhan (Move 17)</p>
+                           <p class="text-sm text-gray-700"><strong>Mistake:</strong> After <code class="move-code">17. Kh2 Qe6</code>, you missed that Black wants to eliminate the Knight. Moving the King instead of improving the Knight on c6 was a missed opportunity. <br><strong>Better Plan:</strong> Improve the Knight with <code class="move-code">17...Nb4</code> to create a powerful outpost.</p>
+                       </div>
+                   </div>
+
+                   <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
+                       <h3 class="font-bold text-gray-800">2. Trade Evaluation and Good vs. Bad Piece Handling</h3>
+                       <p class="text-sm text-gray-600 mt-1">Failing to appreciate long-term implications of exchanges, often trading an active piece for a passive one.</p>
+                       <div class="mt-2 p-3 bg-white border-l-4 border-red-400 rounded">
+                           <p class="text-xs text-gray-500">vs. kacmarek (Move 4)</p>
+                           <p class="text-sm text-gray-700"><strong>Mistake:</strong> After <code class="move-code">4. Bxc6 dxc6</code>, you traded a good bishop for a Knight while opening the file for your opponent. <br><strong>Better Plan:</strong> Keep the tension and the bishop with a move like <code class="move-code">4...a6</code>.</p>
+                       </div>
+                   </div>
+
+                   <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                       <h3 class="font-bold text-gray-800">3. Pawn Breaks and Pawn Tension</h3>
+                       <p class="text-sm text-gray-600 mt-1">Missing crucial opportunities to create pawn breaks, leading to a static game and loss of initiative.</p>
+                        <div class="mt-2 p-3 bg-white border-l-4 border-red-400 rounded">
+                           <p class="text-xs text-gray-500">vs. dragoi12 (Move 16)</p>
+                           <p class="text-sm text-gray-700"><strong>Mistake:</strong> After <code class="move-code">16. Red1</code>, you didn't create tension in the center. <br><strong>Better Plan:</strong> Create imbalance and space for your pieces with the pawn break <code class="move-code">16...d5</code>.</p>
+                       </div>
+                   </div>
+               </section>
+
+               <!-- Section 3: Phase Review -->
+               <section class="mb-8">
+                    <h2 class="section-header"><i class="fas fa-tasks"></i>Phase Review</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                           <h3 class="font-bold text-gray-800 mb-3">Middlegame <span class="text-gray-500 font-medium">(Overall: 5/10)</span></h3>
+                           <div class="space-y-2 text-sm">
+                               <div class="flex justify-between items-center"><span>Positional Understanding</span><span>4/10</span></div><div class="rating-bar-bg"><div class="rating-bar" style="width: 40%"></div></div>
+                               <div class="flex justify-between items-center"><span>Tactical Awareness</span><span>7/10</span></div><div class="rating-bar-bg"><div class="rating-bar" style="width: 70%"></div></div>
+                               <div class="flex justify-between items-center"><span>Plan Formation</span><span>3/10</span></div><div class="rating-bar-bg"><div class="rating-bar" style="width: 30%"></div></div>
+                               <div class="flex justify-between items-center"><span>Piece Coordination</span><span>6/10</span></div><div class="rating-bar-bg"><div class="rating-bar" style="width: 60%"></div></div>
+                           </div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                           <h3 class="font-bold text-gray-800 mb-3">Endgame <span class="text-gray-500 font-medium">(Overall: 4/10)</span></h3>
+                           <div class="space-y-2 text-sm">
+                               <div class="flex justify-between items-center"><span>Pawn Endgames (3 games, 33% success)</span><span>5/10</span></div><div class="rating-bar-bg"><div class="rating-bar" style="width: 50%"></div></div>
+                               <div class="flex justify-between items-center"><span>Rook Endgames (2 games, 0% success)</span><span>3/10</span></div><div class="rating-bar-bg"><div class="rating-bar" style="width: 30%"></div></div>
+                               <div class="flex justify-between items-center"><span>Queen Endgames (1 game, 0% success)</span><span>4/10</span></div><div class="rating-bar-bg"><div class="rating-bar" style="width: 40%"></div></div>
+                               <p class="text-xs text-gray-500 italic mt-3">Common Mistakes: Rushing moves, underestimating opponent resources, passive defence.</p>
+                           </div>
+                        </div>
+                    </div>
+               </section>
+
+               <!-- Section 4: Action Plan -->
+               <section class="mb-8">
+                   <h2 class="section-header"><i class="fas fa-bullseye"></i>Actionable Improvement Plan</h2>
+                   <div class="space-y-2">
+                       <div class="checklist-item"><span class="text-red-600 font-bold text-lg mr-4">HIGH</span><div><strong class="font-semibold text-gray-800">Prophylactic Move Identification:</strong> Before any move, identify at least three potential threats from your opponent and evaluate the best way to neutralize them.</div></div>
+                       <div class="checklist-item"><span class="text-red-600 font-bold text-lg mr-4">HIGH</span><div><strong class="font-semibold text-gray-800">Trade Evaluation Checklist:</strong> Before any exchange, evaluate the resulting pawn structure, piece activity, and potential imbalances. Ask: 'Am I trading an active piece for a passive one?'</div></div>
+                       <div class="checklist-item"><span class="text-yellow-600 font-bold text-lg mr-4">MED</span><div><strong class="font-semibold text-gray-800">Pawn Break Recognition Drill:</strong> In every position, identify all possible pawn breaks for both sides in the next 2-3 moves.</div></div>
+                   </div>
+               </section>
+              
+               <!-- Section 5: Resources -->
+               <section>
+                   <h2 class="section-header"><i class="fas fa-book-open"></i>Recommended Resources</h2>
+                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                       <div class="bg-gray-50 p-3 rounded-lg flex items-start border border-gray-200">
+                           <i class="fas fa-chess-king text-emerald-600 text-xl mr-4 mt-1"></i>
+                           <div>
+                               <h4 class="font-semibold text-gray-800">Master Game Study</h4>
+                               <p class="text-sm text-gray-600"><strong>Capablanca vs. Tartakower (1924):</strong> A masterclass in prophylaxis. Study Capablanca's moves <code class="move-code">9.Ne1</code>, <code class="move-code">14.Bd2</code>, and <code class="move-code">17.Rac1</code>.</p>
+                           </div>
+                       </div>
+                       <div class="bg-gray-50 p-3 rounded-lg flex items-start border border-gray-200">
+                           <i class="fab fa-youtube text-red-600 text-xl mr-4 mt-1"></i>
+                           <div>
+                               <h4 class="font-semibold text-gray-800">Watch This</h4>
+                               <p class="text-sm text-gray-600"><strong>"35 Chess Principles" by Chess Vibes:</strong> This video covers vital chess principles to help you understand strategy and make good decisions.</p>
+                           </div>
+                       </div>
+                       <div class="bg-gray-50 p-3 rounded-lg flex items-start border border-gray-200 col-span-1 md:col-span-2">
+                           <i class="fas fa-book text-emerald-600 text-xl mr-4 mt-1"></i>
+                            <div>
+                               <h4 class="font-semibold text-gray-800">Books for Deeper Study</h4>
+                               <ul class="list-disc list-inside text-sm text-gray-600">
+                                   <li><strong>My System</strong> by Aron Nimzowitsch</li>
+                                   <li><strong>Silman's Endgame Course</strong> by Jeremy Silman</li>
+                                   <li><strong>Pawn Power in Chess</strong> by Hans Kmoch</li>
+                               </ul>
+                           </div>
+                       </div>
+                   </div>
+               </section>
+           </main>
+          
+           <footer class="text-center text-xs text-gray-400 mt-8 pt-4 border-t">
+               <p>This report was generated by Pawnsposes. © 2025</p>
+           </footer>
+       </div>
+   </div>
+
+   <script>
+       function downloadPDF() {
+           const { jsPDF } = window.jspdf;
+           const reportContent = document.getElementById('report-content');
+           const downloadButton = document.getElementById('download-button');
+           const buttonText = document.getElementById('button-text');
+           const originalButtonContent = buttonText.innerHTML;
+
+           // Show loading state
+           buttonText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+           downloadButton.disabled = true;
+
+           // Use html2canvas to render the element
+           html2canvas(reportContent, {
+               scale: 3, // Higher scale for better quality
+               useCORS: true,
+               logging: false,
+               windowWidth: reportContent.scrollWidth,
+               windowHeight: reportContent.scrollHeight
+           }).then(canvas => {
+               const imgData = canvas.toDataURL('image/png');
+               const pdf = new jsPDF({
+                   orientation: 'portrait',
+                   unit: 'mm',
+                   format: 'a4'
+               });
+
+               const pdfWidth = pdf.internal.pageSize.getWidth();
+               const pdfHeight = pdf.internal.pageSize.getHeight();
+               const canvasWidth = canvas.width;
+               const canvasHeight = canvas.height;
+               const ratio = canvasWidth / canvasHeight;
+              
+               let imgHeight = pdfWidth / ratio;
+               let heightLeft = imgHeight;
+               let position = 0;
+
+               // Add the first page
+               pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+               heightLeft -= pdfHeight;
+
+               // Add new pages if the content is longer than one page
+               while (heightLeft > 0) {
+                   position = -heightLeft;
+                   pdf.addPage();
+                   pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+                   heightLeft -= pdfHeight;
+               }
+              
+               // Save the PDF
+               pdf.save('Pawnsposes_Performance_Report.pdf');
+
+           }).catch(err => {
+               console.error("Error generating PDF:", err);
+               // In a real app, you might show a more user-friendly error message
+               buttonText.innerHTML = 'Error!';
+               setTimeout(() => {
+                   buttonText.innerHTML = originalButtonContent;
+               }, 2000);
+
+           }).finally(() => {
+               // Restore button state
+               if (buttonText.innerHTML.includes('spinner')) {
+                  buttonText.innerHTML = originalButtonContent;
+               }
+               downloadButton.disabled = false;
+           });
+       }
+   </script>
+
+</body>
+</html>
+
+
+
