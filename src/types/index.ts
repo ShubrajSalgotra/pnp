@@ -1,3 +1,5 @@
+import type { UserPreferences } from './userData';
+
 export interface User {
   id: string;
   email: string;
@@ -5,8 +7,12 @@ export interface User {
   role: 'child' | 'parent' | 'coach' | 'admin';
   isPremium: boolean;
   avatarUrl?: string | null;
+  preferences?: UserPreferences;
   createdAt: Date;
+  updatedAt?: Date;
 }
+
+export * from './userData';
 
 export interface Game {
   id: string;

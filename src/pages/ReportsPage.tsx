@@ -5,6 +5,7 @@ import ReportGenerator from '../components/ReportGenerator';
 import ReportDisplay from '../components/ReportDisplay';
 import { TrendingUp, Target, BookOpen, Lightbulb } from 'lucide-react';
 import { profileAnalysisService } from '../services/profileAnalysisService';
+import { userDataService } from '../services/userDataService';
 
 const ReportsPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -25,9 +26,23 @@ const ReportsPage: React.FC = () => {
   }, [currentUser?.id]);
 
   const handleReportGenerated = (report: ChessReport) => {
-    // Set user ID from auth context
-    report.userId = currentUser?.id || '';
-    setCurrentReport(report);
+    const nextReport = {
+      ...report,
+      userId: currentUser?.id || '',
+    };
+    setCurrentReport(nextReport);
+
+    if (currentUser?.id) {
+      void userDataService.saveReport(currentUser.id, nextReport, 'self');
+      void profileAnalysisService.loadProfile(currentUser.id).then(async (profile) => {
+        if (!profile) return;
+        await profileAnalysisService.saveProfile({
+          ...profile,
+          report: nextReport,
+          lastAnalyzedAt: new Date().toISOString(),
+        });
+      });
+    }
   };
 
   const handleBackToGenerator = () => {

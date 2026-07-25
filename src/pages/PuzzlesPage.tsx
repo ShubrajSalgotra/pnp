@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, Brain, Sparkles, Swords, Trophy } from 'lucide-react';
+import { Brain, Sparkles, Swords, Trophy } from 'lucide-react';
 import PuzzleTrainer from '../components/PuzzleTrainer';
 import { Button } from '../components/ui/Button';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,6 +8,7 @@ import { GameAnalysis } from '../types/analysis';
 import { ChessGame } from '../types/game';
 import { ChessReport } from '../types/report';
 import { profileAnalysisService } from '../services/profileAnalysisService';
+import { userDataService } from '../services/userDataService';
 
 const PuzzlesPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -23,36 +24,22 @@ const PuzzlesPage: React.FC = () => {
     let isMounted = true;
 
     const loadAnalysisContext = async () => {
-      const savedAnalyses = localStorage.getItem(`chess-analyses-${currentUser?.id}`);
-      const profile = await profileAnalysisService.loadProfile(currentUser?.id);
+      const [profile, analyses] = await Promise.all([
+        profileAnalysisService.loadProfile(currentUser?.id),
+        userDataService.loadGameAnalyses(currentUser?.id),
+      ]);
 
-      if (isMounted) {
-        setProfileReport(profile?.report || null);
-        setProfileGames(profile?.games || []);
-        setProfilePlatform(profile?.platform);
-        setProfileUsername(profile?.username);
-        setProfileRated(profile?.rated);
-      }
+      if (!isMounted) return;
 
-      if (!savedAnalyses) {
-        if (isMounted) setGameAnalyses([]);
-        return;
-      }
-
-      try {
-        const parsedAnalyses = JSON.parse(savedAnalyses) as Array<[string, GameAnalysis]>;
-        const analyses = parsedAnalyses.map(([, analysis]) => ({
-          ...analysis,
-          analyzedAt: new Date(analysis.analyzedAt)
-        }));
-        if (isMounted) setGameAnalyses(analyses);
-      } catch (error) {
-        console.error('Error loading puzzle analysis context:', error);
-        if (isMounted) setGameAnalyses([]);
-      }
+      setProfileReport(profile?.report || null);
+      setProfileGames(profile?.games || []);
+      setProfilePlatform(profile?.platform);
+      setProfileUsername(profile?.username);
+      setProfileRated(profile?.rated);
+      setGameAnalyses(analyses);
     };
 
-    loadAnalysisContext();
+    void loadAnalysisContext();
 
     return () => {
       isMounted = false;
@@ -80,17 +67,11 @@ const PuzzlesPage: React.FC = () => {
     <div className="section-shell space-y-8 py-8">
       <section className="aurora-panel">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-700 dark:text-primary-300">Tactics lab</p>
-        <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="font-display text-3xl font-semibold text-slate-900 sm:text-4xl dark:text-white">Puzzle Trainer</h1>
-            <p className="mt-3 max-w-2xl text-sm text-slate-700 sm:text-base dark:text-slate-300">
-              Train with focused, analysis-aware puzzle sets that feel like a modern coaching workspace.
-            </p>
-          </div>
-          <Button type="button" variant="outline" onClick={() => navigate('/analyze')} className="cursor-pointer border-primary-200/80 bg-white/70 text-slate-800 hover:bg-white dark:border-slate-600 dark:bg-slate-800/70 dark:text-slate-100 dark:hover:bg-slate-800">
-            <BarChart3 className="mr-2 h-4 w-4" />
-            Open analysis library
-          </Button>
+        <div className="mt-2">
+          <h1 className="font-display text-3xl font-semibold text-slate-900 sm:text-4xl dark:text-white">Puzzle Trainer</h1>
+          <p className="mt-3 max-w-2xl text-sm text-slate-700 sm:text-base dark:text-slate-300">
+            Train with focused, analysis-aware puzzle sets that feel like a modern coaching workspace.
+          </p>
         </div>
       </section>
 
@@ -99,7 +80,7 @@ const PuzzlesPage: React.FC = () => {
           { icon: <Swords className="h-4 w-4" />, title: 'Fix weaknesses', text: 'Mine your last 20 games for long thinks and blunders, then replay those exact moments.' },
           { icon: <Sparkles className="h-4 w-4" />, title: 'Session flow', text: 'Hints, resets, and next puzzles are one-click and fast.' },
           { icon: <Trophy className="h-4 w-4" />, title: 'Progress streaks', text: 'Keep momentum with streak and solved tracking.' },
-          { icon: <Brain className="h-4 w-4" />, title: 'Openings & endgames', text: 'Still train general Lichess themes when you want broader practice.' },
+          { icon: <Brain className="h-4 w-4" />, title: 'Openings & endgames', text: 'Starts at your Chess.com / Lichess puzzle rating, then climbs after streaks.' },
         ].map((item) => (
           <div key={item.title} className="grid gap-2 py-3 sm:grid-cols-[auto_1fr] sm:items-center">
             <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100/80 text-primary-700 dark:bg-primary-500/15 dark:text-primary-300">{item.icon}</div>

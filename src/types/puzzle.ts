@@ -66,6 +66,10 @@ export interface PuzzleTrainingConfig {
   angle: string;
   difficulty: PuzzleDifficulty;
   color?: 'white' | 'black';
+  /** Desired Lichess puzzle rating for openings/endgames. */
+  targetRating: number;
+  /** Player puzzle rating used to start the session (Chess.com tactics / Lichess puzzle). */
+  basePuzzleRating?: number;
 }
 
 export interface WeaknessMiningProgress {

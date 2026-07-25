@@ -9,8 +9,8 @@ import {
   CalendarDays,
   Camera,
   Gamepad2,
-  Hash,
   Medal,
+  Puzzle,
   TrendingUp, 
   RefreshCw,
   AlertCircle,
@@ -45,7 +45,8 @@ const DashboardPage: React.FC = () => {
     rapid: number | null;
     bullet: number | null;
     blitz: number | null;
-  }>({ rapid: null, bullet: null, blitz: null });
+    puzzle: number | null;
+  }>({ rapid: null, bullet: null, blitz: null, puzzle: null });
 
   useEffect(() => {
     let isMounted = true;
@@ -110,10 +111,26 @@ const DashboardPage: React.FC = () => {
   // not inferred from a misclassified time-control string in the archive.
   useEffect(() => {
     let isMounted = true;
+    const emptyRatings = { rapid: null, bullet: null, blitz: null, puzzle: null };
+
+    const chessComPuzzleRating = (tactics: {
+      last?: { rating?: number };
+      highest?: { rating?: number };
+      lowest?: { rating?: number };
+    } | undefined): number | null => {
+      const last = tactics?.last?.rating;
+      const highest = tactics?.highest?.rating;
+      const lowest = tactics?.lowest?.rating;
+      const unusedDefault = highest === 400 && lowest === 400;
+      if (typeof last === 'number' && last > 0) return Math.round(last);
+      if (!unusedDefault && typeof highest === 'number' && highest > 0) return Math.round(highest);
+      if (!unusedDefault && typeof lowest === 'number' && lowest > 0) return Math.round(lowest);
+      return null;
+    };
 
     const loadLiveRatings = async () => {
       if (!profile?.username) {
-        if (isMounted) setLiveRatings({ rapid: null, bullet: null, blitz: null });
+        if (isMounted) setLiveRatings(emptyRatings);
         return;
       }
 
@@ -123,7 +140,7 @@ const DashboardPage: React.FC = () => {
             `https://api.chess.com/pub/player/${encodeURIComponent(profile.username)}/stats`
           );
           if (!response.ok) {
-            if (isMounted) setLiveRatings({ rapid: null, bullet: null, blitz: null });
+            if (isMounted) setLiveRatings(emptyRatings);
             return;
           }
           const data = await response.json();
@@ -132,6 +149,7 @@ const DashboardPage: React.FC = () => {
             rapid: typeof data?.chess_rapid?.last?.rating === 'number' ? data.chess_rapid.last.rating : null,
             bullet: typeof data?.chess_bullet?.last?.rating === 'number' ? data.chess_bullet.last.rating : null,
             blitz: typeof data?.chess_blitz?.last?.rating === 'number' ? data.chess_blitz.last.rating : null,
+            puzzle: chessComPuzzleRating(data?.tactics),
           });
           return;
         }
@@ -140,19 +158,21 @@ const DashboardPage: React.FC = () => {
           `https://lichess.org/api/user/${encodeURIComponent(profile.username)}`
         );
         if (!response.ok) {
-          if (isMounted) setLiveRatings({ rapid: null, bullet: null, blitz: null });
+          if (isMounted) setLiveRatings(emptyRatings);
           return;
         }
         const data = await response.json();
         if (!isMounted) return;
+        const puzzle = data?.perfs?.puzzle?.rating;
         setLiveRatings({
           rapid: typeof data?.perfs?.rapid?.rating === 'number' ? data.perfs.rapid.rating : null,
           bullet: typeof data?.perfs?.bullet?.rating === 'number' ? data.perfs.bullet.rating : null,
           blitz: typeof data?.perfs?.blitz?.rating === 'number' ? data.perfs.blitz.rating : null,
+          puzzle: typeof puzzle === 'number' && puzzle > 0 ? Math.round(puzzle) : null,
         });
       } catch (ratingsError) {
         console.error('Could not load live ratings:', ratingsError);
-        if (isMounted) setLiveRatings({ rapid: null, bullet: null, blitz: null });
+        if (isMounted) setLiveRatings(emptyRatings);
       }
     };
 
@@ -229,7 +249,6 @@ const DashboardPage: React.FC = () => {
   const wins = userGames.filter(game => getGameResult(game) === 'Win').length;
   const draws = userGames.filter(game => getGameResult(game) === 'Draw').length;
   const losses = userGames.filter(game => getGameResult(game) === 'Loss').length;
-  const opponentRatings = userGames.map(getOpponentRating).filter((rating): rating is number => typeof rating === 'number');
 
   const classifyTimeControl = (timeControl?: string): 'bullet' | 'blitz' | 'rapid' | 'other' => {
     if (!timeControl) return 'other';
@@ -281,9 +300,7 @@ const DashboardPage: React.FC = () => {
     rapidRating: liveRatings.rapid ?? ratingFromRecentGames('rapid'),
     bulletRating: liveRatings.bullet ?? ratingFromRecentGames('bullet'),
     blitzRating: liveRatings.blitz ?? ratingFromRecentGames('blitz'),
-    averageOpponentRating: opponentRatings.length
-      ? Math.round(opponentRatings.reduce((sum, rating) => sum + rating, 0) / opponentRatings.length)
-      : null,
+    puzzleRating: liveRatings.puzzle,
     winRate: userGames.length ? Math.round((wins / userGames.length) * 100) : 0,
   };
 
@@ -310,10 +327,15 @@ const DashboardPage: React.FC = () => {
       color: 'text-amber-600 dark:text-amber-300'
     },
     {
-      title: 'Average Opponent Rating',
-      value: gameStats.averageOpponentRating ? gameStats.averageOpponentRating.toLocaleString() : '-',
-      change: 'Pulled directly from the game archives',
-      icon: <Hash className="w-5 h-5" />,
+      title: 'Puzzle Rating',
+      value: gameStats.puzzleRating ? gameStats.puzzleRating.toLocaleString() : '-',
+      change:
+        liveRatings.puzzle != null
+          ? profile?.platform === 'chess.com'
+            ? 'Live from Chess.com tactics'
+            : 'Live from Lichess puzzles'
+          : 'Connect an account with puzzle history',
+      icon: <Puzzle className="w-5 h-5" />,
       color: 'text-cyan-600 dark:text-cyan-300'
     }
   ];

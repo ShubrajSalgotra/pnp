@@ -12,7 +12,9 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
+import { userDataService } from '../services/userDataService';
 import { User } from '../types';
+import { DEFAULT_USER_PREFERENCES, UserPreferences } from '../types/userData';
 import { fileToAvatarDataUrl } from '../utils/avatar';
 
 interface AuthContextType {
@@ -24,6 +26,8 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateAvatar: (file: File) => Promise<void>;
   setAvatarUrl: (avatarUrl: string | null) => Promise<void>;
+  updateDisplayName: (displayName: string) => Promise<void>;
+  updatePreferences: (preferences: Partial<UserPreferences>) => Promise<void>;
   loading: boolean;
 }
 
@@ -47,7 +51,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
-      // Store token for API calls
       const token = await result.user.getIdToken();
       localStorage.setItem('authToken', token);
     } catch (error) {
@@ -57,13 +60,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const saveUserData = useCallback(async (userData: User) => {
-    localStorage.setItem(`user-${userData.id}`, JSON.stringify(userData));
+    const payload = {
+      ...userData,
+      preferences: userData.preferences || DEFAULT_USER_PREFERENCES,
+      createdAt: userData.createdAt.toISOString(),
+      updatedAt: (userData.updatedAt || new Date()).toISOString(),
+    };
+
+    localStorage.setItem(`user-${userData.id}`, JSON.stringify(payload));
 
     try {
-      await setDoc(doc(db, 'users', userData.id), {
-        ...userData,
-        createdAt: userData.createdAt.toISOString()
-      }, { merge: true });
+      await setDoc(doc(db, 'users', userData.id), payload, { merge: true });
     } catch (error) {
       console.error('Error saving user data to Firestore:', error);
     }
@@ -82,7 +89,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: data.role || 'child',
           isPremium: data.isPremium || false,
           avatarUrl: data.avatarUrl || user.photoURL || null,
-          createdAt: data.createdAt ? new Date(data.createdAt) : new Date()
+          preferences: { ...DEFAULT_USER_PREFERENCES, ...(data.preferences || {}) },
+          createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
+          updatedAt: data.updatedAt ? new Date(data.updatedAt) : undefined,
         };
       }
     } catch (error) {
@@ -94,11 +103,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return {
           ...data,
           avatarUrl: data.avatarUrl || user.photoURL || null,
-          createdAt: data.createdAt ? new Date(data.createdAt) : new Date()
+          preferences: { ...DEFAULT_USER_PREFERENCES, ...(data.preferences || {}) },
+          createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
+          updatedAt: data.updatedAt ? new Date(data.updatedAt) : undefined,
         };
       }
     }
 
+    const storedTheme = localStorage.getItem('pawnsposes-theme');
     const userData: User = {
       id: user.uid,
       email: user.email!,
@@ -106,7 +118,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role: 'child',
       isPremium: false,
       avatarUrl: user.photoURL || null,
-      createdAt: new Date()
+      preferences: {
+        ...DEFAULT_USER_PREFERENCES,
+        theme: storedTheme === 'dark' || storedTheme === 'light' ? storedTheme : DEFAULT_USER_PREFERENCES.theme,
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
 
     await saveUserData(userData);
@@ -118,7 +135,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       
-      // Store token for API calls
       const token = await result.user.getIdToken();
       localStorage.setItem('authToken', token);
       
@@ -137,11 +153,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
       
-      // Update the user profile
       await updateProfile(result.user, {
         displayName: displayName
       });
 
+      const storedTheme = localStorage.getItem('pawnsposes-theme');
       const userData: User = {
         id: result.user.uid,
         email: result.user.email!,
@@ -149,10 +165,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: role as 'child' | 'parent' | 'coach' | 'admin',
         isPremium: false,
         avatarUrl: result.user.photoURL || null,
-        createdAt: new Date()
+        preferences: {
+          ...DEFAULT_USER_PREFERENCES,
+          theme: storedTheme === 'dark' || storedTheme === 'light' ? storedTheme : DEFAULT_USER_PREFERENCES.theme,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
-      // Store token for API calls
       const token = await result.user.getIdToken();
       localStorage.setItem('authToken', token);
       
@@ -181,7 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const prev = currentUserRef.current;
     if (!prev) return;
 
-    const updatedUser: User = { ...prev, avatarUrl };
+    const updatedUser: User = { ...prev, avatarUrl, updatedAt: new Date() };
     currentUserRef.current = updatedUser;
     setCurrentUser(updatedUser);
     await saveUserData(updatedUser);
@@ -193,11 +213,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error('You must be signed in to update your avatar.');
     }
 
-    const avatarUrl = await fileToAvatarDataUrl(file);
-    const updatedUser: User = { ...prev, avatarUrl };
+    const dataUrl = await fileToAvatarDataUrl(file);
+    let avatarUrl = dataUrl;
+
+    try {
+      avatarUrl = await userDataService.uploadAvatar(prev.id, dataUrl);
+    } catch (error) {
+      console.error('Avatar Storage upload failed, falling back to inline image:', error);
+    }
+
+    const updatedUser: User = { ...prev, avatarUrl, updatedAt: new Date() };
     currentUserRef.current = updatedUser;
     setCurrentUser(updatedUser);
     await saveUserData(updatedUser);
+  }, [saveUserData]);
+
+  const updateDisplayName = useCallback(async (displayName: string) => {
+    const prev = currentUserRef.current;
+    const authUser = auth.currentUser;
+    if (!prev || !authUser) {
+      throw new Error('You must be signed in to update your name.');
+    }
+
+    const nextName = displayName.trim();
+    if (!nextName) {
+      throw new Error('Display name cannot be empty.');
+    }
+
+    await updateProfile(authUser, { displayName: nextName });
+
+    const updatedUser: User = { ...prev, displayName: nextName, updatedAt: new Date() };
+    currentUserRef.current = updatedUser;
+    setCurrentUser(updatedUser);
+    await saveUserData(updatedUser);
+  }, [saveUserData]);
+
+  const updatePreferences = useCallback(async (preferences: Partial<UserPreferences>) => {
+    const prev = currentUserRef.current;
+    if (!prev) return;
+
+    const nextPreferences = {
+      ...DEFAULT_USER_PREFERENCES,
+      ...(prev.preferences || {}),
+      ...preferences,
+    };
+
+    const updatedUser: User = {
+      ...prev,
+      preferences: nextPreferences,
+      updatedAt: new Date(),
+    };
+
+    currentUserRef.current = updatedUser;
+    setCurrentUser(updatedUser);
+    await saveUserData(updatedUser);
+    await userDataService.savePreferences(prev.id, nextPreferences);
   }, [saveUserData]);
 
   useEffect(() => {
@@ -209,7 +279,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         setCurrentUser(userData);
         
-        // Refresh token
         const token = await user.getIdToken();
         localStorage.setItem('authToken', token);
       } else {
@@ -232,6 +301,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     updateAvatar,
     setAvatarUrl,
+    updateDisplayName,
+    updatePreferences,
     loading
   };
 

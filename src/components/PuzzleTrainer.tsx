@@ -24,7 +24,10 @@ import {
   TrainerPuzzle,
   WeaknessMiningProgress
 } from '../types/puzzle';
+import { useAuth } from '../contexts/AuthContext';
 import { puzzleService } from '../services/puzzleService';
+import { userDataService } from '../services/userDataService';
+import { DEFAULT_PUZZLE_PROGRESS } from '../types/userData';
 import { classificationMeta, formatSeconds, isImplausibleFen } from '../utils/gameReviewAnalysis';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
@@ -71,9 +74,11 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
   games,
   rated
 }) => {
+  const { currentUser } = useAuth();
   const chessRef = useRef(new Chess());
   const sessionRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const bestStreakRef = useRef(0);
   const [selectedCategory, setSelectedCategory] = useState<PuzzleTrainingCategory | null>(null);
   const [trainingConfig, setTrainingConfig] = useState<PuzzleTrainingConfig | null>(null);
   const [currentPuzzle, setCurrentPuzzle] = useState<TrainerPuzzle | null>(null);
@@ -89,6 +94,50 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
   const [isSolved, setIsSolved] = useState(false);
   const [miningProgress, setMiningProgress] = useState<WeaknessMiningProgress | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadProgress = async () => {
+      if (!currentUser?.id) {
+        setSolved(0);
+        setStreak(0);
+        bestStreakRef.current = 0;
+        return;
+      }
+
+      const progress = await userDataService.loadPuzzleProgress(currentUser.id);
+      if (cancelled) return;
+
+      setSolved(progress.solved);
+      setStreak(progress.streak);
+      bestStreakRef.current = progress.bestStreak;
+    };
+
+    void loadProgress();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUser?.id]);
+
+  const persistProgress = (
+    nextSolved: number,
+    nextStreak: number,
+    category: PuzzleTrainingCategory | null,
+    targetRating: number | null
+  ) => {
+    if (!currentUser?.id) return;
+
+    bestStreakRef.current = Math.max(bestStreakRef.current, nextStreak);
+    void userDataService.savePuzzleProgress({
+      ...DEFAULT_PUZZLE_PROGRESS(currentUser.id),
+      solved: nextSolved,
+      streak: nextStreak,
+      bestStreak: bestStreakRef.current,
+      lastCategory: category,
+      targetRating,
+    });
+  };
+
   const activeCategory = useMemo(
     () => trainingCategories.find(category => category.id === selectedCategory),
     [selectedCategory]
@@ -100,12 +149,50 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
   useEffect(() => {
     if (!selectedCategory) return;
 
-    const config = puzzleService.buildTrainingConfig(selectedCategory, analysis);
-    setTrainingConfig(config);
-    loadPuzzle(config);
+    let cancelled = false;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const startSession = async () => {
+      setIsLoading(true);
+      setError(null);
+      setMiningProgress(null);
+      setStatus(
+        selectedCategory === 'fix-weakness'
+          ? 'Mining weakness positions from your recent games…'
+          : 'Loading your puzzle rating…'
+      );
+
+      try {
+        const config = await puzzleService.createTrainingConfig(selectedCategory, {
+          analysis,
+          platform,
+          username,
+          signal: controller.signal
+        });
+
+        if (cancelled || controller.signal.aborted) return;
+
+        setTrainingConfig(config);
+        setStreak(0);
+        await loadPuzzle(config, controller);
+      } catch (startError) {
+        if (cancelled || controller.signal.aborted) return;
+        if (startError instanceof DOMException && startError.name === 'AbortError') return;
+        const message =
+          startError instanceof Error ? startError.message : 'Could not start puzzle training.';
+        setError(message);
+        setStatus('Puzzle loading failed.');
+        setIsLoading(false);
+      }
+    };
+
+    void startSession();
 
     return () => {
-      abortRef.current?.abort();
+      cancelled = true;
+      controller.abort();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategory, analysis, platform, username]);
@@ -116,12 +203,17 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
     sessionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [selectedCategory]);
 
-  const loadPuzzle = async (config = trainingConfig) => {
+  const loadPuzzle = async (
+    config = trainingConfig,
+    existingController?: AbortController
+  ) => {
     if (!config) return;
 
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+    const controller = existingController ?? new AbortController();
+    if (!existingController) {
+      abortRef.current?.abort();
+      abortRef.current = controller;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -131,7 +223,7 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
     setStatus(
       config.category === 'fix-weakness'
         ? 'Mining weakness positions from your recent games…'
-        : 'Loading a Lichess puzzle...'
+        : `Loading a ~${config.targetRating} rated puzzle...`
     );
 
     try {
@@ -236,8 +328,25 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
 
   const finishPuzzle = () => {
     setIsSolved(true);
-    setSolved(prev => prev + 1);
-    setStreak(prev => prev + 1);
+    const nextSolved = solved + 1;
+    const nextStreak = streak + 1;
+    setSolved(nextSolved);
+    setStreak(nextStreak);
+
+    const raiseDifficulty =
+      !isWeaknessMode && puzzleService.shouldRaiseDifficulty(nextStreak) && trainingConfig;
+
+    if (raiseDifficulty && trainingConfig) {
+      const nextConfig = puzzleService.withRaisedTargetRating(trainingConfig);
+      setTrainingConfig(nextConfig);
+      persistProgress(nextSolved, nextStreak, selectedCategory, nextConfig.targetRating);
+      setStatus(
+        `Solved. ${puzzleService.getStreakLevelUp()} in a row — next puzzles aim near ${nextConfig.targetRating}.`
+      );
+      return;
+    }
+
+    persistProgress(nextSolved, nextStreak, selectedCategory, trainingConfig?.targetRating ?? null);
     setStatus(
       weakness
         ? `Solved. In the game you played ${weakness.playedMoveSan}.`
@@ -261,6 +370,7 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
 
     if (candidateMove !== expectedMove) {
       setStreak(0);
+      persistProgress(solved, 0, selectedCategory, trainingConfig?.targetRating ?? null);
       setStatus(
         weakness
           ? `Not quite. In the game you played ${weakness.playedMoveSan} — look for a stronger idea.`
@@ -357,6 +467,7 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
         {trainingCategories.map(category => {
           const config = puzzleService.buildTrainingConfig(category.id, analysis);
           const needsAccount = category.id === 'fix-weakness' && (!platform || !username);
+          const isAdaptive = category.id === 'master-opening' || category.id === 'master-endgames';
 
           return (
             <button
@@ -379,7 +490,7 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
                   {config.angle}
                 </span>
                 <Badge variant="outline" className="h-fit w-fit capitalize border-primary-200 text-primary-700 dark:border-slate-600 dark:text-primary-300">
-                  {needsAccount ? 'account needed' : config.difficulty}
+                  {needsAccount ? 'account needed' : isAdaptive ? 'adapts to you' : config.difficulty}
                 </Badge>
               </div>
             </button>
@@ -401,7 +512,7 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
           {trainingConfig && (
             <span className="ml-2 text-primary-700 dark:text-primary-300">
               · {trainingConfig.angle}
-              {!isWeaknessMode && ` · ${trainingConfig.difficulty}`}
+              {!isWeaknessMode && ` · ~${trainingConfig.targetRating}`}
             </span>
           )}
         </div>
@@ -667,9 +778,23 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
                   <span className="font-medium text-slate-900 dark:text-white">{trainingConfig?.angle}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-primary-700 dark:text-primary-300">Level</span>
-                  <span className="font-medium capitalize text-slate-900 dark:text-white">{trainingConfig?.difficulty}</span>
+                  <span className="text-primary-700 dark:text-primary-300">
+                    {platform === 'chess.com' ? 'Chess.com rating' : platform === 'lichess' ? 'Lichess rating' : 'Base rating'}
+                  </span>
+                  <span className="font-medium text-slate-900 dark:text-white">
+                    {trainingConfig?.basePuzzleRating ?? '—'}
+                  </span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-primary-700 dark:text-primary-300">Target rating</span>
+                  <span className="font-medium text-slate-900 dark:text-white">
+                    {trainingConfig?.targetRating ?? '—'}
+                  </span>
+                </div>
+                <p className="pt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                  Starts at your puzzle rating. After every {puzzleService.getStreakLevelUp()} correct
+                  in a row, targets climb by 100.
+                </p>
               </CardContent>
             </Card>
           )}

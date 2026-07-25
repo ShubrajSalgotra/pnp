@@ -1,9 +1,17 @@
 import { gameImportService } from './gameImport';
 import { reportService } from './reportService';
+import { userDataService } from './userDataService';
 import { db } from './firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  writeBatch,
+} from 'firebase/firestore';
 import { ChessGame } from '../types/game';
-import { GameReportRequest, ReportGenerationProgress } from '../types/report';
+import { ChessReport, GameReportRequest, ReportGenerationProgress } from '../types/report';
 import { PlayerAnalysisProfile, ProfileRefreshResult } from '../types/profileAnalysis';
 
 const DEFAULT_GAME_LIMIT = 20;
@@ -13,6 +21,7 @@ const SYNC_BATCH_SIZE = 50;
 const MAX_STORED_GAMES = 2000;
 /** Hard cap enforced by gameImportService when allGames is false. */
 const MAX_IMPORT_COUNT = 500;
+const FIRESTORE_BATCH_LIMIT = 400;
 
 class ProfileAnalysisService {
   private storageKey(userId: string) {
@@ -23,22 +32,50 @@ class ProfileAnalysisService {
     return doc(db, 'users', userId, 'analysis', 'profile');
   }
 
+  private gamesCollection(userId: string) {
+    return collection(db, 'users', userId, 'games');
+  }
+
   private chessAccountRef(platform: 'lichess' | 'chess.com', username: string) {
     const key = `${platform}_${username.trim().toLowerCase()}`.replace(/[^a-z0-9_.-]/g, '_');
     return doc(db, 'chessAccounts', key);
   }
 
-  private toFirestoreData(profile: PlayerAnalysisProfile) {
-    return JSON.parse(JSON.stringify(profile));
+  private toFirestoreData<T>(value: T): T {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  private reviveReport(report: ChessReport | null | undefined): ChessReport | null {
+    if (!report) return null;
+    return {
+      ...report,
+      generatedAt: new Date(report.generatedAt),
+    };
   }
 
   private reviveProfile(profile: PlayerAnalysisProfile): PlayerAnalysisProfile {
     return {
       ...profile,
-      report: profile.report ? {
-        ...profile.report,
-        generatedAt: new Date(profile.report.generatedAt)
-      } : null
+      games: Array.isArray(profile.games) ? profile.games : [],
+      analyzedGameIds: Array.isArray(profile.analyzedGameIds) ? profile.analyzedGameIds : [],
+      report: this.reviveReport(profile.report),
+    };
+  }
+
+  private profileMetadata(profile: PlayerAnalysisProfile) {
+    return {
+      userId: profile.userId,
+      platform: profile.platform,
+      username: profile.username,
+      gameLimit: profile.gameLimit,
+      syncAllGames: profile.syncAllGames || false,
+      rated: profile.rated,
+      analyzedGameIds: profile.analyzedGameIds,
+      reportId: profile.report?.id || null,
+      gamesCount: profile.games.length,
+      lastCheckedAt: profile.lastCheckedAt,
+      lastAnalyzedAt: profile.lastAnalyzedAt,
+      updatedAt: new Date().toISOString(),
     };
   }
 
@@ -56,13 +93,82 @@ class ProfileAnalysisService {
     }
   }
 
+  private async loadGamesFromSubcollection(userId: string): Promise<ChessGame[]> {
+    const snapshot = await getDocs(this.gamesCollection(userId));
+    return snapshot.docs
+      .map((item) => item.data() as ChessGame)
+      .sort((a, b) => this.gameTimestamp(b) - this.gameTimestamp(a));
+  }
+
+  private async loadReportById(userId: string, reportId: string | null | undefined): Promise<ChessReport | null> {
+    if (!reportId) return null;
+    try {
+      const snapshot = await getDoc(doc(db, 'users', userId, 'reports', reportId));
+      if (!snapshot.exists()) return null;
+      return this.reviveReport(snapshot.data() as ChessReport);
+    } catch (error) {
+      console.error('Error loading profile report from Firestore:', error);
+      return null;
+    }
+  }
+
+  private async writeGamesSubcollection(userId: string, games: ChessGame[]): Promise<void> {
+    const existing = await getDocs(this.gamesCollection(userId));
+    const keepIds = new Set(games.map((game) => game.id));
+    const toDelete = existing.docs.filter((item) => !keepIds.has(item.id));
+
+    for (let i = 0; i < toDelete.length; i += FIRESTORE_BATCH_LIMIT) {
+      const batch = writeBatch(db);
+      toDelete.slice(i, i + FIRESTORE_BATCH_LIMIT).forEach((item) => batch.delete(item.ref));
+      await batch.commit();
+    }
+
+    for (let i = 0; i < games.length; i += FIRESTORE_BATCH_LIMIT) {
+      const batch = writeBatch(db);
+      games.slice(i, i + FIRESTORE_BATCH_LIMIT).forEach((game) => {
+        batch.set(doc(this.gamesCollection(userId), game.id), this.toFirestoreData(game), { merge: true });
+      });
+      await batch.commit();
+    }
+  }
+
   async loadProfile(userId?: string): Promise<PlayerAnalysisProfile | null> {
     if (!userId) return null;
 
     try {
       const snapshot = await getDoc(this.firestoreRef(userId));
       if (snapshot.exists()) {
-        const profile = this.reviveProfile(snapshot.data() as PlayerAnalysisProfile);
+        const data = snapshot.data() as PlayerAnalysisProfile & {
+          reportId?: string | null;
+          gamesCount?: number;
+        };
+
+        // Legacy docs may still embed games/report; prefer those when present.
+        let games = Array.isArray(data.games) ? data.games : [];
+        let report = this.reviveReport(data.report);
+
+        if (games.length === 0) {
+          games = await this.loadGamesFromSubcollection(userId);
+        }
+
+        if (!report && data.reportId) {
+          report = await this.loadReportById(userId, data.reportId);
+        }
+
+        const profile = this.reviveProfile({
+          userId,
+          platform: data.platform,
+          username: data.username,
+          gameLimit: data.gameLimit,
+          syncAllGames: data.syncAllGames,
+          rated: data.rated,
+          games,
+          analyzedGameIds: data.analyzedGameIds || [],
+          report,
+          lastCheckedAt: data.lastCheckedAt || null,
+          lastAnalyzedAt: data.lastAnalyzedAt || null,
+        });
+
         localStorage.setItem(this.storageKey(userId), JSON.stringify(profile));
         return profile;
       }
@@ -77,15 +183,34 @@ class ProfileAnalysisService {
     localStorage.setItem(this.storageKey(profile.userId), JSON.stringify(profile));
 
     try {
-      await setDoc(this.firestoreRef(profile.userId), this.toFirestoreData(profile), { merge: true });
+      await setDoc(this.firestoreRef(profile.userId), this.toFirestoreData(this.profileMetadata(profile)), {
+        merge: true,
+      });
+
+      await this.writeGamesSubcollection(profile.userId, profile.games);
+
+      if (profile.report) {
+        await userDataService.saveReport(profile.userId, {
+          ...profile.report,
+          userId: profile.userId,
+        }, 'self');
+      }
+
       await setDoc(this.chessAccountRef(profile.platform, profile.username), {
         userId: profile.userId,
         platform: profile.platform,
         username: profile.username,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       }, { merge: true });
     } catch (error) {
       console.error('Error saving player analysis profile to Firestore:', error);
+
+      // Fallback: attempt legacy monolithic write so users still keep data.
+      try {
+        await setDoc(this.firestoreRef(profile.userId), this.toFirestoreData(profile), { merge: true });
+      } catch (fallbackError) {
+        console.error('Fallback profile save also failed:', fallbackError);
+      }
     }
   }
 

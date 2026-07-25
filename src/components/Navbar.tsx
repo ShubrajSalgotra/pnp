@@ -9,7 +9,6 @@ import {
   LogOut,
   Menu,
   Moon,
-  Settings,
   Sun,
   User,
   X
@@ -128,15 +127,7 @@ const Navbar: React.FC = () => {
                           onClick={() => setIsProfileOpen(false)}
                         >
                           <User className="mr-2 h-4 w-4" />
-                          Profile
-                        </Link>
-                        <Link
-                          to="/settings"
-                          className="flex items-center rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:text-white/85 dark:hover:bg-white/10"
-                          onClick={() => setIsProfileOpen(false)}
-                        >
-                          <Settings className="mr-2 h-4 w-4" />
-                          Settings
+                          Profile & settings
                         </Link>
                         <button
                           type="button"
@@ -264,14 +255,7 @@ const Navbar: React.FC = () => {
                         className="block rounded-lg px-3 py-2 text-base font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-white/80 dark:hover:bg-white/10 dark:hover:text-white"
                         onClick={() => setIsMenuOpen(false)}
                       >
-                        Profile
-                      </Link>
-                      <Link
-                        to="/settings"
-                        className="block rounded-lg px-3 py-2 text-base font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-white/80 dark:hover:bg-white/10 dark:hover:text-white"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        Settings
+                        Profile & settings
                       </Link>
                       <button
                         type="button"

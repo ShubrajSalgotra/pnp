@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /users/{userId} {
+      allow read, create, update: if isOwner(userId);
+      allow delete: if false;
+
+      match /analysis/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /games/{gameId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /reports/{reportId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /opponentReports/{reportId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /gameAnalyses/{analysisId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /puzzleProgress/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    match /chessAccounts/{accountId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && !exists(/databases/$(database)/documents/chessAccounts/$(accountId));
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

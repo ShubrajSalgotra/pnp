@@ -17,6 +17,8 @@ interface ReportPopupProps {
   progress: ReportGenerationProgress | null;
   message: string | null;
   error: string | null;
+  /** Self reports (dashboard) vs opponent reports (analyze). */
+  mode?: 'self' | 'opponent';
 }
 
 type CachedPdf = {
@@ -47,6 +49,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
   progress,
   message,
   error,
+  mode = 'self',
 }) => {
   const reportRef = useRef<HTMLDivElement>(null);
   const [pdfFilename, setPdfFilename] = useState<string>('chess-report.pdf');
@@ -62,6 +65,8 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
   const [isValidating, setIsValidating] = useState(false);
   const [validationResult, setValidationResult] = useState<boolean | null>(null);
   const [cachedPdfUrl, setCachedPdfUrl] = useState<string | null>(null);
+
+  const isOpponent = mode === 'opponent';
 
   useEffect(() => {
     if (!isOpen) {
@@ -125,16 +130,12 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
   }, [isOpen]);
 
   const previewTitle = useMemo(() => {
-    if (viewMode === 'form') {
-      return 'Create Your Report';
+    if (viewMode === 'form' || !report) {
+      return isOpponent ? 'Create Opponent Report' : 'Create Your Report';
     }
 
-    if (report) {
-      return `Report for ${report.username}`;
-    }
-
-    return 'Create Your Report';
-  }, [report, viewMode]);
+    return isOpponent ? `Opponent report · ${report.username}` : `Report for ${report.username}`;
+  }, [isOpponent, report, viewMode]);
 
   const openNewReportForm = () => {
     setPdfError(null);
@@ -236,37 +237,44 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
     return null;
   }
 
+  const fieldClass =
+    'w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-primary-400 dark:focus:ring-primary-400/30';
+
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-md">
-      <div className="relative flex max-h-[95vh] w-full max-w-[96vw] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/10">
-        <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-gradient-to-r from-emerald-50 via-white to-emerald-50 px-5 py-4 sm:px-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-md dark:bg-black/75">
+      <div className="relative flex max-h-[95vh] w-full max-w-[96vw] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl ring-1 ring-black/10 dark:bg-slate-950 dark:ring-white/10">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-gradient-to-r from-primary-50 via-white to-primary-50 px-5 py-4 dark:border-slate-800 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900 sm:px-6">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-emerald-700">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary-700 dark:text-primary-300">
               <Sparkles className="h-4 w-4" />
-              Report viewer
+              {isOpponent ? 'Opponent report' : 'Report viewer'}
             </div>
-            <h2 className="mt-1 truncate text-xl font-extrabold text-slate-900 sm:text-2xl">{previewTitle}</h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <h2 className="mt-1 truncate font-display text-xl font-semibold text-slate-900 dark:text-white sm:text-2xl">
+              {previewTitle}
+            </h2>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
               {viewMode === 'form'
-                ? 'Generate a fresh report from this popup.'
+                ? isOpponent
+                  ? 'Enter an opponent’s chess account to generate a scouting report.'
+                  : 'Generate a fresh report from this popup.'
                 : 'Report opens instantly · PDF is built only when you download.'}
             </p>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             {showViewer && (
               <button
                 type="button"
                 onClick={handleDownloadPdf}
                 disabled={isBuildingPdf}
-                className="inline-flex cursor-pointer items-center rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-70"
+                className="inline-flex cursor-pointer items-center rounded-full bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700 disabled:cursor-wait disabled:opacity-70 dark:bg-primary-500 dark:hover:bg-primary-400"
               >
                 {isBuildingPdf ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <Download className="mr-2 h-4 w-4" />
                 )}
-                {isBuildingPdf ? 'Preparing PDF…' : cachedPdfUrl ? 'Download PDF' : 'Download PDF'}
+                {isBuildingPdf ? 'Preparing PDF…' : 'Download PDF'}
               </button>
             )}
 
@@ -274,17 +282,17 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
               <button
                 type="button"
                 onClick={openNewReportForm}
-                className="inline-flex cursor-pointer items-center rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-50"
+                className="inline-flex cursor-pointer items-center rounded-full border border-primary-200 bg-white px-4 py-2 text-sm font-semibold text-primary-800 shadow-sm transition hover:bg-primary-50 dark:border-slate-600 dark:bg-slate-900 dark:text-primary-200 dark:hover:bg-slate-800"
               >
                 <FileText className="mr-2 h-4 w-4" />
-                Generate new report
+                {isOpponent ? 'New opponent report' : 'Generate new report'}
               </button>
             )}
 
             <button
               type="button"
               onClick={onClose}
-              className="cursor-pointer rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+              className="cursor-pointer rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
               aria-label="Close report popup"
             >
               <X className="h-5 w-5" />
@@ -292,62 +300,64 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
           </div>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 p-4 sm:p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 p-4 dark:bg-slate-900/80 sm:p-6">
           {viewMode === 'form' || !report ? (
-            <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5">
-              <div className="flex items-center gap-2 border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900">
-                <BarChart3 className="h-4 w-4 text-emerald-600" />
-                Report Setup
+            <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-950 dark:shadow-black/40">
+              <div className="flex items-center gap-2 border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 dark:border-slate-800 dark:text-white">
+                <BarChart3 className="h-4 w-4 text-primary-600 dark:text-primary-300" />
+                {isOpponent ? 'Opponent Setup' : 'Report Setup'}
               </div>
 
               <div className="space-y-5 p-5 sm:p-6">
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-                  Enter your chess account details. When the report is ready, it opens instantly in this viewer.
+                <div className="rounded-2xl border border-primary-200 bg-primary-50 p-4 text-sm text-primary-900 dark:border-primary-500/30 dark:bg-primary-500/10 dark:text-primary-100">
+                  {isOpponent
+                    ? 'Enter the opponent’s chess username. When the report is ready, it opens in this viewer.'
+                    : 'Enter your chess account details. When the report is ready, it opens instantly in this viewer.'}
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                  <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
                     Chess Platform
                   </label>
-                  <div className="flex space-x-4">
-                    <label className="flex items-center">
+                  <div className="flex flex-wrap gap-4">
+                    <label className="flex cursor-pointer items-center text-sm text-slate-800 dark:text-slate-100">
                       <input
                         type="radio"
                         name="platform"
                         value="lichess"
                         checked={formData.platform === 'lichess'}
                         onChange={(e) => handleFormChange('platform', e.target.value as 'lichess' | 'chess.com')}
-                        className="mr-2"
+                        className="mr-2 accent-primary-600"
                         disabled={isRefreshing}
                       />
-                      <span className="text-sm">Lichess</span>
+                      Lichess
                     </label>
-                    <label className="flex items-center">
+                    <label className="flex cursor-pointer items-center text-sm text-slate-800 dark:text-slate-100">
                       <input
                         type="radio"
                         name="platform"
                         value="chess.com"
                         checked={formData.platform === 'chess.com'}
                         onChange={(e) => handleFormChange('platform', e.target.value as 'lichess' | 'chess.com')}
-                        className="mr-2"
+                        className="mr-2 accent-primary-600"
                         disabled={isRefreshing}
                       />
-                      <span className="text-sm">Chess.com</span>
+                      Chess.com
                     </label>
                   </div>
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
-                    Username
+                  <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                    {isOpponent ? 'Opponent username' : 'Username'}
                   </label>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={formData.username}
                       onChange={(e) => handleFormChange('username', e.target.value)}
-                      placeholder="Enter chess username"
-                      className="flex-1 rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                      placeholder={isOpponent ? 'Enter opponent username' : 'Enter chess username'}
+                      className={`flex-1 ${fieldClass}`}
                       disabled={isRefreshing}
                     />
                     <Button
@@ -355,21 +365,21 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
                       variant="outline"
                       onClick={validateUsername}
                       disabled={!formData.username || isValidating || isRefreshing}
-                      className="cursor-pointer"
+                      className="cursor-pointer dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
                     >
                       {isValidating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Validate'}
                     </Button>
                   </div>
                   {validationResult === true && (
-                    <p className="mt-2 text-xs text-emerald-700">Username found.</p>
+                    <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-300">Username found.</p>
                   )}
                   {validationResult === false && (
-                    <p className="mt-2 text-xs text-rose-700">Username not found.</p>
+                    <p className="mt-2 text-xs text-rose-700 dark:text-rose-300">Username not found.</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                  <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
                     Games to analyze (1-100)
                   </label>
                   <input
@@ -378,16 +388,16 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
                     max={100}
                     value={formData.gameCount}
                     onChange={(event) => handleFormChange('gameCount', parseInt(event.target.value, 10) || 1)}
-                    className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                    className={fieldClass}
                     disabled={isRefreshing}
                   />
-                  <p className="mt-2 text-xs text-slate-500">
+                  <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                     Recommended: 20–50 games · estimated ~{Math.ceil(estimatedTime / 60)} min
                   </p>
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                  <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
                     Game type
                   </label>
                   <select
@@ -396,7 +406,7 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
                       const value = event.target.value;
                       handleFormChange('rated', value === 'all' ? undefined : value === 'rated');
                     }}
-                    className="h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm"
+                    className={`h-11 ${fieldClass}`}
                     disabled={isRefreshing}
                   >
                     <option value="all">All Games</option>
@@ -419,46 +429,61 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
                   ) : (
                     <>
                       <RefreshCw className="mr-2 h-4 w-4" />
-                      Generate report
+                      {isOpponent ? 'Create opponent report' : 'Generate report'}
                     </>
                   )}
                 </Button>
 
                 {isRefreshing && progress && (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                       <span>{progress.message}</span>
                       <span>{progress.progress}%</span>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-                      <div className="h-2 rounded-full bg-emerald-600 transition-all" style={{ width: `${progress.progress}%` }} />
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                      <div
+                        className="h-2 rounded-full bg-primary-600 transition-all dark:bg-primary-400"
+                        style={{ width: `${progress.progress}%` }}
+                      />
                     </div>
                   </div>
                 )}
 
-                {message && <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</p>}
-                {error && <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</p>}
-                {pdfError && <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-800">{pdfError}</p>}
+                {message && (
+                  <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200">
+                    {message}
+                  </p>
+                )}
+                {error && (
+                  <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:bg-rose-500/15 dark:text-rose-200">
+                    {error}
+                  </p>
+                )}
+                {pdfError && (
+                  <p className="rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:bg-rose-500/15 dark:text-rose-200">
+                    {pdfError}
+                  </p>
+                )}
               </div>
             </div>
           ) : (
-            <div className="mx-auto overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5">
-              <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-                <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                  <FileText className="h-4 w-4 text-emerald-600" />
+            <div className="mx-auto overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-950 dark:shadow-black/40">
+              <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+                <div className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+                  <FileText className="h-4 w-4 text-primary-600 dark:text-primary-300" />
                   Report
                 </div>
-                <div className="text-xs font-medium text-slate-500">{pdfFilename}</div>
+                <div className="text-xs font-medium text-slate-500 dark:text-slate-400">{pdfFilename}</div>
               </div>
 
-              <div className="bg-white p-3 sm:p-4">
+              <div className="bg-white p-3 dark:bg-slate-950 sm:p-4">
                 {pdfError && (
-                  <div className="mb-3 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-800">
+                  <div className="mb-3 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:bg-rose-500/15 dark:text-rose-200">
                     {pdfError}
                   </div>
                 )}
                 {isBuildingPdf && (
-                  <div className="mb-3 flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                  <div className="mb-3 flex items-center gap-2 rounded-xl bg-primary-50 px-4 py-3 text-sm text-primary-900 dark:bg-primary-500/15 dark:text-primary-100">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Building PDF for download…
                   </div>

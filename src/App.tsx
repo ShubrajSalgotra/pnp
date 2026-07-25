@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Navbar from './components/Navbar';
+import UserPrefsSync from './components/UserPrefsSync';
 import WhatsAppFloatingButton from './components/WhatsAppFloatingButton';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
@@ -12,6 +13,7 @@ import GameAnalysisPage from './pages/GameAnalysisPage';
 import GameReviewPage from './pages/GameReviewPage';
 import ReportsPage from './pages/ReportsPage';
 import PuzzlesPage from './pages/PuzzlesPage';
+import ProfilePage from './pages/ProfilePage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -102,6 +104,17 @@ const AppShell: React.FC = () => {
             }
           />
 
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route path="/settings" element={<Navigate to="/profile" replace />} />
+
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
@@ -115,6 +128,7 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+        <UserPrefsSync />
         <Router>
           <AppShell />
         </Router>

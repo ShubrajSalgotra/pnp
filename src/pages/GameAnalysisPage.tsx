@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowRight, Plus, Sparkles } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ChessReport, GameReportRequest, ReportGenerationProgress } from '../types/report';
 import { useAuth } from '../contexts/AuthContext';
 import { reportService } from '../services/reportService';
+import { userDataService } from '../services/userDataService';
 import ReportPopup from '../components/ReportPopup';
 
 const GameAnalysisPage: React.FC = () => {
@@ -16,41 +17,36 @@ const GameAnalysisPage: React.FC = () => {
   const [analysisMessage, setAnalysisMessage] = useState<string | null>(null);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
 
-  const storageKey = useMemo(() => {
-    return `opponent-analysis-reports-${currentUser?.id || 'guest'}`;
-  }, [currentUser?.id]);
-
   const reviveReport = (report: ChessReport): ChessReport => ({
     ...report,
     generatedAt: report.generatedAt instanceof Date ? report.generatedAt : new Date(report.generatedAt),
   });
 
   useEffect(() => {
-    const storedReports = localStorage.getItem(storageKey);
+    let isMounted = true;
 
-    if (!storedReports) {
-      setSavedReports([]);
+    const loadReports = async () => {
+      if (!currentUser?.id) {
+        if (isMounted) setSavedReports([]);
+        return;
+      }
+
+      const reports = await userDataService.loadOpponentReports(currentUser.id);
+      if (isMounted) setSavedReports(reports);
+    };
+
+    void loadReports();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser?.id]);
+
+  const handleGenerateOpponentReport = async (request: GameReportRequest) => {
+    if (!currentUser?.id) {
+      setAnalysisError('Sign in to save opponent reports to your account.');
       return;
     }
 
-    try {
-      const parsedReports = JSON.parse(storedReports) as ChessReport[];
-      const revivedReports = parsedReports.map(reviveReport).sort(
-        (left, right) => new Date(right.generatedAt).getTime() - new Date(left.generatedAt).getTime()
-      );
-
-      setSavedReports(revivedReports);
-    } catch (parseError) {
-      console.error('Failed to load saved opponent reports:', parseError);
-      setSavedReports([]);
-    }
-  }, [storageKey]);
-
-  useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(savedReports));
-  }, [savedReports, storageKey]);
-
-  const handleGenerateOpponentReport = async (request: GameReportRequest) => {
     setIsAnalyzing(true);
     setAnalysisMessage(null);
     setAnalysisError(null);
@@ -59,17 +55,13 @@ const GameAnalysisPage: React.FC = () => {
 
     try {
       const report = await reportService.generateReport(request);
-      const normalizedReport = reviveReport(report);
-      setSavedReports((previousReports) => {
-        const reportKey = `${normalizedReport.platform}:${normalizedReport.username.trim().toLowerCase()}`;
-        const remainingReports = previousReports.filter(
-          (existingReport) => `${existingReport.platform}:${existingReport.username.trim().toLowerCase()}` !== reportKey
-        );
-
-        return [normalizedReport, ...remainingReports].sort(
-          (left, right) => new Date(right.generatedAt).getTime() - new Date(left.generatedAt).getTime()
-        );
+      const normalizedReport = reviveReport({
+        ...report,
+        userId: currentUser.id,
       });
+      const nextReports = await userDataService.upsertOpponentReport(currentUser.id, normalizedReport);
+      await userDataService.saveReport(currentUser.id, normalizedReport, 'opponent');
+      setSavedReports(nextReports);
       setActiveReport(normalizedReport);
       setAnalysisMessage(`Analyzed ${normalizedReport.gameCount} games for ${normalizedReport.username}.`);
     } catch (reportError) {
@@ -175,6 +167,7 @@ const GameAnalysisPage: React.FC = () => {
         progress={analysisProgress}
         message={analysisMessage}
         error={analysisError}
+        mode="opponent"
       />
     </div>
   );
