@@ -1,3 +1,11 @@
+import { Chess } from 'chess.js';
+import {
+  STOCKFISH_ELO_MIN,
+  clampStockfishElo,
+  sanitizeTargetElo,
+  subFloorBlunderChance,
+} from '../utils/opponentRating';
+
 type StockfishListener = (line: string) => void;
 
 const ENGINE_PATH = '/stockfish.js';
@@ -9,6 +17,8 @@ class StockfishService {
   private listeners = new Set<StockfishListener>();
   private commandQueue: Promise<void> = Promise.resolve();
   private generation = 0;
+  /** Current UCI_Elo when LimitStrength is on; null = full strength. */
+  private limitedElo: number | null = null;
 
   private emit(line: string) {
     this.listeners.forEach((listener) => listener(line));
@@ -88,12 +98,108 @@ class StockfishService {
     }
   }
 
+  private async applyStrengthLimit(elo: number | null): Promise<void> {
+    if (elo == null) {
+      this.post('setoption name UCI_LimitStrength value false');
+      this.post('setoption name Skill Level value 20');
+      this.limitedElo = null;
+    } else {
+      const clamped = clampStockfishElo(elo);
+      this.post('setoption name UCI_LimitStrength value true');
+      this.post(`setoption name UCI_Elo value ${clamped}`);
+      // Skill Level 0 stacks with the Elo floor when targeting sub-1320 humans.
+      this.post(
+        `setoption name Skill Level value ${elo < STOCKFISH_ELO_MIN ? 0 : 20}`
+      );
+      this.limitedElo = clamped;
+    }
+    this.post('isready');
+    await this.waitFor((line) => line === 'readyok');
+  }
+
+  /** Full-strength analysis helper — always disables UCI strength limiting. */
+  private async ensureFullStrength(): Promise<void> {
+    await this.applyStrengthLimit(null);
+  }
+
+  private pickWeakerLegalMove(fen: string, avoidUci: string | null): string | null {
+    try {
+      const chess = new Chess(fen);
+      const legal = chess.moves({ verbose: true });
+      if (legal.length <= 1) return null;
+
+      const alternatives = legal.filter((move) => {
+        const uci = `${move.from}${move.to}${move.promotion || ''}`;
+        return uci !== avoidUci;
+      });
+      if (!alternatives.length) return null;
+
+      // Bias toward quieter mistakes at low ratings: prefer non-checks slightly.
+      const quiet = alternatives.filter((move) => !move.san.includes('+') && !move.san.includes('#'));
+      const pool = quiet.length > 0 && Math.random() < 0.7 ? quiet : alternatives;
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      return `${pick.from}${pick.to}${pick.promotion || ''}`;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Play a move aimed at `elo`.
+   * Stockfish UCI_Elo floors at 1320 — below that we use the floor + Skill Level 0
+   * and inject extra weaker moves so ~800-rated opponents aren't bumped to 1320.
+   */
+  async getBestMoveAtElo(
+    fen: string,
+    elo: number,
+    moveTimeMs = 800
+  ): Promise<{ bestMoveUci: string | null; elo: number; uciElo: number }> {
+    return this.enqueue(async () => {
+      await this.init();
+
+      const targetElo = sanitizeTargetElo(elo);
+      const uciElo = clampStockfishElo(targetElo);
+      const belowFloor = targetElo < STOCKFISH_ELO_MIN;
+      const thinkMs = belowFloor
+        ? Math.max(80, Math.round(120 + (targetElo / STOCKFISH_ELO_MIN) * 280))
+        : Math.max(100, Math.round(moveTimeMs));
+
+      await this.applyStrengthLimit(targetElo);
+      this.post('stop');
+      this.post('setoption name MultiPV value 1');
+      this.post(`position fen ${fen}`);
+      this.post(`go movetime ${thinkMs}`);
+
+      const bestMoveLine = await this.waitFor(
+        (line) => line.startsWith('bestmove '),
+        Math.max(15000, thinkMs + 5000)
+      );
+      const match = bestMoveLine.match(/^bestmove\s+(\S+)/);
+      let bestMoveUci = match && match[1] !== '(none)' ? match[1] : null;
+
+      if (belowFloor && bestMoveUci) {
+        const blunderChance = subFloorBlunderChance(targetElo);
+        if (Math.random() < blunderChance) {
+          const weaker = this.pickWeakerLegalMove(fen, bestMoveUci);
+          if (weaker) bestMoveUci = weaker;
+        }
+      }
+
+      return {
+        bestMoveUci,
+        elo: targetElo,
+        uciElo,
+      };
+    });
+  }
+
   async evaluatePosition(
     fen: string,
     depth = DEFAULT_DEPTH
   ): Promise<{ evaluation: number; bestMoveUci: string | null; depth: number }> {
     return this.enqueue(async () => {
       await this.init();
+      await this.ensureFullStrength();
 
       let evaluation = 0;
       let resolvedDepth = 0;
@@ -155,6 +261,81 @@ class StockfishService {
     });
   }
 
+  /**
+   * MultiPV candidate moves for more human-like bot play (UCI strings).
+   * Scores are white-centric centipawns.
+   */
+  async getCandidateMoves(
+    fen: string,
+    depth = 8,
+    multiPv = 3
+  ): Promise<Array<{ moveUci: string; evaluation: number; depth: number }>> {
+    return this.enqueue(async () => {
+      await this.init();
+      await this.ensureFullStrength();
+
+      const pvCount = Math.max(1, Math.min(5, multiPv));
+      const candidates = new Map<number, { moveUci: string; evaluation: number; depth: number }>();
+      const generation = this.generation;
+      const sideToMove = fen.split(' ')[1];
+
+      const onInfo = (line: string) => {
+        if (this.generation !== generation) return;
+        if (!line.startsWith('info ') || !line.includes(' pv ')) return;
+
+        const multipvMatch = line.match(/\bmultipv (\d+)\b/);
+        const pvIndex = multipvMatch ? parseInt(multipvMatch[1], 10) : 1;
+        const pvMatch = line.match(/\bpv (\S+)/);
+        if (!pvMatch) return;
+
+        let evaluation = 0;
+        const mateMatch = line.match(/\bscore mate (-?\d+)\b/);
+        if (mateMatch) {
+          const mateIn = parseInt(mateMatch[1], 10);
+          evaluation = mateIn > 0 ? 100000 - mateIn * 100 : -100000 - mateIn * 100;
+        } else {
+          const cpMatch = line.match(/\bscore cp (-?\d+)\b/);
+          if (cpMatch) evaluation = parseInt(cpMatch[1], 10);
+        }
+
+        const depthMatch = line.match(/\bdepth (\d+)\b/);
+        const resolvedDepth = depthMatch ? parseInt(depthMatch[1], 10) : 0;
+        const whiteCentric = sideToMove === 'b' ? -evaluation : evaluation;
+
+        candidates.set(pvIndex, {
+          moveUci: pvMatch[1],
+          evaluation: whiteCentric,
+          depth: resolvedDepth,
+        });
+      };
+
+      this.listeners.add(onInfo);
+
+      try {
+        this.post('stop');
+        this.post(`setoption name MultiPV value ${pvCount}`);
+        this.post(`position fen ${fen}`);
+        this.post(`go depth ${depth}`);
+        await this.waitFor(
+          (line) => line.startsWith('bestmove '),
+          Math.max(20000, depth * 2500)
+        );
+      } finally {
+        this.listeners.delete(onInfo);
+        this.post('setoption name MultiPV value 1');
+      }
+
+      if (this.generation !== generation) {
+        throw new Error('Stockfish analysis cancelled');
+      }
+
+      return Array.from(candidates.entries())
+        .sort((a, b) => a[0] - b[0])
+        .map(([, value]) => value)
+        .filter((c) => c.moveUci && c.moveUci !== '(none)');
+    });
+  }
+
   async newGame(): Promise<void> {
     return this.enqueue(async () => {
       await this.init();
@@ -164,8 +345,17 @@ class StockfishService {
     });
   }
 
+  /** Restore full engine strength (e.g. after practice). */
+  async clearStrengthLimit(): Promise<void> {
+    return this.enqueue(async () => {
+      await this.init();
+      await this.applyStrengthLimit(null);
+    });
+  }
+
   terminate() {
     this.generation += 1;
+    this.limitedElo = null;
     if (this.worker) {
       try {
         this.worker.postMessage('stop');

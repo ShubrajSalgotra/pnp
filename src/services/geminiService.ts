@@ -9,6 +9,7 @@ import {
   ActionableImprovementPlan,
   ReportGenerationError 
 } from '../types/report';
+import { OpponentScoutIntel } from '../types/opponentScout';
 import { videoRecommendationService } from './videoRecommendationService';
 
 class GeminiService {
@@ -364,173 +365,146 @@ class GeminiService {
     }
   }
 
-  private getFenAtMove(pgn: string, moveNumber: number, gameId: string, username?: string): { fen: string, lastMove: string, fromSquare?: string, toSquare?: string } | null {
+  private getFenAtMove(
+    pgn: string,
+    moveNumber: number,
+    _gameId: string,
+    username?: string
+  ): { fen: string; lastMove: string; fromSquare?: string; toSquare?: string } | null {
     try {
-      console.log(`[${gameId}] Starting FEN extraction for full move ${moveNumber}`);
-      console.log(`[${gameId}] PGN preview:`, pgn.substring(0, 200) + '...');
-      
       const chess = new Chess();
-      
-      // Try to load the PGN - this might throw an error
       try {
         chess.loadPgn(pgn);
-        console.log(`[${gameId}] PGN loaded successfully`);
-      } catch (pgnError) {
-        console.error(`[${gameId}] Failed to load PGN:`, pgnError);
+      } catch {
         return null;
       }
-      
+
       const history = chess.history();
-      console.log(`[${gameId}] Game has ${history.length} half-moves (plies)`);
-      
-      if (history.length === 0) {
-        console.log(`[${gameId}] No moves found in PGN`);
-        return null;
-      }
-      
-      // Reset and play moves up to the specified move number
+      if (history.length === 0) return null;
+
       chess.reset();
-      
-      // Convert full move number to ply index
-      // Full move 1 = plies 1-2 (White's move 1 + Black's move 1)
-      // Full move 2 = plies 3-4 (White's move 2 + Black's move 2)
-      // Full move n = plies (2n-1) to (2n)
-      
-      console.log(`[${gameId}] Full move ${moveNumber} analysis`);
-      console.log(`[${gameId}] Total plies in game: ${history.length}`);
-      console.log(`[${gameId}] Total full moves in game: ${Math.ceil(history.length / 2)}`);
-      
-      // Calculate both possible ply indices for this full move
-      const whitePlyIndex = (moveNumber * 2) - 2; // 0-based ply index for White's move
-      const blackPlyIndex = (moveNumber * 2) - 1; // 0-based ply index for Black's move
-      
-      console.log(`[${gameId}] Full move ${moveNumber} plies: White=${whitePlyIndex + 1}, Black=${blackPlyIndex + 1}`);
-      
-      // Determine which ply to use based on what's available and who the user is
-      let actualTargetPlyIndex: number;
-      
-      // First, try to determine which color the user played
+
+      const whitePlyIndex = moveNumber * 2 - 2;
+      const blackPlyIndex = moveNumber * 2 - 1;
+
       let userColor: 'white' | 'black' | null = null;
       if (username) {
-        const whiteMatch = pgn.match(/\[White\s+"([^"]+)"\]/);
-        const blackMatch = pgn.match(/\[Black\s+"([^"]+)"\]/);
-        const whitePlayer = whiteMatch ? whiteMatch[1] : '';
-        const blackPlayer = blackMatch ? blackMatch[1] : '';
-        
-        if (whitePlayer.toLowerCase().includes(username.toLowerCase()) || 
-            username.toLowerCase().includes(whitePlayer.toLowerCase())) {
+        const whiteMatch = pgn.match(/\[White\s+"([^"]+)"\]/i);
+        const blackMatch = pgn.match(/\[Black\s+"([^"]+)"\]/i);
+        const whitePlayer = whiteMatch?.[1] || '';
+        const blackPlayer = blackMatch?.[1] || '';
+        const u = username.toLowerCase();
+        if (whitePlayer.toLowerCase().includes(u) || u.includes(whitePlayer.toLowerCase())) {
           userColor = 'white';
-        } else if (blackPlayer.toLowerCase().includes(username.toLowerCase()) || 
-                   username.toLowerCase().includes(blackPlayer.toLowerCase())) {
+        } else if (blackPlayer.toLowerCase().includes(u) || u.includes(blackPlayer.toLowerCase())) {
           userColor = 'black';
         }
-        console.log(`[${gameId}] User ${username} played as ${userColor || 'unknown'} (White: ${whitePlayer}, Black: ${blackPlayer})`);
       }
-      
-      if (whitePlyIndex >= 0 && whitePlyIndex < history.length && 
-          blackPlyIndex >= 0 && blackPlyIndex < history.length) {
-        // Both moves exist in this full move
-        if (userColor === 'white') {
-          actualTargetPlyIndex = whitePlyIndex;
-          console.log(`[${gameId}] User played White, using White's move: ply ${actualTargetPlyIndex + 1}`);
-        } else if (userColor === 'black') {
-          actualTargetPlyIndex = blackPlyIndex;
-          console.log(`[${gameId}] User played Black, using Black's move: ply ${actualTargetPlyIndex + 1}`);
-        } else {
-          // Default to White's move if we can't determine user color
-          actualTargetPlyIndex = whitePlyIndex;
-          console.log(`[${gameId}] Both moves available, user color unknown, defaulting to White's move: ply ${actualTargetPlyIndex + 1}`);
-        }
+
+      let actualTargetPlyIndex: number;
+      if (whitePlyIndex >= 0 && whitePlyIndex < history.length && blackPlyIndex < history.length) {
+        actualTargetPlyIndex = userColor === 'black' ? blackPlyIndex : whitePlyIndex;
       } else if (whitePlyIndex >= 0 && whitePlyIndex < history.length) {
-        // Only White's move exists
         actualTargetPlyIndex = whitePlyIndex;
-        console.log(`[${gameId}] Only White's move available: ply ${actualTargetPlyIndex + 1}`);
       } else if (blackPlyIndex >= 0 && blackPlyIndex < history.length) {
-        // Only Black's move exists
         actualTargetPlyIndex = blackPlyIndex;
-        console.log(`[${gameId}] Only Black's move available: ply ${actualTargetPlyIndex + 1}`);
       } else {
-        // Neither move exists - the full move is out of range
-        console.log(`[${gameId}] Full move ${moveNumber} is out of range (game has ${Math.ceil(history.length / 2)} full moves)`);
         return null;
       }
-      
-      console.log(`[${gameId}] Moves around target: ${history.slice(Math.max(0, actualTargetPlyIndex - 2), actualTargetPlyIndex + 3).join(', ')}`);
-      console.log(`[${gameId}] Target move (the user's move that we're analyzing): "${history[actualTargetPlyIndex]}"`);
-      
-      const isWhiteTurn = (actualTargetPlyIndex % 2) === 0;
-      console.log(`[${gameId}] Full move ${moveNumber}, ply ${actualTargetPlyIndex + 1} is ${isWhiteTurn ? "White's" : "Black's"} turn`);
-      
-      if (actualTargetPlyIndex < 0 || actualTargetPlyIndex >= history.length) {
-        console.log(`[${gameId}] Ply index ${actualTargetPlyIndex} out of range (game has ${history.length} plies)`);
-        return null;
-      }
-      
-      // CRITICAL FIX: Get position BEFORE the user's move (so we can suggest alternatives)
-      let userMove = '';
-      let fromSquare = '';
-      let toSquare = '';
-      
-      console.log(`[${gameId}] Playing ${actualTargetPlyIndex} plies to get position BEFORE user's move...`);
-      
-      // Play all moves up to (but not including) the target ply to get position before user's move
+
       for (let i = 0; i < actualTargetPlyIndex; i++) {
         try {
-          const playedMove = chess.move(history[i]);
-          console.log(`[${gameId}] Played ply ${i + 1}: ${history[i]} (${playedMove.san})`);
-        } catch (moveError) {
-          console.error(`[${gameId}] Failed to play ply ${i + 1}: ${history[i]}`, moveError);
+          chess.move(history[i]);
+        } catch {
           return null;
         }
       }
-      
-      // Get the position before the user's move (this is where we want to suggest alternatives)
+
       const fen = chess.fen();
-      console.log(`[${gameId}] Position BEFORE user's move: ${fen}`);
-      console.log(`[${gameId}] Current turn: ${chess.turn() === 'w' ? 'White' : 'Black'}`);
-      
-      // Store the user's actual move for reference (but don't play it yet)
       try {
         const moveResult = chess.move(history[actualTargetPlyIndex]);
-        userMove = moveResult.san; // Store the actual move the user played
-        fromSquare = moveResult.from;
-        toSquare = moveResult.to;
-        console.log(`[${gameId}] User's actual move: ${userMove} from ${fromSquare} to ${toSquare}`);
-        
-        // Undo the move to get back to the position before the user's move
+        const userMove = moveResult.san;
+        const fromSquare = moveResult.from;
+        const toSquare = moveResult.to;
         chess.undo();
-      } catch (moveError) {
-        console.error(`[${gameId}] Failed to parse user's move: ${history[actualTargetPlyIndex]}`, moveError);
+        return { fen, lastMove: userMove, fromSquare, toSquare };
+      } catch {
         return null;
       }
-      
-      console.log(`[${gameId}] Successfully generated FEN (position BEFORE user's move): ${fen}`);
-      console.log(`[${gameId}] User's move that we're analyzing: ${userMove}, From: ${fromSquare}, To: ${toSquare}`);
-      
-      return { fen, lastMove: userMove, fromSquare, toSquare };
-    } catch (error) {
-      console.error(`[${gameId}] Unexpected error in FEN extraction:`, error);
+    } catch {
       return null;
     }
   }
 
   private formatGamesForAnalysis(games: ChessGame[], username: string): string {
-    return games.map((game, index) => {
+    return this.formatGamesCompact(games, username);
+  }
+
+  /** Compact game payload — moves only, truncated — to cut AI latency. */
+  private formatGamesCompact(games: ChessGame[], username: string, maxGames = 30): string {
+    return games.slice(0, maxGames).map((game, index) => {
       const userColor = game.white.name.toLowerCase() === username.toLowerCase() ? 'white' : 'black';
       const opponent = userColor === 'white' ? game.black : game.white;
-      
-      return `
-Game ${index + 1} (ID: ${game.id}):
-- Date: ${game.date}
-- User played: ${userColor}
-- Opponent: ${opponent.name} (${opponent.rating || 'Unrated'})
-- Result: ${game.result}
-- Opening: ${game.opening.name} ${game.opening.eco ? `(${game.opening.eco})` : ''}
-- Time Control: ${game.timeControl}
-- Moves: ${game.moves.join(' ')}
-- PGN: ${game.pgn}
-      `.trim();
+      const moves = (game.moves?.length ? game.moves : []).slice(0, 80).join(' ');
+      const accuracy =
+        userColor === 'white' ? game.accuracy?.white : game.accuracy?.black;
+
+      return [
+        `G${index + 1}|id=${game.id}|${userColor}|vs ${opponent.name}(${opponent.rating ?? '?'})|${game.result}|${game.opening?.name || 'Unknown'}${game.opening?.eco ? ` ${game.opening.eco}` : ''}|tc=${game.timeControl}${typeof accuracy === 'number' ? `|acc=${accuracy}` : ''}`,
+        moves || '(no moves)',
+      ].join('\n');
     }).join('\n\n');
+  }
+
+  private parseJsonObject<T>(response: string): T {
+    const fenced = response.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    const candidate = fenced?.[1] || response;
+    const jsonMatch = candidate.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('Invalid JSON response from Gemini');
+    }
+    return JSON.parse(jsonMatch[0]) as T;
+  }
+
+  private enhanceWeaknessesWithFen(
+    weaknesses: RecurringWeakness[],
+    games: ChessGame[],
+    username: string
+  ): RecurringWeakness[] {
+    for (const weakness of weaknesses) {
+      if (!Array.isArray(weakness.examples)) {
+        weakness.examples = [];
+        continue;
+      }
+
+      for (const example of weakness.examples.slice(0, 2)) {
+        const game =
+          games.find((g) => g.id === example.gameId) ||
+          games.find((g) => g.id?.includes(example.gameId) || example.gameId?.includes(g.id));
+
+        if (!game?.pgn || !example.moveNumber) continue;
+
+        const fenResult = this.getFenAtMove(game.pgn, example.moveNumber, example.gameId, username);
+        const playerInfo = this.getPlayerInfo(game.pgn, example.moveNumber, example.gameId, username);
+        if (fenResult) {
+          example.fenPosition = fenResult.fen;
+          example.lastMove = fenResult.lastMove;
+          example.fromSquare = fenResult.fromSquare;
+          example.toSquare = fenResult.toSquare;
+          example.gameId = game.id;
+          this.validateAndFixMoveRecommendation(example, fenResult.fen);
+        }
+        if (playerInfo) {
+          example.playerColor = playerInfo.playerColor;
+          example.whitePlayer = playerInfo.whitePlayer;
+          example.blackPlayer = playerInfo.blackPlayer;
+        }
+      }
+
+      weakness.examples = weakness.examples.slice(0, 2);
+    }
+
+    return weaknesses;
   }
 
   private formatGamesWithPositionalContext(games: ChessGame[], username: string): string {
@@ -1794,6 +1768,455 @@ CRITICAL: You are analyzing a 1500+ FIDE rated player. They already know basic p
       console.error('Error generating unified analysis:', error);
       throw new ReportGenerationError(
         'Failed to generate unified analysis',
+        'AI_ERROR',
+        error
+      );
+    }
+  }
+
+  /**
+   * Opponent-specific scouting intel: how to beat them, edges, prep, checklist.
+   * Framed for the user preparing to play against `username`, not for coaching that player.
+   */
+  async generateOpponentScoutIntel(
+    games: ChessGame[],
+    username: string,
+    context?: {
+      weaknesses?: RecurringWeakness[];
+      strengths?: string[];
+      middleScore?: number;
+      endgameScore?: number;
+      yourStrengths?: string[];
+    }
+  ): Promise<OpponentScoutIntel> {
+    const gamesData = this.formatGamesForAnalysis(games, username);
+    const weaknessLines =
+      context?.weaknesses
+        ?.slice(0, 5)
+        .map((w, i) => `${i + 1}. ${w.title}: ${w.description}`)
+        .join('\n') || 'Not yet summarized.';
+    const strengthLines = (context?.strengths || []).slice(0, 4).join('; ') || 'Unknown';
+    const yourStrengthLines = (context?.yourStrengths || []).slice(0, 4).join('; ') || 'Not provided';
+
+    const prompt = `
+You are "Pawnsposes," a world-renowned chess Grandmaster (FIDE 2650+) and elite second.
+You are preparing YOUR STUDENT to FACE and BEAT the opponent named '${username}'.
+This is NOT a coaching report for ${username}. Never tell ${username} how to improve.
+Write actionable scouting advice for the person who will sit across from them.
+
+Opponent games (PGN / summaries):
+${gamesData}
+
+Known recurring weaknesses of ${username}:
+${weaknessLines}
+
+Known strengths of ${username}:
+${strengthLines}
+
+Middlegame score (1-10): ${context?.middleScore ?? 'n/a'}
+Endgame score (1-10): ${context?.endgameScore ?? 'n/a'}
+
+Your student's known strengths (use these for "yourEdges" when possible):
+${yourStrengthLines}
+
+Return ONLY valid JSON with this exact shape:
+{
+  "battlePlanHeadline": "one punchy sentence battle plan",
+  "playingStyle": "1-2 paragraph psychological / style read of how they play and what they hate",
+  "predictabilityScore": number (0-100, higher means more patterned / easier to prepare against),
+  "howToBeatThem": ["4-6 concrete, practical instructions"],
+  "yourEdges": ["3-5 mismatch edges the student can exploit"],
+  "dangerZones": ["3-4 things this opponent does well — avoid walking into them"],
+  "prepVsTheirWhite": {
+    "recommendation": "what to aim for when THEY have White (structures / systems)",
+    "why": "why this pressures their habits",
+    "keyIdeas": ["2-4 practical ideas, not deep theory dumps"]
+  },
+  "prepVsTheirBlack": {
+    "recommendation": "what to aim for when THEY have Black",
+    "why": "why this pressures their habits",
+    "keyIdeas": ["2-4 practical ideas"]
+  },
+  "preGameChecklist": ["5 short checklist items for the morning of the game"],
+  "overTheBoardTips": ["3-4 clock / practical tips once the game starts"],
+  "psychologicalNotes": ["2-4 tilt, resignation, time-trouble, or fighting-spirit notes"]
+}
+
+Rules:
+- Be specific to patterns in the games — no generic advice that fits any opponent
+- Prefer plans and structures over move dumps
+- Tone: direct second / prep coach, not parental improvement coach
+- Do not mention AI or that this was auto-generated
+- Keep each bullet punchy (under ~25 words when possible)
+`;
+
+    try {
+      const response = await this.generateWithPrompt(prompt);
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('Invalid JSON response from Gemini');
+      }
+
+      const parsed = JSON.parse(jsonMatch[0]) as OpponentScoutIntel;
+      return {
+        battlePlanHeadline: parsed.battlePlanHeadline || `Exploit ${username}'s repeated habits.`,
+        playingStyle: parsed.playingStyle || 'Style summary unavailable.',
+        predictabilityScore: Math.max(0, Math.min(100, Number(parsed.predictabilityScore) || 50)),
+        howToBeatThem: Array.isArray(parsed.howToBeatThem) ? parsed.howToBeatThem.slice(0, 6) : [],
+        yourEdges: Array.isArray(parsed.yourEdges) ? parsed.yourEdges.slice(0, 5) : [],
+        dangerZones: Array.isArray(parsed.dangerZones) ? parsed.dangerZones.slice(0, 4) : [],
+        prepVsTheirWhite: {
+          recommendation: parsed.prepVsTheirWhite?.recommendation || 'Choose a sound structure you know well.',
+          why: parsed.prepVsTheirWhite?.why || 'Prioritize comfort and practical chances.',
+          keyIdeas: Array.isArray(parsed.prepVsTheirWhite?.keyIdeas)
+            ? parsed.prepVsTheirWhite.keyIdeas.slice(0, 4)
+            : [],
+        },
+        prepVsTheirBlack: {
+          recommendation: parsed.prepVsTheirBlack?.recommendation || 'Steer into familiar middlegames.',
+          why: parsed.prepVsTheirBlack?.why || 'Prioritize comfort and practical chances.',
+          keyIdeas: Array.isArray(parsed.prepVsTheirBlack?.keyIdeas)
+            ? parsed.prepVsTheirBlack.keyIdeas.slice(0, 4)
+            : [],
+        },
+        preGameChecklist: Array.isArray(parsed.preGameChecklist)
+          ? parsed.preGameChecklist.slice(0, 6)
+          : [],
+        overTheBoardTips: Array.isArray(parsed.overTheBoardTips)
+          ? parsed.overTheBoardTips.slice(0, 4)
+          : [],
+        psychologicalNotes: Array.isArray(parsed.psychologicalNotes)
+          ? parsed.psychologicalNotes.slice(0, 4)
+          : [],
+      };
+    } catch (error) {
+      console.error('Error generating opponent scout intel:', error);
+      throw new ReportGenerationError(
+        'Failed to generate opponent scouting intel',
+        'AI_ERROR',
+        error
+      );
+    }
+  }
+
+  /**
+   * Fast path: one AI call for a full self-improvement report.
+   * Numeric stats should be merged from local compute (see reportStats).
+   */
+  async generateCompleteReportFast(
+    games: ChessGame[],
+    username: string,
+    localStatsHint?: {
+      winRate: number;
+      favoriteOpenings: string[];
+      timeControlPreference: string;
+      overallRating: number;
+      asWhiteWinRate: number;
+      asBlackWinRate: number;
+    }
+  ): Promise<{
+    executiveSummary: Partial<ExecutiveSummary>;
+    recurringWeaknesses: RecurringWeakness[];
+    middlegameAnalysis: MiddleGameAnalysis;
+    endgameAnalysis: EndgameAnalysis;
+    improvementPlan: Partial<ActionableImprovementPlan>;
+  }> {
+    const gamesData = this.formatGamesCompact(games, username);
+    const hint = localStatsHint
+      ? `Known stats (use these; do not invent different numbers): winRate=${localStatsHint.winRate}%, whiteWR=${localStatsHint.asWhiteWinRate}%, blackWR=${localStatsHint.asBlackWinRate}%, rating≈${localStatsHint.overallRating}, openings=${localStatsHint.favoriteOpenings.join(', ') || 'n/a'}, tc=${localStatsHint.timeControlPreference}`
+      : '';
+
+    const prompt = `You are Pawnsposes, a FIDE 2650+ coach. Analyze ${username}'s recent games. Be blunt, specific, and practical. No AI disclaimers.
+
+${hint}
+
+GAMES (compact; id is authoritative):
+${gamesData}
+
+Return ONLY valid JSON:
+{
+  "executiveSummary": {
+    "strengthAreas": ["3-4 concrete strengths from these games"],
+    "keyInsights": ["3-4 sharp insights about style / psychology / patterns"],
+    "averageAccuracy": number
+  },
+  "recurringWeaknesses": [
+    {
+      "title": "short concept name",
+      "description": "2-3 sentences on why this keeps costing them",
+      "frequency": number,
+      "examples": [
+        {
+          "gameId": "exact id from GAMES",
+          "moveNumber": number,
+          "position": "brief",
+          "mistake": "e.g. 15...g5?! — what went wrong",
+          "betterMove": "e.g. 15...Nd7! — why better"
+        }
+      ],
+      "improvementSuggestion": "one technical coaching line",
+      "technicalImprovement": "one master-principle line"
+    }
+  ],
+  "middlegameAnalysis": {
+    "overallRating": 1-10,
+    "strengths": ["3 items"],
+    "weaknesses": ["3 items"],
+    "patterns": {
+      "positionalUnderstanding": 1-10,
+      "tacticalAwareness": 1-10,
+      "planFormation": 1-10,
+      "pieceCoordination": 1-10
+    },
+    "recommendations": ["3 actionable middlegame drills"],
+    "examplePositions": []
+  },
+  "endgameAnalysis": {
+    "overallRating": 1-10,
+    "strengths": ["2-3 items"],
+    "weaknesses": ["2-3 items"],
+    "commonMistakes": ["2-3 items"],
+    "endgameTypes": [
+      {"type": "string", "performance": 1-10, "gamesPlayed": number, "successRate": number}
+    ],
+    "recommendations": ["2-3 items"],
+    "studyMaterial": ["2-3 specific drills"],
+    "examplePositions": []
+  },
+  "improvementPlan": {
+    "immediateActions": [
+      {"priority": "high|medium|low", "action": "short title", "description": "what to do next games", "timeframe": "e.g. Next 5 games"}
+    ],
+    "weeklyFocus": [
+      {"week": 1, "focus": "theme", "exercises": ["2 drills"], "goals": ["1 measurable goal"]}
+    ],
+    "monthlyGoals": [
+      {"month": 1, "goal": "string", "milestones": ["2 items"], "trackingMethod": "string"}
+    ],
+    "resources": {
+      "exercises": ["3 drills"],
+      "masterGame": {
+        "players": "White vs Black (Year)",
+        "event": "event",
+        "description": "why it teaches their gap",
+        "relevantConcept": "concept",
+        "keyMoves": "ideas to study"
+      }
+    }
+  }
+}
+
+Rules:
+- Exactly 3 recurringWeaknesses, each with EXACTLY 2 examples using real gameIds/moveNumbers from the list
+- Critique strategic/positional choices, not forced recaptures or saving attacked pieces
+- Suggest legal replacement moves from the position BEFORE their move
+- Tailor depth to their rating (~${localStatsHint?.overallRating || 'unknown'})
+- Keep bullets concrete and game-specific — ban generic advice ("study more", "be careful")`;
+
+    try {
+      const response = await this.generateWithPrompt(prompt, 3);
+      const parsed = this.parseJsonObject<{
+        executiveSummary: Partial<ExecutiveSummary>;
+        recurringWeaknesses: RecurringWeakness[];
+        middlegameAnalysis: MiddleGameAnalysis;
+        endgameAnalysis: EndgameAnalysis;
+        improvementPlan: Partial<ActionableImprovementPlan>;
+      }>(response);
+
+      const weaknesses = this.enhanceWeaknessesWithFen(
+        Array.isArray(parsed.recurringWeaknesses) ? parsed.recurringWeaknesses.slice(0, 3) : [],
+        games,
+        username
+      );
+
+      return {
+        executiveSummary: parsed.executiveSummary || {},
+        recurringWeaknesses: weaknesses,
+        middlegameAnalysis: parsed.middlegameAnalysis,
+        endgameAnalysis: parsed.endgameAnalysis,
+        improvementPlan: parsed.improvementPlan || {},
+      };
+    } catch (error) {
+      console.error('Error generating complete report (fast):', error);
+      throw new ReportGenerationError(
+        'Failed to generate chess report',
+        'AI_ERROR',
+        error
+      );
+    }
+  }
+
+  /**
+   * Fast path: one AI call for opponent analysis + battle-plan scout intel.
+   */
+  async generateOpponentDossierFast(
+    games: ChessGame[],
+    username: string,
+    options?: {
+      yourStrengths?: string[];
+      localStatsHint?: {
+        winRate: number;
+        favoriteOpenings: string[];
+        timeControlPreference: string;
+        overallRating: number;
+        asWhiteWinRate: number;
+        asBlackWinRate: number;
+      };
+    }
+  ): Promise<{
+    executiveSummary: Partial<ExecutiveSummary>;
+    recurringWeaknesses: RecurringWeakness[];
+    middlegameAnalysis: MiddleGameAnalysis;
+    endgameAnalysis: EndgameAnalysis;
+    scoutIntel: OpponentScoutIntel;
+  }> {
+    const gamesData = this.formatGamesCompact(games, username);
+    const local = options?.localStatsHint;
+    const yourStrengths = (options?.yourStrengths || []).slice(0, 4).join('; ') || 'Not provided';
+    const hint = local
+      ? `Opponent stats: winRate=${local.winRate}%, whiteWR=${local.asWhiteWinRate}%, blackWR=${local.asBlackWinRate}%, rating≈${local.overallRating}, openings=${local.favoriteOpenings.join(', ') || 'n/a'}, tc=${local.timeControlPreference}`
+      : '';
+
+    const prompt = `You are Pawnsposes, a FIDE 2650+ second. Prepare YOUR STUDENT to BEAT opponent "${username}".
+This is NOT a coaching report for ${username}. Frame everything as how to exploit them.
+
+${hint}
+Student strengths to leverage: ${yourStrengths}
+
+OPPONENT GAMES:
+${gamesData}
+
+Return ONLY valid JSON:
+{
+  "executiveSummary": {
+    "strengthAreas": ["3 things THIS OPPONENT does well — danger zones"],
+    "keyInsights": ["3-4 scouting insights about how they play / tilt / patterns"],
+    "averageAccuracy": number
+  },
+  "recurringWeaknesses": [
+    {
+      "title": "exploitable habit",
+      "description": "how to provoke / punish it",
+      "frequency": number,
+      "examples": [
+        {
+          "gameId": "exact id",
+          "moveNumber": number,
+          "position": "brief",
+          "mistake": "what THEY did wrong",
+          "betterMove": "what they should have played (for context)"
+        }
+      ],
+      "improvementSuggestion": "how YOU exploit this OTB",
+      "technicalImprovement": "one prep line / structure idea"
+    }
+  ],
+  "middlegameAnalysis": {
+    "overallRating": 1-10,
+    "strengths": ["3"],
+    "weaknesses": ["3"],
+    "patterns": {
+      "positionalUnderstanding": 1-10,
+      "tacticalAwareness": 1-10,
+      "planFormation": 1-10,
+      "pieceCoordination": 1-10
+    },
+    "recommendations": ["3 ways to steer middlegames against them"],
+    "examplePositions": []
+  },
+  "endgameAnalysis": {
+    "overallRating": 1-10,
+    "strengths": ["2-3"],
+    "weaknesses": ["2-3"],
+    "commonMistakes": ["2-3"],
+    "endgameTypes": [
+      {"type": "string", "performance": 1-10, "gamesPlayed": number, "successRate": number}
+    ],
+    "recommendations": ["2-3"],
+    "studyMaterial": ["2-3"],
+    "examplePositions": []
+  },
+  "scoutIntel": {
+    "battlePlanHeadline": "one punchy sentence",
+    "playingStyle": "1-2 paragraphs on how they play and what they hate",
+    "predictabilityScore": 0-100,
+    "howToBeatThem": ["4-6 concrete instructions"],
+    "yourEdges": ["3-5 mismatch edges"],
+    "dangerZones": ["3-4 things they do well"],
+    "prepVsTheirWhite": {"recommendation": "string", "why": "string", "keyIdeas": ["2-4"]},
+    "prepVsTheirBlack": {"recommendation": "string", "why": "string", "keyIdeas": ["2-4"]},
+    "preGameChecklist": ["5 items"],
+    "overTheBoardTips": ["3-4"],
+    "psychologicalNotes": ["2-4"]
+  }
+}
+
+Rules:
+- Exactly 3 recurringWeaknesses with EXACTLY 2 real examples each
+- Specific to these games — no generic opponent advice
+- Prefer plans/structures over move dumps
+- Tone: elite second / prep coach`;
+
+    try {
+      const response = await this.generateWithPrompt(prompt, 3);
+      const parsed = this.parseJsonObject<{
+        executiveSummary: Partial<ExecutiveSummary>;
+        recurringWeaknesses: RecurringWeakness[];
+        middlegameAnalysis: MiddleGameAnalysis;
+        endgameAnalysis: EndgameAnalysis;
+        scoutIntel: OpponentScoutIntel;
+      }>(response);
+
+      const weaknesses = this.enhanceWeaknessesWithFen(
+        Array.isArray(parsed.recurringWeaknesses) ? parsed.recurringWeaknesses.slice(0, 3) : [],
+        games,
+        username
+      );
+
+      const scout = parsed.scoutIntel || ({} as OpponentScoutIntel);
+      const scoutIntel: OpponentScoutIntel = {
+        battlePlanHeadline: scout.battlePlanHeadline || `Exploit ${username}'s repeated habits.`,
+        playingStyle: scout.playingStyle || 'Style summary unavailable.',
+        predictabilityScore: Math.max(0, Math.min(100, Number(scout.predictabilityScore) || 50)),
+        howToBeatThem: Array.isArray(scout.howToBeatThem) ? scout.howToBeatThem.slice(0, 6) : [],
+        yourEdges: Array.isArray(scout.yourEdges) ? scout.yourEdges.slice(0, 5) : [],
+        dangerZones: Array.isArray(scout.dangerZones) ? scout.dangerZones.slice(0, 4) : [],
+        prepVsTheirWhite: {
+          recommendation: scout.prepVsTheirWhite?.recommendation || 'Choose a sound structure you know well.',
+          why: scout.prepVsTheirWhite?.why || 'Prioritize comfort and practical chances.',
+          keyIdeas: Array.isArray(scout.prepVsTheirWhite?.keyIdeas)
+            ? scout.prepVsTheirWhite.keyIdeas.slice(0, 4)
+            : [],
+        },
+        prepVsTheirBlack: {
+          recommendation: scout.prepVsTheirBlack?.recommendation || 'Steer into familiar middlegames.',
+          why: scout.prepVsTheirBlack?.why || 'Prioritize comfort and practical chances.',
+          keyIdeas: Array.isArray(scout.prepVsTheirBlack?.keyIdeas)
+            ? scout.prepVsTheirBlack.keyIdeas.slice(0, 4)
+            : [],
+        },
+        preGameChecklist: Array.isArray(scout.preGameChecklist)
+          ? scout.preGameChecklist.slice(0, 6)
+          : [],
+        overTheBoardTips: Array.isArray(scout.overTheBoardTips)
+          ? scout.overTheBoardTips.slice(0, 4)
+          : [],
+        psychologicalNotes: Array.isArray(scout.psychologicalNotes)
+          ? scout.psychologicalNotes.slice(0, 4)
+          : [],
+      };
+
+      return {
+        executiveSummary: parsed.executiveSummary || {},
+        recurringWeaknesses: weaknesses,
+        middlegameAnalysis: parsed.middlegameAnalysis,
+        endgameAnalysis: parsed.endgameAnalysis,
+        scoutIntel,
+      };
+    } catch (error) {
+      console.error('Error generating opponent dossier (fast):', error);
+      throw new ReportGenerationError(
+        'Failed to generate opponent scouting dossier',
         'AI_ERROR',
         error
       );
