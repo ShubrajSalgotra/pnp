@@ -1,3 +1,5 @@
+import type { OpponentScoutIntel } from './opponentScout';
+
 export interface GameReportRequest {
   platform: 'lichess' | 'chess.com';
   username: string;
@@ -132,6 +134,8 @@ export interface ChessReport {
   middleGameAnalysis: MiddleGameAnalysis;
   endgameAnalysis: EndgameAnalysis;
   improvementPlan: ActionableImprovementPlan;
+  /** Opponent-only scouting intel (how to beat them). Absent on self reports / legacy data. */
+  scoutIntel?: OpponentScoutIntel;
   rawGameData: any[]; // Store game data for reference
 }
 

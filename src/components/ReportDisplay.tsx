@@ -1,12 +1,17 @@
 import React from 'react';
 import { ChessReport } from '../types/report';
 import PositionDisplay from './PositionDisplay';
-import { 
-  Target, 
+import {
+  Target,
   BookOpen,
-  BarChart3,
   Search,
   ExternalLink,
+  Crosshair,
+  Swords,
+  ShieldAlert,
+  ListChecks,
+  TrendingUp,
+  Sparkles,
 } from 'lucide-react';
 
 interface ReportDisplayProps {
@@ -14,27 +19,36 @@ interface ReportDisplayProps {
   onBack?: () => void;
 }
 
+const skillLabel = (key: string) =>
+  key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim();
+
+const priorityStyles: Record<string, string> = {
+  high: 'border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-200',
+  medium:
+    'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200',
+  low: 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200',
+};
+
 const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
-  // Helper function to get game number and opponent name
+  const isOpponent = Boolean(report.scoutIntel);
+  const scout = report.scoutIntel;
+
   const getGameAndOpponentInfo = (gameId: string): string => {
-    const game = report.rawGameData.find(g => g.id === gameId);
+    const game = report.rawGameData.find((g) => g.id === gameId);
     if (!game) return `Game ${gameId}`;
-    
-    // Find the game index (1-based) in the rawGameData array
-    const gameIndex = report.rawGameData.findIndex(g => g.id === gameId) + 1;
-    
-    // Determine who was the opponent based on the user's name
-    const opponentName = game.white.name.toLowerCase() === report.username.toLowerCase() 
-      ? game.black.name 
-      : game.white.name;
-    
+
+    const gameIndex = report.rawGameData.findIndex((g) => g.id === gameId) + 1;
+    const opponentName =
+      game.white.name.toLowerCase() === report.username.toLowerCase()
+        ? game.black.name
+        : game.white.name;
+
     return `Game ${gameIndex} vs ${opponentName}`;
   };
 
-  const getGameById = (gameId: string): any | undefined => {
-    return report.rawGameData.find(g => g.id === gameId) ||
-      report.rawGameData.find(g => g.id?.includes(gameId) || gameId.includes(g.id));
-  };
+  const getGameById = (gameId: string) =>
+    report.rawGameData.find((g) => g.id === gameId) ||
+    report.rawGameData.find((g) => g.id?.includes(gameId) || gameId.includes(g.id));
 
   const getPositionPly = (moveNumber: number, playerColor?: 'white' | 'black'): number => {
     const basePly = Math.max(0, (moveNumber - 1) * 2);
@@ -52,388 +66,526 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
     const ply = getPositionPly(moveNumber, playerColor);
     const baseUrl = game.url.split('#')[0].split('?')[0];
 
-    if (game.site === 'lichess') {
-      return `${baseUrl}#${ply}`;
-    }
-
+    if (game.site === 'lichess') return `${baseUrl}#${ply}`;
     if (game.site === 'chess.com') {
       const analysisUrl = baseUrl.replace('/game/', '/analysis/game/');
       return `${analysisUrl}?tab=analysis&move=${ply}`;
     }
-
     return game.url;
   };
 
-  // Helper function to generate elegant rating notation for PDF
-  const getRatingNotation = (rating: number): string => {
-    const filledDots = '●'.repeat(rating);
-    const emptyDots = '○'.repeat(10 - rating);
-    return `${filledDots}${emptyDots}`;
-  };
+  const generatedLabel =
+    report.generatedAt instanceof Date
+      ? report.generatedAt.toLocaleDateString(undefined, {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        })
+      : String(report.generatedAt);
 
-
+  const kpis = [
+    {
+      label: 'Win rate',
+      value: `${report.executiveSummary.winRate}%`,
+      hint: `${report.executiveSummary.totalGames} games`,
+    },
+    {
+      label: 'Accuracy',
+      value: `${report.executiveSummary.averageAccuracy}%`,
+      hint: 'avg when available',
+    },
+    {
+      label: 'Rating',
+      value: String(report.executiveSummary.overallRating || '—'),
+      hint: report.executiveSummary.timeControlPreference,
+    },
+    {
+      label: isOpponent ? 'Exploit first' : '#1 focus',
+      value:
+        report.recurringWeaknesses[0]?.title.split(' ').slice(0, 3).join(' ') ||
+        (isOpponent ? 'Patterns' : 'Strategy'),
+      hint: report.executiveSummary.favoriteOpenings[0] || 'Openings mix',
+    },
+  ];
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#f0f2f5', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-      <style>
-        {`
-          @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-          
-          .section-header {
-            font-size: 1.125rem;
-            font-weight: 800;
-            color: #064e3b;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            display: flex;
-            align-items: center;
-            margin-bottom: 1rem;
-          }
-          
-          .section-header svg {
-            margin-right: 0.75rem;
-            color: #10b981;
-          }
-          
-          .highlight-card {
-            border: 1px solid #e5e7eb;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            text-align: center;
-          }
-          
-          .checklist-item {
-            display: flex;
-            align-items: flex-start;
-            padding: 0.75rem;
-            border-radius: 0.5rem;
-            background-color: #f8fafc;
-            border: 1px solid #e5e7eb;
-          }
-          
-          .move-code {
-            font-family: monospace;
-            background-color: #e5e7eb;
-            padding: 2px 5px;
-            border-radius: 4px;
-            font-size: 0.9em;
-          }
-          
-          .rating-bar-bg {
-            background-color: #e5e7eb;
-            border-radius: 9999px;
-            height: 8px;
-            overflow: hidden;
-            width: 100%;
-          }
-          
-          .rating-bar {
-            background-color: #10b981;
-            height: 100%;
-            border-radius: 9999px;
-          }
-        `}
-      </style>
-      
-      <div className="max-w-4xl mx-auto p-4">
-        {/* Main Report Container */}
-        <div 
-          className="bg-white rounded-lg shadow-lg border-t-8 p-10" 
-          style={{ 
-            borderTopColor: '#064e3b',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.07)'
-          }}
-        >
-          {/* Header */}
-          <header className="flex justify-between items-start pb-4 mb-6 border-b border-gray-200">
-            <div>
-              <h1 className="text-4xl font-extrabold text-gray-800">Performance Report</h1>
-              <p className="text-md text-gray-500">Prepared by Pawnsposes</p>
-            </div>
-            <div className="text-right">
-              <p className="font-semibold text-lg text-gray-800">{report.username}</p>
-              <p className="text-sm text-gray-500">{report.generatedAt.toLocaleDateString()}</p>
+    <div className="report-shell bg-[#F4F8F5] text-[#123826] dark:bg-slate-950 dark:text-slate-100">
+      <div className="mx-auto max-w-5xl px-3 py-4 sm:px-5 sm:py-6">
+        <article className="overflow-hidden rounded-2xl border border-primary-200/70 bg-white shadow-[0_10px_40px_rgba(18,56,38,0.08)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_10px_40px_rgba(0,0,0,0.35)]">
+          {/* Hero band */}
+          <header className="relative overflow-hidden border-b border-primary-100 bg-gradient-to-br from-[#185637] via-[#2C8A55] to-[#1f6d43] px-6 py-7 text-white sm:px-8">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-30"
+              style={{
+                backgroundImage:
+                  'radial-gradient(circle at 85% 20%, rgba(230,173,32,0.45), transparent 40%), radial-gradient(circle at 10% 90%, rgba(255,255,255,0.12), transparent 35%)',
+              }}
+            />
+            <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-100/90">
+                  {isOpponent ? 'Opponent dossier' : 'Performance report'}
+                </p>
+                <h1 className="mt-1 font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+                  {report.username}
+                </h1>
+                <p className="mt-2 max-w-xl text-sm leading-relaxed text-emerald-50/90">
+                  {isOpponent && scout?.battlePlanHeadline
+                    ? scout.battlePlanHeadline
+                    : 'Concrete patterns from your games — what to fix next, with positions you can reopen.'}
+                </p>
+              </div>
+              <div className="shrink-0 text-left sm:text-right">
+                <p className="text-xs font-medium uppercase tracking-wider text-emerald-100/80">
+                  Pawnsposes
+                </p>
+                <p className="mt-1 text-sm text-white/90">
+                  {report.platform} · {report.gameCount} games
+                </p>
+                <p className="text-xs text-emerald-100/70">{generatedLabel}</p>
+              </div>
             </div>
           </header>
 
-          {/* Tagline */}
-          <div className="text-center italic text-gray-600 mb-8 font-medium">
-            <p>"Built by a real master coach, not just a graph-spitting bot."</p>
-            <p>"We don't just show you what's wrong — we train you to fix it."</p>
-          </div>
+          <div className="space-y-8 px-5 py-6 sm:px-8 sm:py-8">
+            {/* KPI strip */}
+            <section aria-label="Key metrics">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                {kpis.map((kpi) => (
+                  <div
+                    key={kpi.label}
+                    className="rounded-xl border border-slate-200/90 bg-[#F4F8F5]/80 px-3 py-3 transition-colors duration-200 hover:border-primary-300 dark:border-slate-700 dark:bg-slate-950/50 dark:hover:border-primary-700"
+                  >
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                      {kpi.label}
+                    </p>
+                    <p className="mt-1 font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
+                      {kpi.value}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
+                      {kpi.hint}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
 
-          {/* Performance Summary */}
-          <section className="mb-8 p-6 rounded-lg border" style={{ backgroundColor: 'rgba(16, 185, 129, 0.05)', borderColor: 'rgba(16, 185, 129, 0.2)' }}>
-            <h2 className="section-header">
-              <BarChart3 className="w-5 h-5" />
-              Performance Summary
-            </h2>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="highlight-card bg-green-50 border-green-200">
-                <h4 className="font-bold text-sm text-green-800">Win Rate</h4>
-                <p className="text-2xl font-bold text-gray-700 mt-1">{report.executiveSummary.winRate}%</p>
-              </div>
-              <div className="highlight-card bg-primary-50 border-primary-200">
-                <h4 className="font-bold text-sm text-primary-800">Average Accuracy</h4>
-                <p className="text-2xl font-bold text-gray-700 mt-1">{report.executiveSummary.averageAccuracy}%</p>
-              </div>
-              <div className="highlight-card bg-yellow-50 border-yellow-200">
-                <h4 className="font-bold text-sm text-yellow-800">Most Played</h4>
-                <p className="text-lg font-bold text-gray-700 mt-1">
-                  {report.executiveSummary.favoriteOpenings[0] || 'Various'}
-                </p>
-              </div>
-              <div className="highlight-card bg-red-50 border-red-200">
-                <h4 className="font-bold text-sm text-red-800">#1 Focus Area</h4>
-                <p className="text-lg font-bold text-gray-700 mt-1">
-                  {report.recurringWeaknesses[0]?.title.split(' ').slice(0, 2).join(' ') || 'Strategy'}
-                </p>
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="font-bold text-gray-800 mb-2">Key Insights:</h3>
-              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+            {/* Insights */}
+            <section>
+              <SectionHeader
+                icon={<Sparkles className="h-4 w-4" />}
+                title={isOpponent ? 'Scouting read' : 'Coach insights'}
+              />
+              <ul className="mt-3 grid gap-2 sm:grid-cols-2">
                 {report.executiveSummary.keyInsights.map((insight, index) => (
-                  <li key={index}>{insight}</li>
+                  <li
+                    key={index}
+                    className="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2.5 text-sm leading-relaxed text-slate-700 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-200"
+                  >
+                    <span className="mr-2 font-mono text-xs font-semibold text-primary-700 dark:text-primary-300">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                    {insight}
+                  </li>
                 ))}
               </ul>
-            </div>
-          </section>
-
-          {/* Deep Dive - Recurring Weaknesses */}
-          <section className="mb-8">
-            <h2 className="section-header">
-              <Search className="w-5 h-5" />
-              Recurring Weaknesses
-            </h2>
-            
-            <div className="space-y-4">
-              {report.recurringWeaknesses.slice(0, 3).map((weakness, index) => (
-                <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                  <h3 className="font-bold text-gray-800">{index + 1}. {weakness.title}</h3>
-                  <p className="text-sm text-gray-600 mt-1">{weakness.description}</p>
-                  
-                  {weakness.examples && weakness.examples.length > 0 && (
-                    <div className="mt-2 p-3 bg-white border-l-4 border-red-400 rounded">
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-xs text-gray-500">
-                            vs. {getGameAndOpponentInfo(weakness.examples[0].gameId).split(' vs ')[1]} (Move {weakness.examples[0].moveNumber})
-                          </p>
-                          {getGamePositionUrl(
-                            weakness.examples[0].gameId,
-                            weakness.examples[0].moveNumber,
-                            weakness.examples[0].playerColor
-                          ) && (
-                            <a
-                              href={getGamePositionUrl(
-                                weakness.examples[0].gameId,
-                                weakness.examples[0].moveNumber,
-                                weakness.examples[0].playerColor
-                              ) || undefined}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-900 underline"
-                            >
-                              Open exact position
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          )}
-                          <p className="text-xs text-gray-600 mb-2">
-                            <strong>You played:</strong> <span className={`font-semibold ${weakness.examples[0].playerColor === 'white' ? 'text-gray-800' : 'text-gray-600'}`}>
-                              {weakness.examples[0].playerColor === 'white' ? 'White' : 'Black'}
-                            </span>
-                          </p>
-                          <p className="text-sm text-gray-700">
-                            <strong>Mistake:</strong> {weakness.examples[0].mistake} <br/>
-                            <strong>Better Plan:</strong> {weakness.examples[0].betterMove}
-                          </p>
-                        </div>
-                        
-                        {weakness.examples[0].fenPosition && (
-                          <div className="flex justify-center lg:justify-end">
-                            <PositionDisplay 
-                              fen={weakness.examples[0].fenPosition}
-                              lastMove={weakness.examples[0].lastMove}
-                              fromSquare={weakness.examples[0].fromSquare}
-                              toSquare={weakness.examples[0].toSquare}
-                              title={`Position Analysis - ${weakness.examples[0].playerColor === 'white' ? 'White' : 'Black'} to move`}
-                              size={200}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Phase Review */}
-          <section className="mb-8">
-            <h2 className="section-header">
-              <Target className="w-5 h-5" />
-              Phase Review
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Middlegame */}
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <h3 className="font-bold text-gray-800 mb-3">
-                  Middlegame <span className="text-gray-500 font-medium">(Overall: {report.middleGameAnalysis.overallRating}/10)</span>
-                </h3>
-                <div className="space-y-2 text-sm">
-                  {Object.entries(report.middleGameAnalysis.patterns).slice(0, 4).map(([skill, rating]) => (
-                    <div key={skill}>
-                      <div className="flex justify-between items-center">
-                        <span className="capitalize">{skill.replace(/([A-Z])/g, ' $1').trim()}</span>
-                        <span>{rating}/10</span>
-                      </div>
-                      <div 
-                        className="rating-bar-bg"
-                        data-rating-display={`${rating}/10`}
-                        data-rating-dots={getRatingNotation(rating)}
-                        style={{ '--rating-percentage': `${(rating / 10) * 100}%` } as React.CSSProperties}
-                      >
-                        <div 
-                          className="rating-bar" 
-                          style={{ width: `${(rating / 10) * 100}%` }}
-                          data-percentage={`${Math.round((rating / 10) * 100)}%`}
-                        ></div>
-                      </div>
-                    </div>
+              {report.executiveSummary.strengthAreas.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {report.executiveSummary.strengthAreas.map((area) => (
+                    <span
+                      key={area}
+                      className="inline-flex items-center rounded-md border border-primary-200 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-900 dark:border-primary-800 dark:bg-primary-950/40 dark:text-primary-200"
+                    >
+                      {isOpponent ? `Danger · ${area}` : area}
+                    </span>
                   ))}
                 </div>
-              </div>
-              
-              {/* Endgame */}
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <h3 className="font-bold text-gray-800 mb-3">
-                  Endgame <span className="text-gray-500 font-medium">(Overall: {report.endgameAnalysis.overallRating}/10)</span>
-                </h3>
-                <div className="space-y-2 text-sm">
-                  {report.endgameAnalysis.endgameTypes.slice(0, 3).map((endgame, index) => (
-                    <div key={index}>
-                      <div className="flex justify-between items-center">
-                        <span>{endgame.type} ({endgame.gamesPlayed} games, {endgame.successRate}% success)</span>
-                        <span>{endgame.performance}/10</span>
-                      </div>
-                      <div 
-                        className="rating-bar-bg"
-                        data-rating-display={`${endgame.performance}/10`}
-                        data-rating-dots={getRatingNotation(endgame.performance)}
-                        style={{ '--rating-percentage': `${(endgame.performance / 10) * 100}%` } as React.CSSProperties}
-                      >
-                        <div 
-                          className="rating-bar" 
-                          style={{ width: `${(endgame.performance / 10) * 100}%` }}
-                          data-percentage={`${Math.round((endgame.performance / 10) * 100)}%`}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                  <p className="text-xs text-gray-500 italic mt-3">
-                    Common Mistakes: {report.endgameAnalysis.commonMistakes.slice(0, 2).join(', ')}.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
+              )}
+            </section>
 
-          {/* Actionable Improvement Plan */}
-          <section className="mb-8">
-            <h2 className="section-header">
-              <Target className="w-5 h-5" />
-              Actionable Improvement Plan
-            </h2>
-            
-            <div className="space-y-2">
-              {report.improvementPlan.immediateActions.slice(0, 3).map((action, index) => (
-                <div key={index} className="checklist-item">
-                  <span className={`font-bold text-lg mr-4 ${
-                    action.priority === 'high' ? 'text-red-600' :
-                    action.priority === 'medium' ? 'text-yellow-600' :
-                    'text-green-600'
-                  }`}>
-                    {action.priority.toUpperCase()}
-                  </span>
-                  <div>
-                    <strong className="font-semibold text-gray-800">{action.action}:</strong> {action.description}
+            {/* Opponent battle plan */}
+            {isOpponent && scout && (
+              <section>
+                <SectionHeader icon={<Swords className="h-4 w-4" />} title="Battle plan" />
+                <div className="mt-3 grid gap-3 lg:grid-cols-3">
+                  <BattleCard
+                    title="How to beat them"
+                    icon={<Crosshair className="h-4 w-4 text-primary-600" />}
+                    items={scout.howToBeatThem}
+                  />
+                  <BattleCard
+                    title="Your edges"
+                    icon={<TrendingUp className="h-4 w-4 text-amber-600" />}
+                    items={scout.yourEdges}
+                  />
+                  <BattleCard
+                    title="Danger zones"
+                    icon={<ShieldAlert className="h-4 w-4 text-rose-600" />}
+                    items={scout.dangerZones}
+                  />
+                </div>
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <PrepCard
+                    title="When they have White"
+                    recommendation={scout.prepVsTheirWhite.recommendation}
+                    why={scout.prepVsTheirWhite.why}
+                    ideas={scout.prepVsTheirWhite.keyIdeas}
+                  />
+                  <PrepCard
+                    title="When they have Black"
+                    recommendation={scout.prepVsTheirBlack.recommendation}
+                    why={scout.prepVsTheirBlack.why}
+                    ideas={scout.prepVsTheirBlack.keyIdeas}
+                  />
+                </div>
+                {typeof scout.predictabilityScore === 'number' && (
+                  <div className="mt-3 rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-700">
+                    <div className="mb-1.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      <span>Predictability</span>
+                      <span className="font-mono text-slate-800 dark:text-slate-200">
+                        {scout.predictabilityScore}/100
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-primary-500 to-amber-400 transition-[width] duration-500"
+                        style={{ width: `${Math.min(100, scout.predictabilityScore)}%` }}
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
+                )}
+              </section>
+            )}
 
-          {/* Recommended Resources */}
-          <section>
-            <h2 className="section-header">
-              <BookOpen className="w-5 h-5" />
-              Recommended Resources
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Master Game Study */}
-              <div className="bg-gray-50 p-3 rounded-lg flex items-start border border-gray-200">
-                <svg className="w-5 h-5 text-emerald-600 mr-4 mt-1" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-                <div>
-                  <h4 className="font-semibold text-gray-800">Master Game Study</h4>
-                  <p className="text-sm text-gray-600">
-                    <strong>{report.improvementPlan.resources.masterGame.players}:</strong> {report.improvementPlan.resources.masterGame.description}
-                    {report.improvementPlan.resources.masterGame.keyMoves && (
-                      <>
-                        {' '}Study moves <code className="move-code">{report.improvementPlan.resources.masterGame.keyMoves.split(',')[0]}</code>
-                        {report.improvementPlan.resources.masterGame.keyMoves.split(',')[1] && (
-                          <>, <code className="move-code">{report.improvementPlan.resources.masterGame.keyMoves.split(',')[1]}</code></>
-                        )}
-                        .
-                      </>
-                    )}
-                  </p>
-                </div>
+            {/* Weaknesses */}
+            <section>
+              <SectionHeader
+                icon={<Search className="h-4 w-4" />}
+                title={isOpponent ? 'Exploitable habits' : 'Recurring weaknesses'}
+              />
+              <div className="mt-3 space-y-4">
+                {report.recurringWeaknesses.slice(0, 3).map((weakness, index) => {
+                  const example = weakness.examples?.[0];
+                  const positionUrl = example
+                    ? getGamePositionUrl(example.gameId, example.moveNumber, example.playerColor)
+                    : null;
+
+                  return (
+                    <div
+                      key={`${weakness.title}-${index}`}
+                      className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700"
+                    >
+                      <div className="flex items-start gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/50">
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-600 font-mono text-xs font-bold text-white">
+                          {index + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-slate-900 dark:text-white">
+                            {weakness.title}
+                          </h3>
+                          <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                            {weakness.description}
+                          </p>
+                          {weakness.technicalImprovement && (
+                            <p className="mt-2 text-sm font-medium text-primary-800 dark:text-primary-300">
+                              {weakness.technicalImprovement}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {example && (
+                        <div className="grid gap-4 p-4 lg:grid-cols-2">
+                          <div className="space-y-2 text-sm">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                              Example · {getGameAndOpponentInfo(example.gameId)} · Move{' '}
+                              {example.moveNumber}
+                            </p>
+                            {positionUrl && (
+                              <a
+                                href={positionUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-primary-700 underline-offset-2 transition-colors duration-200 hover:text-primary-900 hover:underline dark:text-primary-300"
+                              >
+                                Open exact position
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            )}
+                            <p className="leading-relaxed text-slate-700 dark:text-slate-200">
+                              <span className="font-semibold text-rose-700 dark:text-rose-300">
+                                Mistake:{' '}
+                              </span>
+                              {example.mistake}
+                            </p>
+                            <p className="leading-relaxed text-slate-700 dark:text-slate-200">
+                              <span className="font-semibold text-primary-800 dark:text-primary-300">
+                                Better:{' '}
+                              </span>
+                              {example.betterMove}
+                            </p>
+                          </div>
+                          {example.fenPosition && (
+                            <div className="flex justify-center lg:justify-end">
+                              <PositionDisplay
+                                fen={example.fenPosition}
+                                lastMove={example.lastMove}
+                                fromSquare={example.fromSquare}
+                                toSquare={example.toSquare}
+                                title={`${example.playerColor === 'black' ? 'Black' : 'White'} to move`}
+                                size={200}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              
-              {/* YouTube Video */}
-              <div className="bg-gray-50 p-3 rounded-lg flex items-start border border-gray-200">
-                <svg className="w-5 h-5 text-red-600 mr-4 mt-1" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                </svg>
-                <div>
-                  <h4 className="font-semibold text-gray-800">Watch This</h4>
-                  <p className="text-sm text-gray-600">
-                    <strong>"{report.improvementPlan.resources.recommendedVideo.title}" by {report.improvementPlan.resources.recommendedVideo.channel}:</strong> {report.improvementPlan.resources.recommendedVideo.description}
-                  </p>
-                </div>
+            </section>
+
+            {/* Phase review */}
+            <section>
+              <SectionHeader icon={<Target className="h-4 w-4" />} title="Phase review" />
+              <div className="mt-3 grid gap-4 md:grid-cols-2">
+                <PhasePanel
+                  title="Middlegame"
+                  rating={report.middleGameAnalysis.overallRating}
+                  rows={Object.entries(report.middleGameAnalysis.patterns).map(([skill, rating]) => ({
+                    label: skillLabel(skill),
+                    value: rating,
+                    detail: `${rating}/10`,
+                  }))}
+                  footer={report.middleGameAnalysis.recommendations.slice(0, 2).join(' · ')}
+                />
+                <PhasePanel
+                  title="Endgame"
+                  rating={report.endgameAnalysis.overallRating}
+                  rows={report.endgameAnalysis.endgameTypes.slice(0, 4).map((eg) => ({
+                    label: eg.type,
+                    value: eg.performance,
+                    detail: `${eg.gamesPlayed}g · ${eg.successRate}%`,
+                  }))}
+                  footer={report.endgameAnalysis.commonMistakes.slice(0, 2).join(' · ')}
+                />
               </div>
-              
-              {/* Books */}
-              <div className="bg-gray-50 p-3 rounded-lg flex items-start border border-gray-200 col-span-1 md:col-span-2">
-                <BookOpen className="w-5 h-5 text-emerald-600 mr-4 mt-1" />
-                <div>
-                  <h4 className="font-semibold text-gray-800">Books for Deeper Study</h4>
-                  <ul className="list-disc list-inside text-sm text-gray-600">
-                    <li><strong>My System</strong> by Aron Nimzowitsch</li>
-                    <li><strong>Silman's Endgame Course</strong> by Jeremy Silman</li>
-                    <li><strong>Pawn Power in Chess</strong> by Hans Kmoch</li>
-                  </ul>
-                </div>
+            </section>
+
+            {/* Action plan */}
+            <section>
+              <SectionHeader
+                icon={<ListChecks className="h-4 w-4" />}
+                title={isOpponent ? 'Pre-game checklist' : 'Action plan'}
+              />
+              <div className="mt-3 space-y-2">
+                {report.improvementPlan.immediateActions.slice(0, 4).map((action, index) => (
+                  <div
+                    key={index}
+                    className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-3 transition-colors duration-200 hover:border-primary-300 dark:border-slate-700 dark:bg-slate-950/40 dark:hover:border-primary-700"
+                  >
+                    <span
+                      className={`mt-0.5 shrink-0 rounded border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                        priorityStyles[action.priority] || priorityStyles.medium
+                      }`}
+                    >
+                      {action.priority}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-slate-900 dark:text-white">{action.action}</p>
+                      <p className="mt-0.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
+                        {action.description}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">{action.timeframe}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          </section>
-          
-          {/* Footer */}
-          <footer className="text-center text-xs text-gray-400 mt-8 pt-4 border-t">
-            <p>This report was generated by Pawnsposes. © 2025</p>
+            </section>
+
+            {/* Resources */}
+            <section>
+              <SectionHeader icon={<BookOpen className="h-4 w-4" />} title="Study resources" />
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                <ResourceCard
+                  eyebrow="Master game"
+                  title={report.improvementPlan.resources.masterGame.players}
+                  body={report.improvementPlan.resources.masterGame.description}
+                  meta={report.improvementPlan.resources.masterGame.relevantConcept}
+                />
+                <ResourceCard
+                  eyebrow="Watch"
+                  title={report.improvementPlan.resources.recommendedVideo.title}
+                  body={report.improvementPlan.resources.recommendedVideo.description}
+                  meta={`${report.improvementPlan.resources.recommendedVideo.channel}${
+                    report.improvementPlan.resources.recommendedVideo.duration
+                      ? ` · ${report.improvementPlan.resources.recommendedVideo.duration}`
+                      : ''
+                  }`}
+                  href={report.improvementPlan.resources.recommendedVideo.url}
+                />
+              </div>
+            </section>
+          </div>
+
+          <footer className="border-t border-slate-100 px-6 py-4 text-center text-xs text-slate-400 dark:border-slate-800">
+            Generated by Pawnsposes · {generatedLabel}
           </footer>
-        </div>
+        </article>
       </div>
     </div>
   );
 };
+
+function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
+  return (
+    <h2 className="flex items-center gap-2 font-display text-sm font-semibold uppercase tracking-[0.16em] text-[#185637] dark:text-primary-300">
+      <span className="text-primary-600 dark:text-primary-400">{icon}</span>
+      {title}
+    </h2>
+  );
+}
+
+function BattleCard({
+  title,
+  icon,
+  items,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  items: string[];
+}) {
+  return (
+    <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+      <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+        {icon}
+        {title}
+      </div>
+      <ul className="space-y-1.5">
+        {items.slice(0, 5).map((item, i) => (
+          <li key={i} className="text-sm leading-snug text-slate-600 dark:text-slate-300">
+            <span className="mr-1.5 font-mono text-[10px] text-slate-400">{i + 1}.</span>
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function PrepCard({
+  title,
+  recommendation,
+  why,
+  ideas,
+}: {
+  title: string;
+  recommendation: string;
+  why: string;
+  ideas: string[];
+}) {
+  return (
+    <div className="rounded-xl border border-primary-200/80 bg-primary-50/40 p-4 dark:border-primary-900 dark:bg-primary-950/20">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-800 dark:text-primary-300">
+        {title}
+      </p>
+      <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-white">{recommendation}</p>
+      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{why}</p>
+      {ideas.length > 0 && (
+        <ul className="mt-2 space-y-1">
+          {ideas.slice(0, 3).map((idea) => (
+            <li key={idea} className="text-xs text-slate-600 dark:text-slate-400">
+              · {idea}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function PhasePanel({
+  title,
+  rating,
+  rows,
+  footer,
+}: {
+  title: string;
+  rating: number;
+  rows: Array<{ label: string; value: number; detail: string }>;
+  footer?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+      <div className="mb-3 flex items-baseline justify-between gap-2">
+        <h3 className="font-semibold text-slate-900 dark:text-white">{title}</h3>
+        <span className="font-mono text-sm font-semibold text-primary-700 dark:text-primary-300">
+          {rating}/10
+        </span>
+      </div>
+      <div className="space-y-2.5">
+        {rows.map((row) => (
+          <div key={row.label}>
+            <div className="mb-1 flex items-center justify-between gap-2 text-xs">
+              <span className="truncate text-slate-700 dark:text-slate-200">{row.label}</span>
+              <span className="shrink-0 font-mono text-slate-500">{row.detail}</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+              <div
+                className="h-full rounded-full bg-primary-600 transition-[width] duration-500 dark:bg-primary-400"
+                style={{ width: `${Math.min(100, (row.value / 10) * 100)}%` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      {footer && (
+        <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+          {footer}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ResourceCard({
+  eyebrow,
+  title,
+  body,
+  meta,
+  href,
+}: {
+  eyebrow: string;
+  title: string;
+  body: string;
+  meta?: string;
+  href?: string;
+}) {
+  const content = (
+    <>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{eyebrow}</p>
+      <p className="mt-1 font-semibold text-slate-900 dark:text-white">{title}</p>
+      <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{body}</p>
+      {meta && <p className="mt-2 text-xs text-slate-500">{meta}</p>}
+    </>
+  );
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block cursor-pointer rounded-xl border border-slate-200 p-4 transition-colors duration-200 hover:border-primary-400 hover:bg-primary-50/40 dark:border-slate-700 dark:hover:border-primary-700 dark:hover:bg-primary-950/20"
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">{content}</div>
+  );
+}
 
 export default ReportDisplay;

@@ -82,7 +82,7 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ onReportGenerated }) 
         </p>
         <div className="mt-2 p-2 bg-primary-50 border border-primary-200 rounded-md">
           <p className="text-sm text-primary-700">
-            <strong>✨ Enhanced Analysis:</strong> Using unified prompts for better chess insights
+            Fast single-pass coach analysis with local performance stats.
           </p>
         </div>
       </div>

@@ -1,15 +1,19 @@
 import { gameImportService } from './gameImport';
 import { geminiService } from './geminiService';
-import { fenExtractor } from '../utils/fenExtractor';
-import { 
-  ChessReport, 
-  GameReportRequest, 
+import {
+  ChessReport,
+  GameReportRequest,
   ReportGenerationProgress,
-  ReportGenerationError 
+  ReportGenerationError,
 } from '../types/report';
 import { ChessGame } from '../types/game';
-// Using browser's native print functionality for PDF export
-// ChessGame imported via ChessReport type
+import {
+  buildImprovementPlanFromAnalysis,
+  computeLocalReportStats,
+  ensureEndgameAnalysis,
+  ensureMiddleGameAnalysis,
+  mergeExecutiveSummary,
+} from '../utils/reportStats';
 
 class ReportService {
   private progressCallback?: (progress: ReportGenerationProgress) => void;
@@ -24,131 +28,168 @@ class ReportService {
     }
   }
 
+  private validateRequest(request: GameReportRequest) {
+    if (!request.username || !request.platform || !request.gameCount) {
+      throw new ReportGenerationError('Invalid request parameters', 'INVALID_INPUT');
+    }
+    if (request.gameCount > 100) {
+      throw new ReportGenerationError(
+        'Maximum 100 games can be analyzed at once',
+        'INVALID_INPUT'
+      );
+    }
+  }
+
+  private handleGenerationError(error: unknown): never {
+    console.error('Error generating report:', error);
+
+    let errorMessage = 'An unexpected error occurred';
+    let errorCode: ReportGenerationError['code'] = 'ANALYSIS_ERROR';
+
+    if (error instanceof ReportGenerationError) {
+      errorMessage = error.message;
+      errorCode = error.code;
+      if (error.code === 'RATE_LIMIT' && !error.message.toLowerCase().includes('quota')) {
+        errorMessage =
+          'The AI service is currently experiencing high demand. Please wait a few minutes and try again.';
+      }
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
+    this.updateProgress('error', errorMessage, 0);
+    throw new ReportGenerationError(errorMessage, errorCode, error);
+  }
+
+  private async buildSelfReportFromGames(
+    request: GameReportRequest,
+    games: ChessGame[],
+    idPrefix = 'report'
+  ): Promise<ChessReport> {
+    this.updateProgress('analyzing', 'Computing performance stats...', 30);
+    const localStats = computeLocalReportStats(games, request.username);
+
+    this.updateProgress('analyzing', 'Running coach analysis (single pass)...', 45);
+    const ai = await geminiService.generateCompleteReportFast(games, request.username, {
+      winRate: localStats.winRate,
+      favoriteOpenings: localStats.favoriteOpenings,
+      timeControlPreference: localStats.timeControlPreference,
+      overallRating: localStats.overallRating,
+      asWhiteWinRate: localStats.asWhiteWinRate,
+      asBlackWinRate: localStats.asBlackWinRate,
+    });
+
+    this.updateProgress('generating', 'Packaging improvement plan...', 90);
+    const executiveSummary = mergeExecutiveSummary(localStats, ai.executiveSummary);
+    const middleGameAnalysis = ensureMiddleGameAnalysis(ai.middlegameAnalysis);
+    const endgameAnalysis = ensureEndgameAnalysis(ai.endgameAnalysis);
+    const recurringWeaknesses = Array.isArray(ai.recurringWeaknesses)
+      ? ai.recurringWeaknesses
+      : [];
+    const improvementPlan = buildImprovementPlanFromAnalysis(
+      recurringWeaknesses,
+      middleGameAnalysis,
+      endgameAnalysis,
+      ai.improvementPlan
+    );
+
+    this.updateProgress('generating', 'Compiling final report...', 96);
+
+    return {
+      id: `${idPrefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+      userId: '',
+      username: request.username,
+      platform: request.platform,
+      gameCount: games.length,
+      generatedAt: new Date(),
+      executiveSummary,
+      recurringWeaknesses,
+      middleGameAnalysis,
+      endgameAnalysis,
+      improvementPlan,
+      rawGameData: games,
+    };
+  }
+
   async generateReport(request: GameReportRequest): Promise<ChessReport> {
+    return this.generateReportWithUnifiedPrompts(request);
+  }
+
+  /**
+   * Opponent scouting report: single AI pass for analysis + battle plan.
+   */
+  async generateOpponentReport(
+    request: GameReportRequest,
+    options?: { yourStrengths?: string[] }
+  ): Promise<ChessReport> {
     try {
-      // Validate input
-      if (!request.username || !request.platform || !request.gameCount) {
-        throw new ReportGenerationError(
-          'Invalid request parameters',
-          'INVALID_INPUT'
-        );
-      }
+      this.validateRequest(request);
 
-      if (request.gameCount > 100) {
-        throw new ReportGenerationError(
-          'Maximum 100 games can be analyzed at once',
-          'INVALID_INPUT'
-        );
-      }
+      this.updateProgress('fetching', 'Fetching opponent games...', 10);
 
-      // Step 1: Fetch games
-      this.updateProgress('fetching', 'Fetching games from chess platform...', 10);
-      
       const importResponse = await gameImportService.importGames({
         platform: request.platform,
         username: request.username,
         count: request.gameCount,
-        rated: request.rated
+        rated: request.rated,
       });
 
       if (!importResponse.games || importResponse.games.length === 0) {
         throw new ReportGenerationError(
-          'No games found for the specified user',
+          'No games found for the specified opponent',
           'FETCH_ERROR'
         );
       }
 
       const games = importResponse.games;
-      this.updateProgress('fetching', `Fetched ${games.length} games successfully`, 20);
+      this.updateProgress('fetching', `Fetched ${games.length} games`, 25);
 
-      // Extract FEN positions from all games for report generation
-      console.log('🔍 [REPORT GENERATION] Starting FEN extraction for report...');
-      console.log(`📊 [REPORT GENERATION] Processing ${games.length} games for user: ${request.username}`);
-      
-      const allGamesFenData = fenExtractor.extractAllGamesPositions(games, request.username);
-      
-      // Display comprehensive FEN data in console
-      console.log('🎯 [REPORT GENERATION] === COMPLETE FEN EXTRACTION RESULTS ===');
-      console.log('📈 [REPORT GENERATION] Summary:', {
-        username: allGamesFenData.username,
-        totalGames: allGamesFenData.totalGames,
-        extractedAt: allGamesFenData.extractedAt,
-        totalPositions: allGamesFenData.games.reduce((sum, game) => sum + game.positions.length, 0)
+      this.updateProgress('analyzing', 'Computing opponent stats...', 35);
+      const localStats = computeLocalReportStats(games, request.username);
+
+      this.updateProgress('analyzing', 'Building scouting dossier (single pass)...', 50);
+      const dossier = await geminiService.generateOpponentDossierFast(games, request.username, {
+        yourStrengths: options?.yourStrengths,
+        localStatsHint: {
+          winRate: localStats.winRate,
+          favoriteOpenings: localStats.favoriteOpenings,
+          timeControlPreference: localStats.timeControlPreference,
+          overallRating: localStats.overallRating,
+          asWhiteWinRate: localStats.asWhiteWinRate,
+          asBlackWinRate: localStats.asBlackWinRate,
+        },
       });
-      
-      // Display detailed JSON for each game
-      allGamesFenData.games.forEach((gameData, index) => {
-        console.log(`🏆 [REPORT GENERATION] Game ${index + 1} (${gameData.gameId}):`);
-        console.log(`🎯 [REPORT GENERATION] Game Info:`, gameData.gameInfo);
-        console.log(`📍 [REPORT GENERATION] Total Positions: ${gameData.positions.length}`);
-        console.log(`⚡ [REPORT GENERATION] User Color: ${gameData.userColor}`);
-        console.log(`🎮 [REPORT GENERATION] Full Game Positions (JSON):`, JSON.stringify(gameData, null, 2));
-      });
-      
-      // Extract and display user's move positions for analysis
-      const userMovePositions = fenExtractor.getUserMovePositions(allGamesFenData);
-      console.log('👤 [REPORT GENERATION] === USER MOVE POSITIONS FOR ANALYSIS ===');
-      console.log(`🎯 [REPORT GENERATION] Found ${userMovePositions.length} positions where user made moves`);
-      console.log('📊 [REPORT GENERATION] User Move Positions (JSON):', JSON.stringify(userMovePositions, null, 2));
-      
-      // Extract positions before user moves (for alternative move suggestions)
-      const analysisPositions = fenExtractor.getPositionsBeforeUserMoves(allGamesFenData);
-      console.log('🔍 [REPORT GENERATION] === POSITIONS BEFORE USER MOVES (FOR ANALYSIS) ===');
-      console.log(`🎯 [REPORT GENERATION] Found ${analysisPositions.length} positions before user moves`);
-      console.log('🧠 [REPORT GENERATION] Analysis Positions (JSON):', JSON.stringify(analysisPositions, null, 2));
-      
-      // Sample display of first few positions with FEN strings
-      if (analysisPositions.length > 0) {
-        console.log('📋 [REPORT GENERATION] === SAMPLE ANALYSIS POSITIONS ===');
-        analysisPositions.slice(0, 5).forEach((pos, index) => {
-          console.log(`🎯 [REPORT GENERATION] Sample ${index + 1}:`);
-          console.log(`  🏆 Game: ${pos.gameId}`);
-          console.log(`  🎲 Move: ${pos.moveNumber}`);
-          console.log(`  ⚡ User played: ${pos.userMove} as ${pos.userColor}`);
-          console.log(`  📍 Position before move (FEN): ${pos.positionBeforeMove}`);
-          console.log('---');
-        });
-      }
-      
-      console.log('✅ [REPORT GENERATION] FEN extraction completed successfully!');
-      console.log('🎯 [REPORT GENERATION] This data is available for enhanced Gemini analysis');
 
-      // Step 2: Generate Executive Summary
-      this.updateProgress('analyzing', 'Generating executive summary...', 30);
-      const executiveSummary = await geminiService.generateExecutiveSummary(games, request.username);
-      this.updateProgress('analyzing', 'Executive summary generated', 40);
-
-      // Step 3: Identify Recurring Weaknesses
-      this.updateProgress('analyzing', 'Analyzing recurring weaknesses...', 50);
-      const recurringWeaknesses = await geminiService.generateRecurringWeaknesses(games, request.username);
-      this.updateProgress('analyzing', 'Recurring weaknesses identified', 60);
-
-      // Step 4: Analyze Middlegame
-      this.updateProgress('analyzing', 'Analyzing middlegame patterns...', 70);
-      const middleGameAnalysis = await geminiService.generateMiddleGameAnalysis(games, request.username);
-      this.updateProgress('analyzing', 'Middlegame analysis complete', 80);
-
-      // Step 5: Analyze Endgame
-      this.updateProgress('analyzing', 'Analyzing endgame performance...', 85);
-      const endgameAnalysis = await geminiService.generateEndgameAnalysis(games, request.username);
-      this.updateProgress('analyzing', 'Endgame analysis complete', 90);
-
-      // Step 6: Generate Improvement Plan
-      this.updateProgress('generating', 'Creating personalized improvement plan...', 95);
-      const improvementPlan = await geminiService.generateImprovementPlan(
-        games,
-        request.username,
+      this.updateProgress('generating', 'Packaging prep checklist...', 88);
+      const executiveSummary = mergeExecutiveSummary(localStats, dossier.executiveSummary);
+      const middleGameAnalysis = ensureMiddleGameAnalysis(dossier.middlegameAnalysis);
+      const endgameAnalysis = ensureEndgameAnalysis(dossier.endgameAnalysis);
+      const recurringWeaknesses = Array.isArray(dossier.recurringWeaknesses)
+        ? dossier.recurringWeaknesses
+        : [];
+      const improvementPlan = buildImprovementPlanFromAnalysis(
         recurringWeaknesses,
         middleGameAnalysis,
         endgameAnalysis
       );
 
-      // Step 7: Compile final report
-      this.updateProgress('generating', 'Compiling final report...', 98);
-      
+      if (dossier.scoutIntel.preGameChecklist.length > 0) {
+        improvementPlan.immediateActions = dossier.scoutIntel.preGameChecklist
+          .slice(0, 4)
+          .map((item, index) => ({
+            priority: (index === 0 ? 'high' : index === 1 ? 'medium' : 'low') as
+              | 'high'
+              | 'medium'
+              | 'low',
+            action: item,
+            description: dossier.scoutIntel.howToBeatThem[index] || item,
+            timeframe: 'Before the game',
+          }));
+      }
+
       const report: ChessReport = {
-        id: `report_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        userId: '', // Will be set by the calling component
+        id: `opponent_report_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+        userId: '',
         username: request.username,
         platform: request.platform,
         gameCount: games.length,
@@ -158,34 +199,14 @@ class ReportService {
         middleGameAnalysis,
         endgameAnalysis,
         improvementPlan,
-        rawGameData: games
+        scoutIntel: dossier.scoutIntel,
+        rawGameData: games,
       };
 
-      this.updateProgress('complete', 'Report generation completed successfully!', 100);
-      
+      this.updateProgress('complete', 'Opponent scouting dossier ready!', 100);
       return report;
-
     } catch (error) {
-      console.error('Error generating report:', error);
-      
-      let errorMessage = 'An unexpected error occurred';
-      let errorCode: ReportGenerationError['code'] = 'ANALYSIS_ERROR';
-      
-      if (error instanceof ReportGenerationError) {
-        errorMessage = error.message;
-        errorCode = error.code;
-        
-        // Provide more user-friendly messages for temporary rate limiting without hiding quota/billing issues.
-        if (error.code === 'RATE_LIMIT' && !error.message.toLowerCase().includes('quota')) {
-          errorMessage = 'The AI service is currently experiencing high demand. Please wait a few minutes and try again.';
-        }
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-
-      this.updateProgress('error', errorMessage, 0);
-      
-      throw new ReportGenerationError(errorMessage, errorCode, error);
+      this.handleGenerationError(error);
     }
   }
 
@@ -198,12 +219,9 @@ class ReportService {
     }
   }
 
-  // Helper method to estimate report generation time
+  /** Rough wall-clock estimate in seconds (single AI pass). */
   estimateGenerationTime(gameCount: number): number {
-    // Base time: 30 seconds
-    // Additional time: 2 seconds per game
-    // AI processing: 60 seconds
-    return 30 + (gameCount * 2) + 60;
+    return 25 + Math.min(gameCount, 40) * 0.4 + 35;
   }
 
   async generateReportFromGamesWithUnifiedPrompts(
@@ -211,105 +229,32 @@ class ReportService {
     games: ChessGame[]
   ): Promise<ChessReport> {
     try {
-      if (!request.username || !request.platform || !request.gameCount) {
-        throw new ReportGenerationError('Invalid request parameters', 'INVALID_INPUT');
-      }
+      this.validateRequest(request);
 
       if (!games || games.length === 0) {
         throw new ReportGenerationError('No games found for the specified user', 'FETCH_ERROR');
       }
 
-      console.log(`[REPORT SERVICE] Loaded ${games.length} cached/imported games for unified prompts`);
       this.updateProgress('fetching', `Loaded ${games.length} games successfully`, 20);
-
-      const allGamesFenData = fenExtractor.extractAllGamesPositions(games, request.username);
-      const analysisPositions = fenExtractor.getPositionsBeforeUserMoves(allGamesFenData);
-      console.log(`[UNIFIED REPORT] Prepared ${analysisPositions.length} positions before user moves`);
-
-      this.updateProgress('analyzing', 'Generating executive summary (unified prompt)...', 30);
-      const executiveSummary = await geminiService.generateUnifiedExecutiveSummary(games, request.username);
-      this.updateProgress('analyzing', 'Executive summary generated', 35);
-
-      this.updateProgress('analyzing', 'Analyzing weaknesses, middlegame, and endgame (unified prompt)...', 40);
-      const unifiedAnalysis = await geminiService.generateUnifiedAnalysis(games, request.username);
-      this.updateProgress('analyzing', 'Core analysis complete', 75);
-
-      this.updateProgress('generating', 'Creating personalized improvement plan...', 85);
-      const improvementPlan = await geminiService.generateImprovementPlan(
-        games,
-        request.username,
-        unifiedAnalysis.recurringWeaknesses,
-        unifiedAnalysis.middlegameAnalysis,
-        unifiedAnalysis.endgameAnalysis
-      );
-
-      this.updateProgress('generating', 'Compiling final report...', 95);
-
-      const report: ChessReport = {
-        id: `unified_report_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        userId: '',
-        username: request.username,
-        platform: request.platform,
-        gameCount: games.length,
-        generatedAt: new Date(),
-        executiveSummary,
-        recurringWeaknesses: unifiedAnalysis.recurringWeaknesses,
-        middleGameAnalysis: unifiedAnalysis.middlegameAnalysis,
-        endgameAnalysis: unifiedAnalysis.endgameAnalysis,
-        improvementPlan,
-        rawGameData: games
-      };
-
+      const report = await this.buildSelfReportFromGames(request, games, 'unified_report');
       this.updateProgress('complete', 'Report generation completed successfully!', 100);
       return report;
     } catch (error) {
-      console.error('Error generating unified report from games:', error);
-
-      let errorMessage = 'An unexpected error occurred';
-      let errorCode: ReportGenerationError['code'] = 'ANALYSIS_ERROR';
-
-      if (error instanceof ReportGenerationError) {
-        errorMessage = error.message;
-        errorCode = error.code;
-
-        if (error.code === 'RATE_LIMIT' && !error.message.toLowerCase().includes('quota')) {
-          errorMessage = 'The AI service is currently experiencing high demand. Please wait a few minutes and try again.';
-        }
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-
-      this.updateProgress('error', errorMessage, 0);
-      throw new ReportGenerationError(errorMessage, errorCode, error);
+      this.handleGenerationError(error);
     }
   }
 
-  // NEW: Test method using unified prompts - hybrid approach
   async generateReportWithUnifiedPrompts(request: GameReportRequest): Promise<ChessReport> {
     try {
-      // Validate input
-      if (!request.username || !request.platform || !request.gameCount) {
-        throw new ReportGenerationError(
-          'Invalid request parameters',
-          'INVALID_INPUT'
-        );
-      }
+      this.validateRequest(request);
 
-      if (request.gameCount > 100) {
-        throw new ReportGenerationError(
-          'Maximum 100 games can be analyzed at once',
-          'INVALID_INPUT'
-        );
-      }
-
-      // Step 1: Fetch games
       this.updateProgress('fetching', 'Fetching games from chess platform...', 10);
-      
+
       const importResponse = await gameImportService.importGames({
         platform: request.platform,
         username: request.username,
         count: request.gameCount,
-        rated: request.rated
+        rated: request.rated,
       });
 
       if (!importResponse.games || importResponse.games.length === 0) {
@@ -320,127 +265,13 @@ class ReportService {
       }
 
       const games = importResponse.games;
-      console.log(`[REPORT SERVICE] Loaded ${games.length} games for unified prompts`);
-      console.log(`[REPORT SERVICE] Sample game IDs:`, games.slice(0, 3).map(g => g.id));
-      this.updateProgress('fetching', `Fetched ${games.length} games successfully`, 20);
+      this.updateProgress('fetching', `Fetched ${games.length} games successfully`, 22);
 
-      // Extract FEN positions from all games for unified report generation
-      console.log('🔍 [UNIFIED REPORT] Starting FEN extraction for unified report...');
-      console.log(`📊 [UNIFIED REPORT] Processing ${games.length} games for user: ${request.username}`);
-      
-      const allGamesFenData = fenExtractor.extractAllGamesPositions(games, request.username);
-      
-      // Display comprehensive FEN data in console
-      console.log('🎯 [UNIFIED REPORT] === COMPLETE FEN EXTRACTION RESULTS ===');
-      console.log('📈 [UNIFIED REPORT] Summary:', {
-        username: allGamesFenData.username,
-        totalGames: allGamesFenData.totalGames,
-        extractedAt: allGamesFenData.extractedAt,
-        totalPositions: allGamesFenData.games.reduce((sum, game) => sum + game.positions.length, 0)
-      });
-      
-      // Display detailed JSON for each game
-      allGamesFenData.games.forEach((gameData, index) => {
-        console.log(`🏆 [UNIFIED REPORT] Game ${index + 1} (${gameData.gameId}):`);
-        console.log(`🎯 [UNIFIED REPORT] Game Info:`, gameData.gameInfo);
-        console.log(`📍 [UNIFIED REPORT] Total Positions: ${gameData.positions.length}`);
-        console.log(`⚡ [UNIFIED REPORT] User Color: ${gameData.userColor}`);
-        console.log(`🎮 [UNIFIED REPORT] Full Game Positions (JSON):`, JSON.stringify(gameData, null, 2));
-      });
-      
-      // Extract and display user's move positions for analysis
-      const userMovePositions = fenExtractor.getUserMovePositions(allGamesFenData);
-      console.log('👤 [UNIFIED REPORT] === USER MOVE POSITIONS FOR ANALYSIS ===');
-      console.log(`🎯 [UNIFIED REPORT] Found ${userMovePositions.length} positions where user made moves`);
-      console.log('📊 [UNIFIED REPORT] User Move Positions (JSON):', JSON.stringify(userMovePositions, null, 2));
-      
-      // Extract positions before user moves (for alternative move suggestions)
-      const analysisPositions = fenExtractor.getPositionsBeforeUserMoves(allGamesFenData);
-      console.log('🔍 [UNIFIED REPORT] === POSITIONS BEFORE USER MOVES (FOR ANALYSIS) ===');
-      console.log(`🎯 [UNIFIED REPORT] Found ${analysisPositions.length} positions before user moves`);
-      console.log('🧠 [UNIFIED REPORT] Analysis Positions (JSON):', JSON.stringify(analysisPositions, null, 2));
-      
-      // Sample display of first few positions with FEN strings
-      if (analysisPositions.length > 0) {
-        console.log('📋 [UNIFIED REPORT] === SAMPLE ANALYSIS POSITIONS ===');
-        analysisPositions.slice(0, 5).forEach((pos, index) => {
-          console.log(`🎯 [UNIFIED REPORT] Sample ${index + 1}:`);
-          console.log(`  🏆 Game: ${pos.gameId}`);
-          console.log(`  🎲 Move: ${pos.moveNumber}`);
-          console.log(`  ⚡ User played: ${pos.userMove} as ${pos.userColor}`);
-          console.log(`  📍 Position before move (FEN): ${pos.positionBeforeMove}`);
-          console.log('---');
-        });
-      }
-      
-      console.log('✅ [UNIFIED REPORT] FEN extraction completed successfully!');
-      console.log('🎯 [UNIFIED REPORT] This data is available for enhanced Gemini analysis');
-
-      // Step 2: Generate Executive Summary using unified prompt
-      this.updateProgress('analyzing', 'Generating executive summary (unified prompt)...', 30);
-      const executiveSummary = await geminiService.generateUnifiedExecutiveSummary(games, request.username);
-      this.updateProgress('analyzing', 'Executive summary generated', 35);
-
-      // Step 3: Generate core analysis using unified prompt (hybrid approach)
-      this.updateProgress('analyzing', 'Analyzing weaknesses, middlegame, and endgame (unified prompt)...', 40);
-      console.log(`[REPORT SERVICE] About to call generateUnifiedAnalysis with ${games.length} games`);
-      const unifiedAnalysis = await geminiService.generateUnifiedAnalysis(games, request.username);
-      console.log(`[REPORT SERVICE] UnifiedAnalysis completed. Weaknesses count:`, unifiedAnalysis.recurringWeaknesses.length);
-      this.updateProgress('analyzing', 'Core analysis complete', 75);
-
-      // Step 4: Generate Improvement Plan using updated prompt
-      this.updateProgress('generating', 'Creating personalized improvement plan...', 85);
-      const improvementPlan = await geminiService.generateImprovementPlan(
-        games,
-        request.username,
-        unifiedAnalysis.recurringWeaknesses,
-        unifiedAnalysis.middlegameAnalysis,
-        unifiedAnalysis.endgameAnalysis
-      );
-
-      // Step 5: Compile final report
-      this.updateProgress('generating', 'Compiling final report...', 95);
-      
-      const report: ChessReport = {
-        id: `unified_report_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        userId: '', // Will be set by the calling component
-        username: request.username,
-        platform: request.platform,
-        gameCount: games.length,
-        generatedAt: new Date(),
-        executiveSummary,
-        recurringWeaknesses: unifiedAnalysis.recurringWeaknesses,
-        middleGameAnalysis: unifiedAnalysis.middlegameAnalysis,
-        endgameAnalysis: unifiedAnalysis.endgameAnalysis,
-        improvementPlan,
-        rawGameData: games
-      };
-
+      const report = await this.buildSelfReportFromGames(request, games, 'unified_report');
       this.updateProgress('complete', 'Report generation completed successfully!', 100);
-      
       return report;
-
     } catch (error) {
-      console.error('Error generating unified report:', error);
-      
-      let errorMessage = 'An unexpected error occurred';
-      let errorCode: ReportGenerationError['code'] = 'ANALYSIS_ERROR';
-      
-      if (error instanceof ReportGenerationError) {
-        errorMessage = error.message;
-        errorCode = error.code;
-        
-        // Provide more user-friendly messages for temporary rate limiting without hiding quota/billing issues.
-        if (error.code === 'RATE_LIMIT' && !error.message.toLowerCase().includes('quota')) {
-          errorMessage = 'The AI service is currently experiencing high demand. Please wait a few minutes and try again.';
-        }
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-
-      this.updateProgress('error', errorMessage, 0);
-      
-      throw new ReportGenerationError(errorMessage, errorCode, error);
+      this.handleGenerationError(error);
     }
   }
 
