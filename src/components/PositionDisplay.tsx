@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo } from 'react';
 import { Chessboard } from 'react-chessboard';
-import { Chess } from 'chess.js';
 
 interface PositionDisplayProps {
   fen: string;
@@ -43,7 +42,7 @@ const PositionDisplay: React.FC<PositionDisplayProps> = ({
     
     console.log('Highlighting squares:', squares);
     return squares;
-  }, [fromSquare, toSquare]);
+  }, [fromSquare, toSquare, lastMove]);
 
   return (
     <div className="flex flex-col items-center">

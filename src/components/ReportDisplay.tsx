@@ -2,12 +2,7 @@ import React from 'react';
 import { ChessReport } from '../types/report';
 import PositionDisplay from './PositionDisplay';
 import { 
-  User, 
-  Calendar, 
-  Trophy, 
   Target, 
-  AlertTriangle, 
-  TrendingUp, 
   BookOpen,
   BarChart3,
   Search,

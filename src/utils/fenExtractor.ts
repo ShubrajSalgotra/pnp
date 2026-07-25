@@ -95,8 +95,16 @@ class FenExtractor {
       for (let i = 0; i < history.length; i++) {
         const move = history[i];
         
-        // Make the move
-        chess.move(move.san);
+        // Prefer SAN; fall back to from/to so verbose objects never get passed through.
+        try {
+          chess.move(move.san);
+        } catch {
+          chess.move({
+            from: move.from,
+            to: move.to,
+            ...(move.promotion ? { promotion: move.promotion } : {}),
+          });
+        }
         
         const moveNumber = Math.floor(i / 2) + 1;
         const ply = i + 1;

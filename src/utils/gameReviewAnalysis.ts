@@ -291,6 +291,75 @@ function parseUciSquares(uci?: string | null): { from?: string; to?: string } {
   };
 }
 
+type PlayableMove = {
+  from: string;
+  to: string;
+  promotion?: string;
+  san?: string;
+};
+
+/**
+ * Apply a move without passing full verbose Move objects into chess.js.
+ * Verbose objects throw noisy "Invalid move: {...}" errors on any desync.
+ */
+export function playMoveSafe(chess: Chess, move: PlayableMove): Move {
+  const payload: { from: string; to: string; promotion?: string } = {
+    from: move.from,
+    to: move.to,
+  };
+  if (move.promotion) {
+    payload.promotion = move.promotion;
+  }
+
+  try {
+    return chess.move(payload);
+  } catch {
+    if (move.san) {
+      try {
+        return chess.move(move.san);
+      } catch {
+        // fall through
+      }
+    }
+    throw new Error(
+      `Could not play ${move.san || `${move.from}${move.to}`} in the current position.`
+    );
+  }
+}
+
+/**
+ * Detect FENs that cannot arise in standard chess (e.g. 6 white knights while
+ * 7 pawns remain — often LLM/corrupt data that looks like RNBQKB1R → NNNNKN1N).
+ */
+export function isImplausibleFen(fen: string): boolean {
+  const board = fen.split(' ')[0] || '';
+  if (!board) return true;
+
+  const count = (piece: string) =>
+    (board.match(new RegExp(piece, 'g')) || []).length;
+
+  const sides: Array<{ piece: string; pawn: string }> = [
+    { piece: 'N', pawn: 'P' },
+    { piece: 'B', pawn: 'P' },
+    { piece: 'R', pawn: 'P' },
+    { piece: 'Q', pawn: 'P' },
+    { piece: 'n', pawn: 'p' },
+    { piece: 'b', pawn: 'p' },
+    { piece: 'r', pawn: 'p' },
+    { piece: 'q', pawn: 'p' },
+  ];
+
+  for (const { piece, pawn } of sides) {
+    const pieces = count(piece);
+    const pawns = count(pawn);
+    const base = piece.toLowerCase() === 'q' ? 1 : 2;
+    const maxPromotions = Math.max(0, 8 - pawns);
+    if (pieces > base + maxPromotions) return true;
+  }
+
+  return count('K') !== 1 || count('k') !== 1;
+}
+
 export async function analyzeGameForReview(
   game: ChessGame,
   options?: {
@@ -337,6 +406,7 @@ export async function analyzeGameForReview(
   let lastWhiteClock: number | undefined = startClock;
   let lastBlackClock: number | undefined = startClock;
   let previousClassification: ReviewClassification | undefined;
+  let previousFen = chess.fen();
 
   for (let index = 0; index <= history.length; index += 1) {
     if (options?.signal?.aborted) {
@@ -344,6 +414,12 @@ export async function analyzeGameForReview(
     }
 
     const fen = chess.fen();
+    if (isImplausibleFen(fen)) {
+      throw new Error(
+        'This game has a corrupted board position and cannot be analyzed. Try refreshing games from your chess account.'
+      );
+    }
+
     options?.onProgress?.({
       currentMove: Math.min(index, history.length),
       totalMoves: history.length,
@@ -395,6 +471,7 @@ export async function analyzeGameForReview(
         else lastBlackClock = clockSeconds;
       }
 
+      const fenBefore = previousFen;
       const reviewMove: ReviewMove = {
         index: index - 1,
         moveNumber: Math.floor((index - 1) / 2) + 1,
@@ -402,7 +479,7 @@ export async function analyzeGameForReview(
         color: move.color,
         from: move.from,
         to: move.to,
-        fenBefore: move.before,
+        fenBefore,
         fenAfter: fen,
         evaluation: positionEval.evaluation,
         evalBefore: previousEval,
@@ -424,7 +501,7 @@ export async function analyzeGameForReview(
       if (isWhite) counts.white[classification] += 1;
       else counts.black[classification] += 1;
 
-      const phase = phaseForPosition(move.before, index - 1, history.length);
+      const phase = phaseForPosition(fenBefore, index - 1, history.length);
       if (isWhite) phaseAccuracies[phase].white.push(moveAccuracy);
       else phaseAccuracies[phase].black.push(moveAccuracy);
 
@@ -433,9 +510,10 @@ export async function analyzeGameForReview(
 
     previousEval = positionEval.evaluation;
     previousBestMove = positionEval.bestMoveUci;
+    previousFen = fen;
 
     if (index < history.length) {
-      chess.move(history[index]);
+      playMoveSafe(chess, history[index]);
     }
   }
 
@@ -560,10 +638,16 @@ export function extractPlayerMoveTimings(game: ChessGame, username: string): Pla
   for (let index = 0; index < history.length; index += 1) {
     const move = history[index];
     const fenBefore = chess.fen();
-    const played = chess.move(move);
-    if (!played) break;
+    if (isImplausibleFen(fenBefore)) break;
 
-    const isWhite = move.color === 'w';
+    let played: Move;
+    try {
+      played = playMoveSafe(chess, move);
+    } catch {
+      break;
+    }
+
+    const isWhite = played.color === 'w';
     const rawClock = clocks[index];
     const clockSeconds = parseClockToSeconds(rawClock);
     let timeSpentSeconds: number | undefined;
@@ -582,12 +666,12 @@ export function extractPlayerMoveTimings(game: ChessGame, username: string): Pla
       timings.push({
         moveIndex: index,
         moveNumber: Math.floor(index / 2) + 1,
-        color: move.color,
-        san: move.san,
-        from: move.from,
-        to: move.to,
-        promotion: move.promotion,
-        uci: `${move.from}${move.to}${move.promotion || ''}`,
+        color: played.color,
+        san: played.san,
+        from: played.from,
+        to: played.to,
+        promotion: played.promotion,
+        uci: `${played.from}${played.to}${played.promotion || ''}`,
         fenBefore,
         fenAfter: chess.fen(),
         timeSpentSeconds,
@@ -634,13 +718,15 @@ export async function analyzeCandidateMove(args: {
   const depth = args.depth ?? Math.max(8, STOCKFISH_DEPTH - 2);
   const before = await stockfishService.evaluatePosition(args.fenBefore, depth);
 
+  if (isImplausibleFen(args.fenBefore)) {
+    throw new Error(`Illegal candidate position for ${args.played.san}`);
+  }
+
   const board = new Chess(args.fenBefore);
-  const move = board.move({
-    from: args.played.from,
-    to: args.played.to,
-    promotion: args.played.promotion,
-  });
-  if (!move) {
+  let move: Move;
+  try {
+    move = playMoveSafe(board, args.played);
+  } catch {
     throw new Error(`Illegal candidate move ${args.played.san} in ${args.fenBefore}`);
   }
 

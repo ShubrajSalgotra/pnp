@@ -10,6 +10,7 @@ import {
   classificationMeta,
   extractPlayerMoveTimings,
   formatSeconds,
+  isImplausibleFen,
   PlayerMoveTiming,
   startingClockFromTimeControl
 } from '../utils/gameReviewAnalysis';
@@ -79,7 +80,7 @@ class WeaknessPuzzleService {
   }
 
   async mineWeaknessPuzzles(request: WeaknessMiningRequest): Promise<TrainerPuzzle[]> {
-    const { username, platform, rated, onProgress, signal } = request;
+    const { username, onProgress, signal } = request;
 
     onProgress?.({
       phase: 'loading-games',
@@ -282,6 +283,10 @@ class WeaknessPuzzleService {
     thinkThreshold: number
   ): ScoredCandidate | null {
     if (!analysis.bestMoveUci || analysis.bestMoveUci === analysis.playedUci) {
+      return null;
+    }
+
+    if (isImplausibleFen(analysis.fenBefore)) {
       return null;
     }
 

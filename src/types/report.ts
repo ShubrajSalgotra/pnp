@@ -5,7 +5,6 @@ export interface GameReportRequest {
   /** When true, fetch the player's full game history instead of `gameCount`. */
   allGames?: boolean;
   rated?: boolean;
-  allGames?: boolean;
 }
 
 export interface ExecutiveSummary {

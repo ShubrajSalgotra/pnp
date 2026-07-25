@@ -25,7 +25,7 @@ import {
   WeaknessMiningProgress
 } from '../types/puzzle';
 import { puzzleService } from '../services/puzzleService';
-import { classificationMeta, formatSeconds } from '../utils/gameReviewAnalysis';
+import { classificationMeta, formatSeconds, isImplausibleFen } from '../utils/gameReviewAnalysis';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
@@ -178,9 +178,16 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
     if (puzzle.lichessPgn) {
       puzzleGame.loadPgn(puzzle.lichessPgn);
     } else if (puzzle.fen) {
+      if (isImplausibleFen(puzzle.fen)) {
+        throw new Error('This puzzle position looks corrupted. Please load the next puzzle.');
+      }
       puzzleGame.load(puzzle.fen);
     } else {
       throw new Error('Puzzle is missing a starting position.');
+    }
+
+    if (isImplausibleFen(puzzleGame.fen())) {
+      throw new Error('This puzzle position looks corrupted. Please load the next puzzle.');
     }
 
     chessRef.current = puzzleGame;
@@ -193,11 +200,16 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
 
   const getExpectedMove = () => currentPuzzle?.solution[solutionIndex];
 
-  const getMoveFromUci = (uciMove: string) => ({
-    from: uciMove.slice(0, 2),
-    to: uciMove.slice(2, 4),
-    promotion: uciMove[4]
-  });
+  const getMoveFromUci = (uciMove: string) => {
+    const move: { from: string; to: string; promotion?: string } = {
+      from: uciMove.slice(0, 2),
+      to: uciMove.slice(2, 4),
+    };
+    if (uciMove[4]) {
+      move.promotion = uciMove[4];
+    }
+    return move;
+  };
 
   const isLegalUciMove = (game: Chess, uciMove: string) => {
     return game.moves({ verbose: true }).some(move => {
@@ -208,9 +220,16 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
   };
 
   const playUciMove = (uciMove: string) => {
-    const move = chessRef.current.move(getMoveFromUci(uciMove));
+    if (!isLegalUciMove(chessRef.current, uciMove)) {
+      throw new Error(`Illegal puzzle move: ${uciMove}`);
+    }
 
-    if (!move) {
+    try {
+      const move = chessRef.current.move(getMoveFromUci(uciMove));
+      if (!move) {
+        throw new Error(`Illegal puzzle move: ${uciMove}`);
+      }
+    } catch {
       throw new Error(`Illegal puzzle move: ${uciMove}`);
     }
   };

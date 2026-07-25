@@ -40,11 +40,54 @@ type ExploreMove = {
   color: 'w' | 'b';
 };
 
+type EngineSuggestion = {
+  san: string;
+  from: string;
+  to: string;
+  color: 'w' | 'b';
+};
+
+type ExploreEngineState = {
+  loading: boolean;
+  evaluation: number | null;
+  /** Best move for the side to move in the current explore position. */
+  sideToMoveBest: EngineSuggestion | null;
+};
+
 const START_FEN = new Chess().fen();
+/** Snappier depth while freely exploring variations. */
+const EXPLORE_ENGINE_DEPTH = 10;
 
 function fenAtMainLineIndex(analysis: ReviewAnalysis, index: number): string {
   if (index < 0) return START_FEN;
   return analysis.moves[index]?.fenAfter || START_FEN;
+}
+
+function parseUciMove(uci: string): { from: string; to: string; promotion?: string } | null {
+  if (!uci || uci.length < 4 || uci === '(none)') return null;
+  return {
+    from: uci.slice(0, 2),
+    to: uci.slice(2, 4),
+    ...(uci[4] ? { promotion: uci[4] } : {}),
+  };
+}
+
+function suggestionFromUci(fen: string, uci: string | null): EngineSuggestion | null {
+  const parsed = uci ? parseUciMove(uci) : null;
+  if (!parsed) return null;
+  try {
+    const chess = new Chess(fen);
+    const move = chess.move(parsed);
+    if (!move) return null;
+    return {
+      san: move.san,
+      from: move.from,
+      to: move.to,
+      color: move.color,
+    };
+  } catch {
+    return null;
+  }
 }
 
 function tryPlayMove(fen: string, from: string, to: string): ExploreMove | null {
@@ -341,10 +384,12 @@ const GameReviewPage: React.FC = () => {
   const [exploreMoves, setExploreMoves] = useState<ExploreMove[]>([]);
   /** Index into exploreMoves; -1 = position at the branch point. */
   const [explorePly, setExplorePly] = useState(-1);
+  const [exploreEngine, setExploreEngine] = useState<ExploreEngineState | null>(null);
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
   const [hoverSquare, setHoverSquare] = useState<string | null>(null);
   /** Ignore the click that browsers fire after a drag-drop. */
   const suppressClickRef = useRef(false);
+  const exploreEngineRequestRef = useRef(0);
 
   useEffect(() => {
     if (game) {
@@ -386,6 +431,7 @@ const GameReviewPage: React.FC = () => {
     setExploreRootIndex(-1);
     setExploreMoves([]);
     setExplorePly(-1);
+    setExploreEngine(null);
 
     analyzeGameForReview(game, {
       depth: analysisDepth,
@@ -411,10 +457,12 @@ const GameReviewPage: React.FC = () => {
   }, [game, analysisDepth]);
 
   const exitExplore = useCallback(() => {
+    exploreEngineRequestRef.current += 1;
     setIsExploring(false);
     setExploreRootIndex(-1);
     setExploreMoves([]);
     setExplorePly(-1);
+    setExploreEngine(null);
   }, []);
 
   const goToMove = useCallback(
@@ -454,17 +502,6 @@ const GameReviewPage: React.FC = () => {
     Boolean(currentMove!.bestMoveFrom && currentMove!.bestMoveTo) &&
     (currentMove!.bestMoveFrom !== currentMove!.from || currentMove!.bestMoveTo !== currentMove!.to);
 
-  const boardArrows = useMemo(() => {
-    if (!showSuggestion || !currentMove?.bestMoveFrom || !currentMove?.bestMoveTo) return [];
-    return [
-      {
-        startSquare: currentMove.bestMoveFrom,
-        endSquare: currentMove.bestMoveTo,
-        color: '#15781B',
-      },
-    ];
-  }, [currentMove, showSuggestion]);
-
   const positionFen = useMemo(() => {
     if (!analysis) return START_FEN;
     if (!isExploring) return mainLineFen;
@@ -479,6 +516,70 @@ const GameReviewPage: React.FC = () => {
       return 'w' as const;
     }
   }, [positionFen]);
+
+  // Live Stockfish suggestions while exploring a line that differs from the game.
+  useEffect(() => {
+    if (!isExploring || !analysis || isAnalyzing) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    const requestId = ++exploreEngineRequestRef.current;
+    const fen = positionFen;
+
+    setExploreEngine({
+      loading: true,
+      evaluation: null,
+      sideToMoveBest: null,
+    });
+
+    (async () => {
+      try {
+        const sideEval = await stockfishService.evaluatePosition(fen, EXPLORE_ENGINE_DEPTH);
+        if (cancelled || requestId !== exploreEngineRequestRef.current) return;
+
+        setExploreEngine({
+          loading: false,
+          evaluation: sideEval.evaluation,
+          sideToMoveBest: suggestionFromUci(fen, sideEval.bestMoveUci),
+        });
+      } catch {
+        if (cancelled || requestId !== exploreEngineRequestRef.current) return;
+        setExploreEngine({
+          loading: false,
+          evaluation: null,
+          sideToMoveBest: null,
+        });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [analysis, isAnalyzing, isExploring, positionFen]);
+
+  const boardArrows = useMemo(() => {
+    // Only draw the side-to-move suggestion on the current board. The opponent
+    // reply is shown as text (it applies after the engine's first move).
+    if (isExploring && exploreEngine?.sideToMoveBest) {
+      return [
+        {
+          startSquare: exploreEngine.sideToMoveBest.from,
+          endSquare: exploreEngine.sideToMoveBest.to,
+          color: exploreEngine.sideToMoveBest.color === 'w' ? '#15781B' : '#2563EB',
+        },
+      ];
+    }
+
+    if (!showSuggestion || !currentMove?.bestMoveFrom || !currentMove?.bestMoveTo) return [];
+    return [
+      {
+        startSquare: currentMove.bestMoveFrom,
+        endSquare: currentMove.bestMoveTo,
+        color: '#15781B',
+      },
+    ];
+  }, [currentMove, exploreEngine, isExploring, showSuggestion]);
 
   const legalTargets = useMemo(
     () => (selectedSquare ? getLegalTargets(positionFen, selectedSquare) : []),
@@ -854,9 +955,15 @@ const GameReviewPage: React.FC = () => {
   const statusText = useMemo(() => {
     if (!analysis) return '';
     if (isExploring) {
+      const engineEval =
+        exploreEngine && !exploreEngine.loading && exploreEngine.evaluation !== null
+          ? ` · ${formatEval(exploreEngine.evaluation)}`
+          : exploreEngine?.loading
+            ? ' · Stockfish…'
+            : '';
       return exploreLineText
-        ? `Exploring · ${exploreLineText}`
-        : 'Exploring · drag pieces to try a different line';
+        ? `Exploring · ${exploreLineText}${engineEval}`
+        : `Exploring · drag pieces to try a different line${engineEval}`;
     }
     if (currentMoveIndex < 0) {
       const startEval = analysis.evalSeries[0] ?? 0;
@@ -864,7 +971,7 @@ const GameReviewPage: React.FC = () => {
     }
     const evaluation = analysis.moves[currentMoveIndex].evaluation;
     return `${evalStatusText(evaluation)} · ${formatEval(evaluation)}`;
-  }, [analysis, currentMoveIndex, exploreLineText, isExploring]);
+  }, [analysis, currentMoveIndex, exploreEngine, exploreLineText, isExploring]);
 
   const movePairs = useMemo(() => {
     if (!analysis) return [];
@@ -1253,8 +1360,8 @@ const GameReviewPage: React.FC = () => {
             </div>
             <p className="text-center text-[11px] text-slate-500 dark:text-slate-400">
               {isExploring
-                ? 'Variation mode · Esc or Return to game restores the played line'
-                : 'Click a piece for legal moves, or drag to play · game moves stay on the main line'}
+                ? 'Variation mode · Stockfish updates after every move · Esc returns to the played line'
+                : 'Click a piece for legal moves, or drag to play · leaving the game line opens engine suggestions'}
             </p>
           </div>
         </section>

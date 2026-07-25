@@ -43,7 +43,6 @@ export interface ImportGameRequest {
   /** When true, fetch the player's full game history from the platform API. */
   allGames?: boolean;
   rated?: boolean;
-  allGames?: boolean;
   variant?: string;
 }
 

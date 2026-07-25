@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Chess } from 'chess.js';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { GameAnalysis, MoveAnalysis } from '../types/analysis';
 import { ChessGame } from '../types/game';
+import { playMoveSafe } from '../utils/gameReviewAnalysis';
 
 interface GameViewerProps {
   game: ChessGame;
@@ -28,24 +29,55 @@ interface GameViewerProps {
   onClose: () => void;
 }
 
+type ViewerMove = {
+  san: string;
+  from: string;
+  to: string;
+  fenAfter: string;
+};
+
+const START_FEN = new Chess().fen();
+
 const GameViewer: React.FC<GameViewerProps> = ({ game, analysis, onClose }) => {
-  const [chess] = useState(new Chess());
   const [currentMoveIndex, setCurrentMoveIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>('white');
-  const [gameHistory, setGameHistory] = useState<any[]>([]);
+  const [gameHistory, setGameHistory] = useState<ViewerMove[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load the game
+    const chess = new Chess();
+    try {
+      chess.loadPgn(game.pgn);
+    } catch {
+      setGameHistory([]);
+      setCurrentMoveIndex(-1);
+      setLoadError('Could not load this game’s moves.');
+      return;
+    }
+
+    const verbose = chess.history({ verbose: true });
     chess.reset();
-    chess.loadPgn(game.pgn);
-    const history = chess.history({ verbose: true });
-    setGameHistory(history);
-    
-    // Reset to starting position
-    chess.reset();
+    const rebuilt: ViewerMove[] = [];
+
+    try {
+      for (const move of verbose) {
+        const played = playMoveSafe(chess, move);
+        rebuilt.push({
+          san: played.san,
+          from: played.from,
+          to: played.to,
+          fenAfter: chess.fen(),
+        });
+      }
+      setLoadError(null);
+    } catch {
+      setLoadError('Stopped replaying this game after an illegal/corrupt move.');
+    }
+
+    setGameHistory(rebuilt);
     setCurrentMoveIndex(-1);
-  }, [game.pgn, chess]);
+  }, [game.pgn]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -67,15 +99,10 @@ const GameViewer: React.FC<GameViewerProps> = ({ game, analysis, onClose }) => {
     };
   }, [isPlaying, currentMoveIndex, gameHistory.length]);
 
-  useEffect(() => {
-    // Update board position based on current move
-    chess.reset();
-    for (let i = 0; i <= currentMoveIndex; i++) {
-      if (gameHistory[i]) {
-        chess.move(gameHistory[i]);
-      }
-    }
-  }, [currentMoveIndex, gameHistory, chess]);
+  const positionFen = useMemo(() => {
+    if (currentMoveIndex < 0) return START_FEN;
+    return gameHistory[currentMoveIndex]?.fenAfter || START_FEN;
+  }, [currentMoveIndex, gameHistory]);
 
   const getCurrentMove = (): MoveAnalysis | undefined => {
     if (!analysis || currentMoveIndex < 0) return undefined;
@@ -130,6 +157,12 @@ const GameViewer: React.FC<GameViewerProps> = ({ game, analysis, onClose }) => {
         <Button onClick={onClose} variant="outline">Close</Button>
       </div>
 
+      {loadError && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {loadError}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chess Board */}
         <div className="lg:col-span-2">
@@ -155,7 +188,7 @@ const GameViewer: React.FC<GameViewerProps> = ({ game, analysis, onClose }) => {
               <div className="aspect-square max-w-lg mx-auto">
                 <Chessboard
                   options={{
-                    position: chess.fen(),
+                    position: positionFen,
                     boardOrientation: boardOrientation,
                     allowDragging: false,
                     boardStyle: {

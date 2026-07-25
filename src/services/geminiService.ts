@@ -200,6 +200,16 @@ class GeminiService {
 
   private validateAndFixMoveRecommendation(example: any, fen: string): void {
     try {
+      // Skip clearly impossible boards (e.g. too many knights for remaining pawns).
+      const board = fen.split(' ')[0] || '';
+      const count = (piece: string) => (board.match(new RegExp(piece, 'g')) || []).length;
+      const whiteKnights = count('N');
+      const whitePawns = count('P');
+      if (whiteKnights > 2 + Math.max(0, 8 - whitePawns)) {
+        console.log(`Skipping move validation for implausible FEN: ${fen}`);
+        return;
+      }
+
       const chess = new Chess(fen);
       const legalMoves = chess.moves();
       
@@ -210,18 +220,18 @@ class GeminiService {
       let suggestedMove = '';
       
       // Pattern 1: Standard algebraic notation at the beginning
-      let moveMatch = betterMoveText.match(/^([NBRQK]?[a-h]?[1-8]?x?[a-h][1-8](?:\=[NBRQ])?[\+\#]?)/);
+      let moveMatch = betterMoveText.match(/^([NBRQK]?[a-h]?[1-8]?x?[a-h][1-8](?:=[NBRQ])?[+#]?)/);
       if (moveMatch) {
         suggestedMove = moveMatch[1];
       } else {
         // Pattern 2: Move after numbers (e.g., "15...Nd7!" or "20.Rb1!")
-        moveMatch = betterMoveText.match(/\d+\.+\s*([NBRQK]?[a-h]?[1-8]?x?[a-h][1-8](?:\=[NBRQ])?[\+\#]?)/);
+        moveMatch = betterMoveText.match(/\d+\.+\s*([NBRQK]?[a-h]?[1-8]?x?[a-h][1-8](?:=[NBRQ])?[+#]?)/);
         if (moveMatch) {
           suggestedMove = moveMatch[1];
         } else {
           // Pattern 3: Move in quotes or parentheses
-          moveMatch = betterMoveText.match(/["']([NBRQK]?[a-h]?[1-8]?x?[a-h][1-8](?:\=[NBRQ])?[\+\#]?)["']/) ||
-                      betterMoveText.match(/\(([NBRQK]?[a-h]?[1-8]?x?[a-h][1-8](?:\=[NBRQ])?[\+\#]?)\)/);
+          moveMatch = betterMoveText.match(/["']([NBRQK]?[a-h]?[1-8]?x?[a-h][1-8](?:=[NBRQ])?[+#]?)["']/) ||
+                      betterMoveText.match(/\(([NBRQK]?[a-h]?[1-8]?x?[a-h][1-8](?:=[NBRQ])?[+#]?)\)/);
           if (moveMatch) {
             suggestedMove = moveMatch[1];
           }
@@ -274,7 +284,7 @@ class GeminiService {
           console.log(`✅ FIXED: Replacing with legal move: "${similarMove}"`);
           
           // Preserve the explanation but update the move
-          const explanationMatch = betterMoveText.match(/(?:^[^\-]*\s*-\s*)(.+)$/);
+          const explanationMatch = betterMoveText.match(/(?:^[^-]*\s*-\s*)(.+)$/);
           const explanation = explanationMatch ? explanationMatch[1] : 'This move improves the position by developing pieces actively and maintaining better coordination';
           
           example.betterMove = `${similarMove} - ${explanation}`;
