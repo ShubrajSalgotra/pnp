@@ -13,6 +13,7 @@ import {
   User,
   X
 } from 'lucide-react';
+import { DefaultAvatar } from './DefaultAvatar';
 
 const Navbar: React.FC = () => {
   const { currentUser, logout } = useAuth();
@@ -104,9 +105,7 @@ const Navbar: React.FC = () => {
                         className="h-7 w-7 rounded-full object-cover ring-1 ring-slate-200 dark:ring-white/20"
                       />
                     ) : (
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 dark:bg-white/15">
-                        <User className="h-3.5 w-3.5 text-slate-600 dark:text-white" />
-                      </div>
+                      <DefaultAvatar className="h-7 w-7" />
                     )}
                     <span className="max-w-[7.5rem] truncate font-medium">{currentUser.displayName}</span>
                     <ChevronDown className="h-3.5 w-3.5 text-slate-400 dark:text-white/70" />
@@ -240,9 +239,7 @@ const Navbar: React.FC = () => {
                           className="h-10 w-10 rounded-full object-cover ring-1 ring-slate-200 dark:ring-white/20"
                         />
                       ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 dark:bg-white/15">
-                          <User className="h-5 w-5 text-slate-600 dark:text-white" />
-                        </div>
+                        <DefaultAvatar className="h-10 w-10" />
                       )}
                       <div className="ml-3 min-w-0">
                         <div className="truncate text-base font-medium text-slate-900 dark:text-white">{currentUser.displayName}</div>

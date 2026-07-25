@@ -21,6 +21,7 @@ import { profileAnalysisService } from '../services/profileAnalysisService';
 import { PlayerAnalysisProfile } from '../types/profileAnalysis';
 import { GameReportRequest, ReportGenerationProgress } from '../types/report';
 import ReportPopup from '../components/ReportPopup';
+import { DefaultAvatar } from '../components/DefaultAvatar';
 import { persistSelectedGame } from '../utils/selectedGame';
 import { ChessGame } from '../types/game';
 
@@ -193,7 +194,7 @@ const DashboardPage: React.FC = () => {
 
   const displayAvatarUrl = isCustomAvatar(currentUser?.avatarUrl)
     ? currentUser?.avatarUrl
-    : (chessAvatarUrl || currentUser?.avatarUrl || '/pnp_logo.jpeg');
+    : (chessAvatarUrl || currentUser?.avatarUrl || null);
 
   const handleAvatarClick = () => {
     if (isUploadingAvatar) return;
@@ -483,11 +484,15 @@ const DashboardPage: React.FC = () => {
               aria-label="Change profile picture"
               className="group relative h-32 w-32 cursor-pointer overflow-hidden rounded-full border-4 border-white shadow-soft transition hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:cursor-wait sm:h-36 sm:w-36 dark:border-slate-700"
             >
-              <img
-                src={displayAvatarUrl || '/pnp_logo.jpeg'}
-                alt="Player avatar"
-                className="h-full w-full object-cover"
-              />
+              {displayAvatarUrl ? (
+                <img
+                  src={displayAvatarUrl}
+                  alt="Player avatar"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <DefaultAvatar className="h-full w-full bg-gradient-to-b from-primary-100 to-primary-200 text-primary-800 ring-0 dark:from-primary-500/30 dark:to-primary-500/15 dark:text-primary-200" />
+              )}
               <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-slate-950/55 text-white opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
                 <Camera className="h-5 w-5" />
                 <span className="text-xs font-medium">

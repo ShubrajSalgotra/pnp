@@ -8,7 +8,6 @@ import {
   Moon,
   RefreshCw,
   Sun,
-  User,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -19,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Badge } from '../components/ui/Badge';
+import { DefaultAvatar } from '../components/DefaultAvatar';
 
 const roleLabel: Record<string, string> = {
   child: 'Player',
@@ -154,9 +154,7 @@ const ProfilePage: React.FC = () => {
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-primary-100 dark:bg-primary-500/20">
-                  <User className="h-8 w-8 text-primary-700 dark:text-primary-300" />
-                </div>
+                <DefaultAvatar className="h-full w-full bg-gradient-to-b from-primary-100 to-primary-200 text-primary-800 ring-0 dark:from-primary-500/30 dark:to-primary-500/15 dark:text-primary-200" />
               )}
               <span className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-slate-950/55 text-white opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
                 <Camera className="h-4 w-4" />
