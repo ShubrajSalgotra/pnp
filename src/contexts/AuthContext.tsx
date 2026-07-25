@@ -10,9 +10,10 @@ import {
   signInWithPopup,
   getAdditionalUserInfo
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '../services/firebase';
+import { auth } from '../services/firebase';
+import { profileAnalysisService } from '../services/profileAnalysisService';
 import { userDataService } from '../services/userDataService';
+import { userProfileService } from '../services/userProfileService';
 import { User } from '../types';
 import { DEFAULT_USER_PREFERENCES, UserPreferences } from '../types/userData';
 import { fileToAvatarDataUrl } from '../utils/avatar';
@@ -48,87 +49,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const currentUserRef = useRef<User | null>(null);
   currentUserRef.current = currentUser;
 
+  const applyUser = useCallback((userData: User) => {
+    currentUserRef.current = userData;
+    setCurrentUser(userData);
+  }, []);
+
+  const syncProfile = useCallback(async (
+    authUser: FirebaseUser,
+    overrides: Parameters<typeof userProfileService.ensureProfile>[1] = {}
+  ): Promise<User> => {
+    try {
+      return await userProfileService.ensureProfile(authUser, overrides);
+    } catch (error) {
+      console.error('Firestore profile sync failed; using Auth identity fallback:', error);
+      const cached = userProfileService.getCachedProfile(authUser.uid);
+      if (cached) {
+        return {
+          ...cached,
+          ...overrides,
+          displayName: overrides.displayName || cached.displayName,
+          email: overrides.email || cached.email,
+          avatarUrl: overrides.avatarUrl ?? cached.avatarUrl,
+        };
+      }
+
+      return {
+        id: authUser.uid,
+        email: overrides.email || authUser.email || '',
+        displayName:
+          overrides.displayName ||
+          authUser.displayName ||
+          (authUser.email ? authUser.email.split('@')[0] : 'User'),
+        role: overrides.role || 'child',
+        isPremium: overrides.isPremium ?? false,
+        avatarUrl: overrides.avatarUrl ?? authUser.photoURL ?? null,
+        preferences: {
+          ...DEFAULT_USER_PREFERENCES,
+          ...(overrides.preferences || {}),
+        },
+        createdAt: authUser.metadata?.creationTime
+          ? new Date(authUser.metadata.creationTime)
+          : new Date(),
+        updatedAt: new Date(),
+      };
+    }
+  }, []);
+
   const login = async (email: string, password: string) => {
     try {
       const result = await signInWithEmailAndPassword(auth, email, password);
       const token = await result.user.getIdToken();
       localStorage.setItem('authToken', token);
+      const userData = await syncProfile(result.user);
+      applyUser(userData);
     } catch (error) {
       console.error('Login error:', error);
       throw error;
     }
   };
-
-  const saveUserData = useCallback(async (userData: User) => {
-    const payload = {
-      ...userData,
-      preferences: userData.preferences || DEFAULT_USER_PREFERENCES,
-      createdAt: userData.createdAt.toISOString(),
-      updatedAt: (userData.updatedAt || new Date()).toISOString(),
-    };
-
-    localStorage.setItem(`user-${userData.id}`, JSON.stringify(payload));
-
-    try {
-      await setDoc(doc(db, 'users', userData.id), payload, { merge: true });
-    } catch (error) {
-      console.error('Error saving user data to Firestore:', error);
-    }
-  }, []);
-
-  const loadUserData = useCallback(async (user: FirebaseUser): Promise<User> => {
-    try {
-      const snapshot = await getDoc(doc(db, 'users', user.uid));
-
-      if (snapshot.exists()) {
-        const data = snapshot.data() as any;
-        return {
-          id: user.uid,
-          email: data.email || user.email!,
-          displayName: data.displayName || user.displayName || 'User',
-          role: data.role || 'child',
-          isPremium: data.isPremium || false,
-          avatarUrl: data.avatarUrl || user.photoURL || null,
-          preferences: { ...DEFAULT_USER_PREFERENCES, ...(data.preferences || {}) },
-          createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
-          updatedAt: data.updatedAt ? new Date(data.updatedAt) : undefined,
-        };
-      }
-    } catch (error) {
-      console.error('Error loading user data from Firestore:', error);
-
-      const cachedUser = localStorage.getItem(`user-${user.uid}`);
-      if (cachedUser) {
-        const data = JSON.parse(cachedUser);
-        return {
-          ...data,
-          avatarUrl: data.avatarUrl || user.photoURL || null,
-          preferences: { ...DEFAULT_USER_PREFERENCES, ...(data.preferences || {}) },
-          createdAt: data.createdAt ? new Date(data.createdAt) : new Date(),
-          updatedAt: data.updatedAt ? new Date(data.updatedAt) : undefined,
-        };
-      }
-    }
-
-    const storedTheme = localStorage.getItem('pawnsposes-theme');
-    const userData: User = {
-      id: user.uid,
-      email: user.email!,
-      displayName: user.displayName || 'User',
-      role: 'child',
-      isPremium: false,
-      avatarUrl: user.photoURL || null,
-      preferences: {
-        ...DEFAULT_USER_PREFERENCES,
-        theme: storedTheme === 'dark' || storedTheme === 'light' ? storedTheme : DEFAULT_USER_PREFERENCES.theme,
-      },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    await saveUserData(userData);
-    return userData;
-  }, [saveUserData]);
 
   const loginWithGoogle = async (): Promise<{ user: User; isNewUser: boolean }> => {
     try {
@@ -138,9 +116,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const token = await result.user.getIdToken();
       localStorage.setItem('authToken', token);
       
-      const userData = await loadUserData(result.user);
+      const userData = await syncProfile(result.user, {
+        displayName: result.user.displayName || undefined,
+        email: result.user.email || undefined,
+        avatarUrl: result.user.photoURL,
+      });
       const isNewUser = getAdditionalUserInfo(result)?.isNewUser ?? false;
-      setCurrentUser(userData);
+      applyUser(userData);
       return { user: userData, isNewUser };
       
     } catch (error) {
@@ -158,26 +140,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       const storedTheme = localStorage.getItem('pawnsposes-theme');
-      const userData: User = {
-        id: result.user.uid,
-        email: result.user.email!,
-        displayName: displayName,
-        role: role as 'child' | 'parent' | 'coach' | 'admin',
-        isPremium: false,
-        avatarUrl: result.user.photoURL || null,
+      const token = await result.user.getIdToken();
+      localStorage.setItem('authToken', token);
+
+      const userData = await syncProfile(result.user, {
+        displayName,
+        email: result.user.email || email,
+        role: role as User['role'],
         preferences: {
           ...DEFAULT_USER_PREFERENCES,
           theme: storedTheme === 'dark' || storedTheme === 'light' ? storedTheme : DEFAULT_USER_PREFERENCES.theme,
         },
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+      });
 
-      const token = await result.user.getIdToken();
-      localStorage.setItem('authToken', token);
-      
-      await saveUserData(userData);
-      setCurrentUser(userData);
+      applyUser(userData);
       return userData;
       
     } catch (error) {
@@ -190,6 +166,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await signOut(auth);
       localStorage.removeItem('authToken');
+      currentUserRef.current = null;
       setCurrentUser(null);
     } catch (error) {
       console.error('Logout error:', error);
@@ -202,10 +179,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!prev) return;
 
     const updatedUser: User = { ...prev, avatarUrl, updatedAt: new Date() };
-    currentUserRef.current = updatedUser;
-    setCurrentUser(updatedUser);
-    await saveUserData(updatedUser);
-  }, [saveUserData]);
+    applyUser(updatedUser);
+    await userProfileService.saveProfile(updatedUser);
+  }, [applyUser]);
 
   const updateAvatar = useCallback(async (file: File) => {
     const prev = currentUserRef.current;
@@ -223,10 +199,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const updatedUser: User = { ...prev, avatarUrl, updatedAt: new Date() };
-    currentUserRef.current = updatedUser;
-    setCurrentUser(updatedUser);
-    await saveUserData(updatedUser);
-  }, [saveUserData]);
+    applyUser(updatedUser);
+    await userProfileService.saveProfile(updatedUser);
+  }, [applyUser]);
 
   const updateDisplayName = useCallback(async (displayName: string) => {
     const prev = currentUserRef.current;
@@ -243,10 +218,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await updateProfile(authUser, { displayName: nextName });
 
     const updatedUser: User = { ...prev, displayName: nextName, updatedAt: new Date() };
-    currentUserRef.current = updatedUser;
-    setCurrentUser(updatedUser);
-    await saveUserData(updatedUser);
-  }, [saveUserData]);
+    applyUser(updatedUser);
+    await userProfileService.saveProfile(updatedUser);
+  }, [applyUser]);
 
   const updatePreferences = useCallback(async (preferences: Partial<UserPreferences>) => {
     const prev = currentUserRef.current;
@@ -264,24 +238,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updatedAt: new Date(),
     };
 
-    currentUserRef.current = updatedUser;
-    setCurrentUser(updatedUser);
-    await saveUserData(updatedUser);
+    applyUser(updatedUser);
+    await userProfileService.saveProfile(updatedUser);
     await userDataService.savePreferences(prev.id, nextPreferences);
-  }, [saveUserData]);
+  }, [applyUser]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
       
       if (user) {
-        const userData = await loadUserData(user);
-        
-        setCurrentUser(userData);
+        // Every signed-in session upserts Auth identity into Firestore.
+        const userData = await syncProfile(user, {
+          displayName: user.displayName || undefined,
+          email: user.email || undefined,
+          avatarUrl: user.photoURL,
+        });
+        applyUser(userData);
+
+        // Push any browser-local caches (games/reports/puzzles) into Firestore.
+        try {
+          await userDataService.migrateLocalCachesToCloud(user.uid);
+          const localProfile = profileAnalysisService.getProfile(user.uid);
+          if (localProfile) {
+            await profileAnalysisService.saveProfile(localProfile);
+          }
+        } catch (migrateError) {
+          console.error('Local→Firestore migration failed:', migrateError);
+        }
         
         const token = await user.getIdToken();
         localStorage.setItem('authToken', token);
       } else {
+        currentUserRef.current = null;
         setCurrentUser(null);
         localStorage.removeItem('authToken');
       }
@@ -290,7 +279,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return unsubscribe;
-  }, [loadUserData]);
+  }, [applyUser, syncProfile]);
 
   const value: AuthContextType = {
     currentUser,

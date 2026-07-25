@@ -18,6 +18,7 @@ import {
   SearchX
 } from 'lucide-react';
 import { profileAnalysisService } from '../services/profileAnalysisService';
+import { userDataService } from '../services/userDataService';
 import { PlayerAnalysisProfile } from '../types/profileAnalysis';
 import { GameReportRequest, ReportGenerationProgress } from '../types/report';
 import ReportPopup from '../components/ReportPopup';
@@ -304,6 +305,43 @@ const DashboardPage: React.FC = () => {
     puzzleRating: liveRatings.puzzle,
     winRate: userGames.length ? Math.round((wins / userGames.length) * 100) : 0,
   };
+
+  // Persist dashboard stats so they appear in Firestore for every account.
+  useEffect(() => {
+    if (!currentUser?.id || !profile) return;
+
+    void userDataService.saveStats({
+      userId: currentUser.id,
+      platform: profile.platform,
+      username: profile.username,
+      ratings: {
+        rapid: gameStats.rapidRating,
+        blitz: gameStats.blitzRating,
+        bullet: gameStats.bulletRating,
+        puzzle: gameStats.puzzleRating,
+      },
+      wins: gameStats.wins,
+      losses: gameStats.losses,
+      draws: gameStats.draws,
+      winRate: gameStats.winRate,
+      gamesCount: userGames.length,
+      averageAccuracy: profile.report?.executiveSummary?.averageAccuracy ?? null,
+      lastReportId: profile.report?.id ?? null,
+      updatedAt: new Date().toISOString(),
+    });
+  }, [
+    currentUser?.id,
+    gameStats.blitzRating,
+    gameStats.bulletRating,
+    gameStats.draws,
+    gameStats.losses,
+    gameStats.puzzleRating,
+    gameStats.rapidRating,
+    gameStats.winRate,
+    gameStats.wins,
+    profile,
+    userGames.length,
+  ]);
 
   const stats = [
     {

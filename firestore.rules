@@ -33,7 +33,19 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
+      match /gameReviews/{gameId} {
+        allow read, write: if isOwner(userId);
+      }
+
       match /puzzleProgress/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /puzzleHistory/{entryId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /stats/{docId} {
         allow read, write: if isOwner(userId);
       }
     }

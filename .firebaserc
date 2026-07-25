@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "pawn-poses-insight"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

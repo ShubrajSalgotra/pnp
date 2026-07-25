@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { profileAnalysisService } from '../services/profileAnalysisService';
+import { userDataService } from '../services/userDataService';
 import { ChessGame } from '../types/game';
 import {
   ReviewAnalysis,
@@ -416,45 +417,82 @@ const GameReviewPage: React.FC = () => {
     if (!game) return undefined;
 
     const abortController = new AbortController();
-    setIsAnalyzing(true);
-    setAnalysis(null);
-    setAnalysisError(null);
-    setAnalysisProgress({
-      currentMove: 0,
-      totalMoves: game.moves?.length || 0,
-      progress: 0,
-      message: 'Starting Stockfish…',
-    });
-    setCurrentMoveIndex(-1);
-    setIsPlaying(false);
-    setIsExploring(false);
-    setExploreRootIndex(-1);
-    setExploreMoves([]);
-    setExplorePly(-1);
-    setExploreEngine(null);
+    let cancelled = false;
 
-    analyzeGameForReview(game, {
-      depth: analysisDepth,
-      signal: abortController.signal,
-      onProgress: setAnalysisProgress,
-    })
-      .then((result) => {
-        if (abortController.signal.aborted) return;
+    const runAnalysis = async () => {
+      setIsAnalyzing(true);
+      setAnalysis(null);
+      setAnalysisError(null);
+      setAnalysisProgress({
+        currentMove: 0,
+        totalMoves: game.moves?.length || 0,
+        progress: 0,
+        message: 'Loading saved review…',
+      });
+      setCurrentMoveIndex(-1);
+      setIsPlaying(false);
+      setIsExploring(false);
+      setExploreRootIndex(-1);
+      setExploreMoves([]);
+      setExplorePly(-1);
+      setExploreEngine(null);
+
+      if (currentUser?.id) {
+        try {
+          const saved = await userDataService.loadGameReview(currentUser.id, game.id);
+          if (
+            !cancelled &&
+            !abortController.signal.aborted &&
+            saved?.analysis &&
+            saved.depth >= analysisDepth
+          ) {
+            setAnalysis(saved.analysis);
+            setIsAnalyzing(false);
+            setAnalysisProgress(null);
+            return;
+          }
+        } catch (loadError) {
+          console.error('Could not load saved game review:', loadError);
+        }
+      }
+
+      if (cancelled || abortController.signal.aborted) return;
+
+      setAnalysisProgress({
+        currentMove: 0,
+        totalMoves: game.moves?.length || 0,
+        progress: 0,
+        message: 'Starting Stockfish…',
+      });
+
+      try {
+        const result = await analyzeGameForReview(game, {
+          depth: analysisDepth,
+          signal: abortController.signal,
+          onProgress: setAnalysisProgress,
+        });
+        if (cancelled || abortController.signal.aborted) return;
         setAnalysis(result);
         setIsAnalyzing(false);
         setAnalysisProgress(null);
-      })
-      .catch((error: unknown) => {
-        if (abortController.signal.aborted) return;
+        if (currentUser?.id) {
+          void userDataService.saveGameReview(currentUser.id, game.id, result, analysisDepth);
+        }
+      } catch (error: unknown) {
+        if (cancelled || abortController.signal.aborted) return;
         setIsAnalyzing(false);
         setAnalysisError(error instanceof Error ? error.message : 'Stockfish analysis failed');
-      });
+      }
+    };
+
+    void runAnalysis();
 
     return () => {
+      cancelled = true;
       abortController.abort();
       stockfishService.terminate();
     };
-  }, [game, analysisDepth]);
+  }, [analysisDepth, currentUser?.id, game]);
 
   const exitExplore = useCallback(() => {
     exploreEngineRequestRef.current += 1;

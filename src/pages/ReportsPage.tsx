@@ -32,17 +32,40 @@ const ReportsPage: React.FC = () => {
     };
     setCurrentReport(nextReport);
 
-    if (currentUser?.id) {
-      void userDataService.saveReport(currentUser.id, nextReport, 'self');
-      void profileAnalysisService.loadProfile(currentUser.id).then(async (profile) => {
-        if (!profile) return;
+    if (!currentUser?.id) return;
+
+    void (async () => {
+      await userDataService.saveReport(currentUser.id, nextReport, 'self');
+
+      const existing = await profileAnalysisService.loadProfile(currentUser.id);
+      if (existing) {
         await profileAnalysisService.saveProfile({
-          ...profile,
+          ...existing,
+          platform: nextReport.platform,
+          username: nextReport.username,
           report: nextReport,
           lastAnalyzedAt: new Date().toISOString(),
         });
+        return;
+      }
+
+      // First-time report from /reports — create a linked profile shell.
+      await profileAnalysisService.setupProfile({
+        userId: currentUser.id,
+        platform: nextReport.platform,
+        username: nextReport.username,
+        gameCount: nextReport.gameCount || 20,
+        generateReport: false,
       });
-    }
+      const created = await profileAnalysisService.loadProfile(currentUser.id);
+      if (created) {
+        await profileAnalysisService.saveProfile({
+          ...created,
+          report: nextReport,
+          lastAnalyzedAt: new Date().toISOString(),
+        });
+      }
+    })();
   };
 
   const handleBackToGenerator = () => {
