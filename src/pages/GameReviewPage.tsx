@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Chess, type Square } from 'chess.js';
+import { Chess } from 'chess.js';
 import { Chessboard } from 'react-chessboard';
-import type { PieceDropHandlerArgs, PieceHandlerArgs, SquareHandlerArgs } from 'react-chessboard';
 import {
   ArrowLeft,
   ChevronLeft,
@@ -15,6 +14,8 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useChessboardInteraction } from '../hooks/useChessboardInteraction';
+import { useChessSounds } from '../hooks/useChessSounds';
 import { profileAnalysisService } from '../services/profileAnalysisService';
 import { userDataService } from '../services/userDataService';
 import { ChessGame } from '../types/game';
@@ -29,17 +30,16 @@ import {
   formatSeconds,
   resultLabel,
 } from '../utils/gameReviewAnalysis';
+import {
+  BoardLastMove,
+  PlayedBoardMove,
+  tryPlayMove,
+} from '../utils/chessboardTheme';
 import { Button } from '../components/ui/Button';
 import { loadSelectedGame, persistSelectedGame } from '../utils/selectedGame';
 import { STOCKFISH_DEPTH, stockfishService } from '../services/stockfishService';
 
-type ExploreMove = {
-  san: string;
-  from: string;
-  to: string;
-  fenAfter: string;
-  color: 'w' | 'b';
-};
+type ExploreMove = PlayedBoardMove;
 
 type EngineSuggestion = {
   san: string;
@@ -91,61 +91,6 @@ function suggestionFromUci(fen: string, uci: string | null): EngineSuggestion | 
   }
 }
 
-function tryPlayMove(fen: string, from: string, to: string): ExploreMove | null {
-  const chess = new Chess(fen);
-  const piece = chess.get(from as Square);
-  const isPromotion =
-    piece?.type === 'p' &&
-    ((piece.color === 'w' && to[1] === '8') || (piece.color === 'b' && to[1] === '1'));
-
-  try {
-    const move = chess.move(
-      isPromotion ? { from, to, promotion: 'q' } : { from, to }
-    );
-    if (!move) return null;
-    return {
-      san: move.san,
-      from: move.from,
-      to: move.to,
-      fenAfter: chess.fen(),
-      color: move.color,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function getLegalTargets(fen: string, from: string): { to: string; isCapture: boolean }[] {
-  try {
-    const chess = new Chess(fen);
-    const piece = chess.get(from as Square);
-    if (!piece) return [];
-    return chess
-      .moves({ square: from as Square, verbose: true })
-      .map((move) => ({
-        to: move.to,
-        isCapture: Boolean(move.captured) || move.flags.includes('c') || move.flags.includes('e'),
-      }));
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Wood board + Chess.com interaction language:
- * yellow last-move/selected, gray legal-move hints.
- */
-const BOARD_LIGHT = '#f0d9b5';
-const BOARD_DARK = '#b58863';
-const LAST_MOVE_TINT = 'rgba(255, 255, 51, 0.5)';
-const SELECTED_SQUARE_TINT = 'rgba(255, 255, 51, 0.5)';
-const HOVER_LEGAL_TINT = 'rgba(255, 255, 51, 0.45)';
-/** Chess.com quiet-move hint — dark translucent dot (not Lichess green). */
-const LEGAL_MOVE_DOT =
-  'radial-gradient(rgba(0, 0, 0, 0.14) 19%, rgba(0, 0, 0, 0) 20%)';
-/** Chess.com capture hint — dark ring. */
-const LEGAL_CAPTURE_RING =
-  'radial-gradient(transparent 0%, transparent 79%, rgba(0, 0, 0, 0.14) 80%)';
 const CLASSIFICATION_TINT: Partial<Record<ReviewClassification, string>> = {
   blunder: 'rgba(202, 52, 49, 0.55)',
   miss: 'rgba(238, 106, 167, 0.48)',
@@ -386,11 +331,9 @@ const GameReviewPage: React.FC = () => {
   /** Index into exploreMoves; -1 = position at the branch point. */
   const [explorePly, setExplorePly] = useState(-1);
   const [exploreEngine, setExploreEngine] = useState<ExploreEngineState | null>(null);
-  const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
-  const [hoverSquare, setHoverSquare] = useState<string | null>(null);
-  /** Ignore the click that browsers fire after a drag-drop. */
-  const suppressClickRef = useRef(false);
   const exploreEngineRequestRef = useRef(0);
+  const moveSoundKeyRef = useRef('');
+  const sounds = useChessSounds();
 
   useEffect(() => {
     if (game) {
@@ -547,13 +490,19 @@ const GameReviewPage: React.FC = () => {
     return exploreMoves[explorePly]?.fenAfter || fenAtMainLineIndex(analysis, exploreRootIndex);
   }, [analysis, exploreMoves, explorePly, exploreRootIndex, isExploring, mainLineFen]);
 
-  const sideToMove = useMemo(() => {
-    try {
-      return new Chess(positionFen).turn();
-    } catch {
-      return 'w' as const;
+  const boardLastMove = useMemo((): BoardLastMove | null => {
+    if (exploreMove) {
+      return { from: exploreMove.from, to: exploreMove.to };
     }
-  }, [positionFen]);
+    if (currentMove) {
+      return {
+        from: currentMove.from,
+        to: currentMove.to,
+        toTint: CLASSIFICATION_TINT[currentMove.classification],
+      };
+    }
+    return null;
+  }, [currentMove, exploreMove]);
 
   // Live Stockfish suggestions while exploring a line that differs from the game.
   useEffect(() => {
@@ -619,35 +568,17 @@ const GameReviewPage: React.FC = () => {
     ];
   }, [currentMove, exploreEngine, isExploring, showSuggestion]);
 
-  const legalTargets = useMemo(
-    () => (selectedSquare ? getLegalTargets(positionFen, selectedSquare) : []),
-    [positionFen, selectedSquare]
-  );
-
-  const legalTargetSet = useMemo(
-    () => new Set(legalTargets.map((target) => target.to)),
-    [legalTargets]
-  );
-
-  useEffect(() => {
-    setSelectedSquare(null);
-    setHoverSquare(null);
-  }, [positionFen]);
-
-  const clearSelection = useCallback(() => {
-    setSelectedSquare(null);
-    setHoverSquare(null);
-  }, []);
-
   const applyBoardMove = useCallback(
     (from: string, to: string): boolean => {
       if (!analysis || from === to) return false;
 
       const played = tryPlayMove(positionFen, from, to);
-      if (!played) return false;
+      if (!played) {
+        sounds.playIllegal();
+        return false;
+      }
 
       setIsPlaying(false);
-      clearSelection();
 
       // Stay on the main line when the user plays the next game move.
       if (!isExploring) {
@@ -673,163 +604,43 @@ const GameReviewPage: React.FC = () => {
     },
     [
       analysis,
-      clearSelection,
       currentMoveIndex,
       exploreMoves,
       explorePly,
       isExploring,
       positionFen,
+      sounds,
     ]
   );
 
-  const selectSquare = useCallback(
-    (square: string) => {
-      try {
-        const chess = new Chess(positionFen);
-        const piece = chess.get(square as Square);
-        if (!piece || piece.color !== sideToMove) {
-          clearSelection();
-          return;
-        }
-        setSelectedSquare(square);
-      } catch {
-        clearSelection();
-      }
-    },
-    [clearSelection, positionFen, sideToMove]
-  );
+  const { boardOptions } = useChessboardInteraction({
+    fen: positionFen,
+    enabled: Boolean(analysis) && !isAnalyzing,
+    lastMove: boardLastMove,
+    onMove: applyBoardMove,
+  });
 
-  const handlePieceDrop = useCallback(
-    ({ sourceSquare, targetSquare }: PieceDropHandlerArgs): boolean => {
-      suppressClickRef.current = true;
-      window.setTimeout(() => {
-        suppressClickRef.current = false;
-      }, 0);
+  useEffect(() => {
+    moveSoundKeyRef.current = '';
+  }, [analysis]);
 
-      if (!targetSquare || targetSquare === sourceSquare) {
-        // Keep selection on cancelled drag so legal moves stay visible.
-        selectSquare(sourceSquare);
-        return false;
-      }
-      return applyBoardMove(sourceSquare, targetSquare);
-    },
-    [applyBoardMove, selectSquare]
-  );
+  useEffect(() => {
+    const move = exploreMove || currentMove;
+    const key = isExploring
+      ? `e:${explorePly}:${move?.san || ''}`
+      : `m:${currentMoveIndex}:${move?.san || ''}`;
 
-  const handleSquareClick = useCallback(
-    ({ square, piece }: SquareHandlerArgs) => {
-      if (suppressClickRef.current) return;
-
-      if (selectedSquare) {
-        if (square === selectedSquare) {
-          clearSelection();
-          return;
-        }
-        if (legalTargetSet.has(square)) {
-          applyBoardMove(selectedSquare, square);
-          return;
-        }
-        if (piece && piece.pieceType.startsWith(sideToMove)) {
-          selectSquare(square);
-          return;
-        }
-        clearSelection();
-        return;
-      }
-
-      if (piece && piece.pieceType.startsWith(sideToMove)) {
-        selectSquare(square);
-      }
-    },
-    [
-      applyBoardMove,
-      clearSelection,
-      legalTargetSet,
-      selectSquare,
-      selectedSquare,
-      sideToMove,
-    ]
-  );
-
-  const handlePieceDrag = useCallback(
-    ({ square }: PieceHandlerArgs) => {
-      if (square) selectSquare(square);
-    },
-    [selectSquare]
-  );
-
-  const handleMouseOverSquare = useCallback(
-    ({ square }: SquareHandlerArgs) => {
-      if (selectedSquare && legalTargetSet.has(square)) {
-        setHoverSquare(square);
-      } else {
-        setHoverSquare(null);
-      }
-    },
-    [legalTargetSet, selectedSquare]
-  );
-
-  const handleMouseOutSquare = useCallback(() => {
-    setHoverSquare(null);
-  }, []);
-
-  const canDragPiece = useCallback(
-    ({ piece }: PieceHandlerArgs) => {
-      const color = piece.pieceType.startsWith('w') ? 'w' : 'b';
-      return color === sideToMove;
-    },
-    [sideToMove]
-  );
-
-  const squareStyles = useMemo(() => {
-    const styles: Record<string, React.CSSProperties> = {};
-
-    const paintLastMove = (from: string, to: string, toTint?: string) => {
-      styles[from] = { ...styles[from], backgroundColor: LAST_MOVE_TINT };
-      styles[to] = { ...styles[to], backgroundColor: toTint || LAST_MOVE_TINT };
-    };
-
-    if (exploreMove) {
-      paintLastMove(exploreMove.from, exploreMove.to);
-    } else if (currentMove) {
-      paintLastMove(
-        currentMove.from,
-        currentMove.to,
-        CLASSIFICATION_TINT[currentMove.classification]
-      );
+    if (!moveSoundKeyRef.current) {
+      moveSoundKeyRef.current = key;
+      return;
     }
+    if (moveSoundKeyRef.current === key) return;
+    moveSoundKeyRef.current = key;
 
-    if (selectedSquare) {
-      styles[selectedSquare] = {
-        ...styles[selectedSquare],
-        backgroundColor: SELECTED_SQUARE_TINT,
-      };
+    if (move?.san) {
+      sounds.playFromMove({ san: move.san });
     }
-
-    legalTargets.forEach(({ to, isCapture }) => {
-      const existing = styles[to] || {};
-      if (hoverSquare === to) {
-        // Chess.com: yellow wash replaces the gray hint on hover.
-        styles[to] = {
-          ...existing,
-          backgroundColor: HOVER_LEGAL_TINT,
-          backgroundImage: 'none',
-          cursor: 'pointer',
-        };
-        return;
-      }
-
-      styles[to] = {
-        ...existing,
-        backgroundImage: isCapture ? LEGAL_CAPTURE_RING : LEGAL_MOVE_DOT,
-        backgroundSize: '100% 100%',
-        backgroundRepeat: 'no-repeat',
-        cursor: 'pointer',
-      };
-    });
-
-    return styles;
-  }, [currentMove, exploreMove, hoverSquare, legalTargets, selectedSquare]);
+  }, [currentMove, currentMoveIndex, exploreMove, explorePly, isExploring, sounds]);
 
   const stepExploreBack = useCallback(() => {
     if (!isExploring) return;
@@ -1278,48 +1089,9 @@ const GameReviewPage: React.FC = () => {
               <div className="review-chessboard h-full w-full overflow-hidden rounded-sm border border-[#8b5a2b]/70 shadow-elevated">
                 <Chessboard
                   options={{
-                    position: positionFen,
+                    ...boardOptions,
                     boardOrientation,
-                    allowDragging: true,
-                    allowDragOffBoard: false,
-                    // Chess.com: click selects; a few px starts a drag.
-                    dragActivationDistance: 2,
-                    // Soft ease-out glide after drop / when scrubbing moves.
-                    animationDurationInMs: 200,
-                    showAnimations: true,
-                    canDragPiece,
-                    onPieceDrag: handlePieceDrag,
-                    onPieceDrop: handlePieceDrop,
-                    onSquareClick: handleSquareClick,
-                    onMouseOverSquare: handleMouseOverSquare,
-                    onMouseOutSquare: handleMouseOutSquare,
-                    showNotation: true,
                     arrows: boardArrows,
-                    squareStyles,
-                    lightSquareStyle: { backgroundColor: BOARD_LIGHT },
-                    darkSquareStyle: { backgroundColor: BOARD_DARK },
-                    lightSquareNotationStyle: { color: BOARD_DARK },
-                    darkSquareNotationStyle: { color: BOARD_LIGHT },
-                    // Chess.com dest preview while dragging.
-                    dropSquareStyle: {
-                      backgroundColor: HOVER_LEGAL_TINT,
-                      boxShadow: 'none',
-                    },
-                    // Subtle lift + soft shadow (Chess.com), not the library's chunky 1.2x.
-                    draggingPieceStyle: {
-                      transform: 'scale(1.05)',
-                      filter: 'drop-shadow(0 8px 12px rgba(0, 0, 0, 0.28))',
-                      cursor: 'grabbing',
-                    },
-                    draggingPieceGhostStyle: {
-                      opacity: 0.35,
-                    },
-                    boardStyle: {
-                      borderRadius: '2px',
-                      width: '100%',
-                      height: '100%',
-                      cursor: selectedSquare ? 'pointer' : 'default',
-                    },
                   }}
                 />
               </div>

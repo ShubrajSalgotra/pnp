@@ -166,6 +166,44 @@
   }
 }
 
+@keyframes puzzle-celebrate-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes puzzle-confetti-fall {
+  0% {
+    transform: translate3d(0, -12%, 0) rotate(0deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--drift), 120%, 0) rotate(220deg);
+    opacity: 0;
+  }
+}
+
+.puzzle-celebrate-panel {
+  animation: puzzle-celebrate-pop 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.puzzle-confetti span {
+  position: absolute;
+  top: -10%;
+  width: 0.45rem;
+  height: 0.7rem;
+  border-radius: 2px;
+  animation: puzzle-confetti-fall 1.5s ease-in forwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .achievement-track {
     animation: none;
@@ -175,5 +213,10 @@
     animation: none;
     background-image: none;
     @apply bg-slate-200;
+  }
+
+  .puzzle-celebrate-panel,
+  .puzzle-confetti span {
+    animation: none;
   }
 }

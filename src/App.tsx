@@ -10,10 +10,12 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import GameAnalysisPage from './pages/GameAnalysisPage';
+import OpponentPracticePage from './pages/OpponentPracticePage';
 import GameReviewPage from './pages/GameReviewPage';
 import ReportsPage from './pages/ReportsPage';
 import PuzzlesPage from './pages/PuzzlesPage';
 import ProfilePage from './pages/ProfilePage';
+import PremiumPage from './pages/PremiumPage';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -87,6 +89,15 @@ const AppShell: React.FC = () => {
           />
 
           <Route
+            path="/analyze/practice"
+            element={
+              <ProtectedRoute>
+                <OpponentPracticePage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/puzzles"
             element={
               <ProtectedRoute>
@@ -109,6 +120,15 @@ const AppShell: React.FC = () => {
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/premium"
+            element={
+              <ProtectedRoute>
+                <PremiumPage />
               </ProtectedRoute>
             }
           />

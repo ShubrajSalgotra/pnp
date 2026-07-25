@@ -80,7 +80,7 @@ const PuzzlesPage: React.FC = () => {
           { icon: <Swords className="h-4 w-4" />, title: 'Fix weaknesses', text: 'Mine your last 20 games for long thinks and blunders, then replay those exact moments.' },
           { icon: <Sparkles className="h-4 w-4" />, title: 'Session flow', text: 'Hints, resets, and next puzzles are one-click and fast.' },
           { icon: <Trophy className="h-4 w-4" />, title: 'Progress streaks', text: 'Keep momentum with streak and solved tracking.' },
-          { icon: <Brain className="h-4 w-4" />, title: 'Openings & endgames', text: 'Starts at your Chess.com / Lichess puzzle rating, then climbs after streaks.' },
+          { icon: <Brain className="h-4 w-4" />, title: 'Openings & endgames', text: 'Starts at your puzzle rating, then climbs after streaks.' },
         ].map((item) => (
           <div key={item.title} className="grid gap-2 py-3 sm:grid-cols-[auto_1fr] sm:items-center">
             <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100/80 text-primary-700 dark:bg-primary-500/15 dark:text-primary-300">{item.icon}</div>
@@ -100,7 +100,7 @@ const PuzzlesPage: React.FC = () => {
           <div>
             <h2 className="font-semibold text-slate-900 dark:text-white">Sync a chess account for weakness puzzles</h2>
             <p className="text-sm text-slate-700 dark:text-slate-300">
-              Fix My Weaknesses needs your Lichess or Chess.com games. Open reports to connect an account, then come back to replay your own blunders and long thinks.
+              Fix My Weaknesses needs your chess games. Open reports to connect an account, then come back to replay your own blunders and long thinks.
             </p>
             <Button type="button" variant="outline" size="sm" className="mt-3 cursor-pointer" onClick={() => navigate('/reports')}>
               Open reports
