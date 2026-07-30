@@ -95,6 +95,18 @@ class GameImportService {
     return moves;
   }
 
+  private parseLichessTimestampMs(headers: Record<string, string>): number | undefined {
+    // Prefer precise UTC tags when present.
+    const utcDate = headers.UTCDate || headers.Date;
+    if (!utcDate) return undefined;
+
+    const datePart = utcDate.replace(/\./g, '-');
+    const timePart = headers.UTCTime || '00:00:00';
+    const parsed = Date.parse(`${datePart}T${timePart}Z`);
+    if (!Number.isFinite(parsed)) return undefined;
+    return parsed;
+  }
+
   private async fetchLichessGames(
     username: string,
     count = 20,
@@ -102,8 +114,9 @@ class GameImportService {
     allGames = false
   ): Promise<ChessGame[]> {
     const allFetched: ChessGame[] = [];
+    const seenIds = new Set<string>();
     const maxPerRequest = 100; // Lichess API limit per request
-    let since: number | undefined;
+    let until: number | undefined;
     const target = allGames ? Number.POSITIVE_INFINITY : count;
     
     console.log(
@@ -122,8 +135,8 @@ class GameImportService {
         url += `&rated=${rated}`;
       }
       
-      if (since) {
-        url += `&until=${since}`;
+      if (until) {
+        url += `&until=${until}`;
       }
       
       const response = await fetch(url, {
@@ -155,17 +168,27 @@ class GameImportService {
       }
       
       const parsedGames = this.parseLichessGames(pgnGames);
-      allFetched.push(...parsedGames);
+      let added = 0;
+      for (const game of parsedGames) {
+        if (seenIds.has(game.id)) continue;
+        seenIds.add(game.id);
+        allFetched.push(game);
+        added += 1;
+      }
       
-      // Set since timestamp for next request (get older games)
-      if (parsedGames.length > 0) {
-        const lastGame = parsedGames[parsedGames.length - 1];
-        const lastGameDate = new Date(lastGame.date);
-        since = lastGameDate.getTime();
+      // Page older than the oldest game in this batch (Lichess `until` is exclusive ms).
+      const oldest = parsedGames[parsedGames.length - 1];
+      const oldestHeaders = this.parsePgnHeaders(oldest?.pgn || '');
+      const oldestMs = this.parseLichessTimestampMs(oldestHeaders);
+      if (oldestMs != null) {
+        until = oldestMs;
+      } else if (oldest?.date) {
+        const fallback = Date.parse(oldest.date.replace(/\./g, '-'));
+        until = Number.isFinite(fallback) ? fallback : until;
       }
 
-      // Fewer games than requested means we've reached the end of history
-      if (parsedGames.length < remainingCount) {
+      // No new unique games or fewer than requested ⇒ end of history
+      if (added === 0 || parsedGames.length < remainingCount) {
         break;
       }
       
@@ -253,23 +276,20 @@ class GameImportService {
       return [];
     }
 
-    // Fetch games from archives (newest first). Full history uses every archive.
+    // Newest first. Keep walking older months until we have enough games
+    // (or exhaust history). Previously we only opened ~3 recent archives, which
+    // returned far fewer than requested when the opponent was recently inactive.
+    const archivesNewestFirst = [...archives].reverse();
     const fetchedGames: any[] = [];
-    const archivesToFetch = allGames
-      ? [...archives].reverse()
-      : archives.slice(-Math.min(
-          Math.max(3, Math.ceil(count / 50)),
-          archives.length
-        )).reverse();
     
     console.log(
       allGames
-        ? `Fetching ALL games from ${archivesToFetch.length} Chess.com archives for ${username} (rated: ${rated})`
-        : `Fetching from ${archivesToFetch.length} archives to get ${count} games from Chess.com for ${username} (rated: ${rated})`
+        ? `Fetching ALL games from ${archivesNewestFirst.length} Chess.com archives for ${username} (rated: ${rated})`
+        : `Fetching Chess.com archives newest-first until ${count} games for ${username} (rated: ${rated})`
     );
     
-    for (let archiveIndex = 0; archiveIndex < archivesToFetch.length; archiveIndex++) {
-      const archive = archivesToFetch[archiveIndex];
+    for (let archiveIndex = 0; archiveIndex < archivesNewestFirst.length; archiveIndex++) {
+      const archive = archivesNewestFirst[archiveIndex];
       if (!allGames && fetchedGames.length >= count) break;
       
       try {
@@ -277,13 +297,12 @@ class GameImportService {
         
         if (!gamesResponse.ok) {
           console.warn(`Failed to fetch archive: ${archive}`);
-          continue; // Skip this archive and try the next one
+          continue;
         }
 
         const gamesData = await gamesResponse.json();
         const games = gamesData.games || [];
         
-        // Filter by rated status if specified, then sort by date (newest first)
         let filteredGames = games;
         if (rated !== undefined) {
           filteredGames = games.filter((game: any) => 
@@ -291,15 +310,19 @@ class GameImportService {
           );
         }
         
-        const sortedGames = filteredGames
-          .sort((a: any, b: any) => b.end_time - a.end_time);
+        fetchedGames.push(
+          ...filteredGames.sort((a: any, b: any) => b.end_time - a.end_time)
+        );
+
+        console.log(
+          `Chess.com: ${fetchedGames.length} matching games after ${archiveIndex + 1}/${archivesNewestFirst.length} archives`
+        );
+
+        if (!allGames && fetchedGames.length >= count) {
+          break;
+        }
         
-        fetchedGames.push(...sortedGames);
-        
-        // Add a small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 100));
-        
-        console.log(`Chess.com: Fetched ${fetchedGames.length} games so far from ${archiveIndex + 1}/${archivesToFetch.length} archives`);
       } catch (error) {
         console.warn(`Error fetching archive ${archive}:`, error);
         continue;
@@ -307,12 +330,12 @@ class GameImportService {
     }
 
     // Remove duplicates; optionally cap to the requested count
-    const uniqueGames = fetchedGames.filter((game, index, self) => 
-      index === self.findIndex(g => g.uuid === game.uuid)
-    );
+    const uniqueGames = fetchedGames
+      .filter((game, index, self) => index === self.findIndex((g) => g.uuid === game.uuid))
+      .sort((a: any, b: any) => b.end_time - a.end_time);
     const selectedGames = allGames ? uniqueGames : uniqueGames.slice(0, count);
 
-    console.log(`Chess.com processed ${fetchedGames.length} games, ${selectedGames.length} unique games`);
+    console.log(`Chess.com processed ${fetchedGames.length} games, returning ${selectedGames.length}`);
 
     return selectedGames.map((game: any, index: number) => {
       const headers = this.parsePgnHeaders(game.pgn || '');

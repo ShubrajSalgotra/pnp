@@ -29,21 +29,34 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useChessboardInteraction } from '../hooks/useChessboardInteraction';
 import { useChessSounds } from '../hooks/useChessSounds';
-import { puzzleService } from '../services/puzzleService';
-import { userDataService } from '../services/userDataService';
-import { DEFAULT_PUZZLE_PROGRESS } from '../types/userData';
-import { classificationMeta, formatSeconds, isImplausibleFen } from '../utils/gameReviewAnalysis';
+import { classificationMeta, formatEval, formatSeconds, isImplausibleFen } from '../utils/gameReviewAnalysis';
 import {
   BoardLastMove,
   HINT_SQUARE_TINT,
   WRONG_MOVE_TINT,
+  tryPlayMove,
 } from '../utils/chessboardTheme';
+import { puzzleService } from '../services/puzzleService';
+import { stockfishService } from '../services/stockfishService';
+import { userDataService } from '../services/userDataService';
+import { DEFAULT_PUZZLE_PROGRESS } from '../types/userData';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
 
 const OPPONENT_REPLY_DELAY_MS = 420;
+const EXPLORE_ENGINE_DEPTH = 12;
+const EXPLORE_ARROW_COLORS = ['#15781B', '#65a30d', '#a3e635'];
 const CONFETTI_COLORS = ['#34d399', '#38bdf8', '#fbbf24', '#f472b6', '#a78bfa', '#fb7185'];
+
+type ExploreCandidate = {
+  rank: number;
+  san: string;
+  from: string;
+  to: string;
+  moveUci: string;
+  evaluation: number;
+};
 
 interface PuzzleTrainerProps {
   analysis?: GameAnalysis | null;
@@ -112,7 +125,12 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
   const [hintLevel, setHintLevel] = useState(0);
   const [isSolved, setIsSolved] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [isExploring, setIsExploring] = useState(false);
+  const [explorePlyCount, setExplorePlyCount] = useState(0);
+  const [exploreCandidates, setExploreCandidates] = useState<ExploreCandidate[]>([]);
+  const [exploreEngineLoading, setExploreEngineLoading] = useState(false);
   const [isAwaitingReply, setIsAwaitingReply] = useState(false);
+  const exploreEngineRequestRef = useRef(0);
   const [miningProgress, setMiningProgress] = useState<WeaknessMiningProgress | null>(null);
   const [lastMove, setLastMove] = useState<BoardLastMove | null>(null);
   const [wrongSquare, setWrongSquare] = useState<string | null>(null);
@@ -288,6 +306,10 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
     setHintLevel(0);
     setIsSolved(false);
     setShowCelebration(false);
+    setIsExploring(false);
+    setExplorePlyCount(0);
+    setExploreCandidates([]);
+    setExploreEngineLoading(false);
     setMiningProgress(null);
     setStatus(
       config.category === 'fix-weakness'
@@ -495,8 +517,52 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
     [finishPuzzle, sounds]
   );
 
+  const applyExploreMove = useCallback(
+    (sourceSquare: string, targetSquare: string): boolean => {
+      const beforeFen = chessRef.current.fen();
+      const played = tryPlayMove(beforeFen, sourceSquare, targetSquare);
+      if (!played) {
+        sounds.playIllegal();
+        return false;
+      }
+
+      const promotion = played.san.match(/=([QRBN])/i)?.[1]?.toLowerCase();
+      try {
+        const move = chessRef.current.move({
+          from: played.from,
+          to: played.to,
+          ...(promotion ? { promotion } : {}),
+        });
+        if (!move) {
+          sounds.playIllegal();
+          return false;
+        }
+      } catch {
+        sounds.playIllegal();
+        return false;
+      }
+
+      sounds.playFromMove({
+        san: played.san,
+        captured: played.captured,
+        isCheck: played.isCheck,
+        isCheckmate: played.isCheckmate,
+      });
+      setLastMove({ from: played.from, to: played.to });
+      setFen(chessRef.current.fen());
+      setExplorePlyCount((count) => count + 1);
+      setStatus('Exploring — Stockfish top moves update for this position.');
+      return true;
+    },
+    [sounds]
+  );
+
   const applyPuzzleMove = useCallback(
     (sourceSquare: string, targetSquare: string): boolean => {
+      if (isExploring && isSolved) {
+        return applyExploreMove(sourceSquare, targetSquare);
+      }
+
       const expectedMove = currentPuzzle?.solution[solutionIndex];
 
       if (!currentPuzzle || !expectedMove || isSolved || isLoading || isAwaitingReply) {
@@ -566,9 +632,11 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
+      applyExploreMove,
       currentPuzzle,
       finishPuzzle,
       isAwaitingReply,
+      isExploring,
       isLoading,
       isSolved,
       playOpponentReply,
@@ -591,7 +659,9 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
   const canUndo =
     Boolean(currentPuzzle) &&
     !isLoading &&
-    (isAwaitingReply || (!isSolved && solutionIndex >= 2));
+    (isAwaitingReply ||
+      (isExploring && explorePlyCount > 0) ||
+      (!isSolved && solutionIndex >= 2));
 
   const undoLastMove = () => {
     if (!currentPuzzle || isLoading) return;
@@ -604,6 +674,15 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
       syncLastMoveFromBoard();
       setWrongSquare(null);
       setStatus(weakness ? 'Find the move you missed in this game.' : 'Find the best move.');
+      return;
+    }
+
+    if (isExploring && explorePlyCount > 0) {
+      chessRef.current.undo();
+      setExplorePlyCount((count) => Math.max(0, count - 1));
+      setFen(chessRef.current.fen());
+      syncLastMoveFromBoard();
+      setStatus('Exploring — Stockfish top moves update for this position.');
       return;
     }
 
@@ -630,7 +709,12 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
     });
   };
 
-  const boardEnabled = Boolean(currentPuzzle && !isSolved && !isLoading && !isAwaitingReply);
+  const boardEnabled = Boolean(
+    currentPuzzle &&
+      !isLoading &&
+      !isAwaitingReply &&
+      ((!isSolved && !showCelebration) || isExploring)
+  );
   const extraSquareStyles = useMemo(() => {
     const styles: Record<string, React.CSSProperties> = {};
 
@@ -658,6 +742,14 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
   });
 
   const boardArrows = useMemo(() => {
+    if (isExploring && exploreCandidates.length > 0) {
+      return exploreCandidates.map((candidate, index) => ({
+        startSquare: candidate.from,
+        endSquare: candidate.to,
+        color: EXPLORE_ARROW_COLORS[index] || EXPLORE_ARROW_COLORS[EXPLORE_ARROW_COLORS.length - 1],
+      }));
+    }
+
     if (hintLevel < 2 || !expectedMove || isSolved || isAwaitingReply) return [];
     return [
       {
@@ -666,7 +758,69 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
         color: '#15781B',
       },
     ];
-  }, [expectedMove, hintLevel, isAwaitingReply, isSolved]);
+  }, [expectedMove, exploreCandidates, hintLevel, isAwaitingReply, isExploring, isSolved]);
+
+  useEffect(() => {
+    if (!isExploring || !currentPuzzle || showCelebration) {
+      setExploreCandidates([]);
+      setExploreEngineLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    const requestId = ++exploreEngineRequestRef.current;
+    const analyzeFen = fen;
+
+    setExploreEngineLoading(true);
+
+    (async () => {
+      try {
+        const candidates = await stockfishService.getCandidateMoves(
+          analyzeFen,
+          EXPLORE_ENGINE_DEPTH,
+          3
+        );
+        if (cancelled || requestId !== exploreEngineRequestRef.current) return;
+
+        const mapped: ExploreCandidate[] = [];
+        candidates.forEach((candidate, index) => {
+          const from = candidate.moveUci.slice(0, 2);
+          const to = candidate.moveUci.slice(2, 4);
+          const promotion = candidate.moveUci[4];
+          try {
+            const probe = new Chess(analyzeFen);
+            const move = probe.move({
+              from,
+              to,
+              ...(promotion ? { promotion } : {}),
+            });
+            if (!move) return;
+            mapped.push({
+              rank: index + 1,
+              san: move.san,
+              from: move.from,
+              to: move.to,
+              moveUci: candidate.moveUci,
+              evaluation: candidate.evaluation,
+            });
+          } catch {
+            // Skip illegal / mismatched engine lines.
+          }
+        });
+
+        setExploreCandidates(mapped);
+        setExploreEngineLoading(false);
+      } catch {
+        if (cancelled || requestId !== exploreEngineRequestRef.current) return;
+        setExploreCandidates([]);
+        setExploreEngineLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentPuzzle, fen, isExploring, showCelebration]);
 
   useEffect(() => {
     return () => {
@@ -730,6 +884,10 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
     setHintLevel(0);
     setIsSolved(false);
     setShowCelebration(false);
+    setIsExploring(false);
+    setExplorePlyCount(0);
+    setExploreCandidates([]);
+    setExploreEngineLoading(false);
     setWrongSquare(null);
     setStatus(weakness ? 'Find the move you missed in this game.' : 'Find the best move.');
     preparePuzzle(currentPuzzle);
@@ -780,6 +938,10 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
     setHintLevel(0);
     setIsSolved(false);
     setShowCelebration(false);
+    setIsExploring(false);
+    setExplorePlyCount(0);
+    setExploreCandidates([]);
+    setExploreEngineLoading(false);
     setMiningProgress(null);
     setStatus('Choose a training target to begin.');
   };
@@ -872,9 +1034,11 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
             <CardContent className="space-y-3">
               <div
                 className={`flex items-center justify-center gap-3 rounded-xl px-4 py-2 text-center text-sm font-medium ${
-                  showCelebration || isSolved
+                  showCelebration || (isSolved && !isExploring)
                     ? 'bg-emerald-500/15 text-emerald-900 ring-1 ring-emerald-400/40 dark:bg-emerald-400/10 dark:text-emerald-100 dark:ring-emerald-400/30'
-                    : wrongSquare
+                    : isExploring
+                      ? 'bg-sky-500/15 text-sky-900 ring-1 ring-sky-400/40 dark:bg-sky-400/10 dark:text-sky-100 dark:ring-sky-400/30'
+                      : wrongSquare
                       ? 'bg-red-500/15 text-red-900 ring-1 ring-red-400/40 dark:bg-red-400/10 dark:text-red-100 dark:ring-red-400/30'
                       : isAwaitingReply
                         ? 'bg-amber-500/15 text-amber-900 ring-1 ring-amber-400/40 dark:bg-amber-400/10 dark:text-amber-100 dark:ring-amber-400/30'
@@ -949,7 +1113,12 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
                           type="button"
                           variant="outline"
                           className="flex-1 cursor-pointer"
-                          onClick={() => setShowCelebration(false)}
+                          onClick={() => {
+                            setShowCelebration(false);
+                            setIsExploring(true);
+                            setExplorePlyCount(0);
+                            setStatus('Exploring — drag pieces; Stockfish shows the top 3 moves.');
+                          }}
                         >
                           Stay here
                         </Button>
@@ -1086,6 +1255,54 @@ const PuzzleTrainer: React.FC<PuzzleTrainerProps> = ({
               <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                 {status}
               </div>
+
+              {isExploring && (
+                <div className="space-y-2 rounded-xl border border-emerald-200/80 bg-emerald-50/80 p-3 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-800 dark:text-emerald-200">
+                      Stockfish top moves
+                    </div>
+                    {exploreEngineLoading && (
+                      <span className="inline-flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-300">
+                        <RefreshCw className="h-3 w-3 animate-spin" />
+                        Analyzing…
+                      </span>
+                    )}
+                  </div>
+                  {exploreCandidates.length > 0 ? (
+                    <ol className="space-y-1.5">
+                      {exploreCandidates.map((candidate, index) => (
+                        <li
+                          key={candidate.moveUci}
+                          className="flex items-center justify-between gap-3 rounded-lg bg-white/80 px-3 py-2 text-sm dark:bg-slate-900/60"
+                        >
+                          <span className="inline-flex items-center gap-2 font-medium text-slate-900 dark:text-white">
+                            <span
+                              className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold text-white"
+                              style={{ backgroundColor: EXPLORE_ARROW_COLORS[index] }}
+                            >
+                              {candidate.rank}
+                            </span>
+                            <span className="font-mono">{candidate.san}</span>
+                          </span>
+                          <span className="font-mono text-xs font-semibold text-slate-600 dark:text-slate-300">
+                            {formatEval(candidate.evaluation)}
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p className="text-xs text-emerald-800/80 dark:text-emerald-200/80">
+                      {exploreEngineLoading
+                        ? 'Calculating candidate moves…'
+                        : 'No engine moves for this position.'}
+                    </p>
+                  )}
+                  <p className="text-[11px] leading-4 text-emerald-800/70 dark:text-emerald-200/70">
+                    Arrows on the board match these lines. Eval is white-centric.
+                  </p>
+                </div>
+              )}
 
               {error && (
                 <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">

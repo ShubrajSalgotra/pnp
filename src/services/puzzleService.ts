@@ -45,12 +45,19 @@ export interface PuzzleSessionContext {
 }
 
 class PuzzleService {
+  /** Avoid repeating the same Lichess puzzle within a training session. */
+  private seenPuzzleIds = new Set<string>();
+
   getCategoryLabel(category: PuzzleTrainingCategory): string {
     return CATEGORY_LABELS[category];
   }
 
   getStreakLevelUp(): number {
     return STREAK_LEVEL_UP;
+  }
+
+  clearSeenPuzzles() {
+    this.seenPuzzleIds.clear();
   }
 
   /** Preview config for category cards (no network). */
@@ -71,6 +78,7 @@ class PuzzleService {
     category: PuzzleTrainingCategory,
     context: PuzzleSessionContext = {}
   ): Promise<PuzzleTrainingConfig> {
+    this.clearSeenPuzzles();
     const preview = this.buildTrainingConfig(category, context.analysis);
     if (category === 'fix-weakness') {
       return preview;
@@ -109,7 +117,17 @@ class PuzzleService {
     }
 
     const lichessPuzzle = await this.fetchLichessPuzzleNearRating(config, context.signal);
+    this.rememberPuzzle(lichessPuzzle.puzzle.id);
     return this.toTrainerPuzzle(lichessPuzzle);
+  }
+
+  private rememberPuzzle(id: string) {
+    this.seenPuzzleIds.add(id);
+    // Keep memory bounded so sparse themes can eventually reuse older puzzles.
+    if (this.seenPuzzleIds.size > 80) {
+      const oldest = this.seenPuzzleIds.values().next().value;
+      if (oldest) this.seenPuzzleIds.delete(oldest);
+    }
   }
 
   async fetchPlayerPuzzleRating(
@@ -189,23 +207,56 @@ class PuzzleService {
     config: PuzzleTrainingConfig,
     signal?: AbortSignal
   ): Promise<LichessPuzzleResponse> {
-    const candidates = await this.fetchLichessPuzzleBatch(config, signal);
-    if (candidates.length === 0) {
-      throw new Error('Could not load a Lichess puzzle for this training target.');
-    }
+    const ratingWindow = 180;
+    const maxAttempts = 4;
+    let pool: LichessPuzzleResponse[] = [];
 
-    let best = candidates[0];
-    let bestDistance = Math.abs(best.puzzle.rating - config.targetRating);
-
-    for (let i = 1; i < candidates.length; i += 1) {
-      const distance = Math.abs(candidates[i].puzzle.rating - config.targetRating);
-      if (distance < bestDistance) {
-        best = candidates[i];
-        bestDistance = distance;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const batch = await this.fetchLichessPuzzleBatch(config, signal);
+      for (const item of batch) {
+        if (!this.seenPuzzleIds.has(item.puzzle.id)) {
+          pool.push(item);
+        }
       }
+
+      // Deduplicate by puzzle id while preserving order.
+      const byId = new Map<string, LichessPuzzleResponse>();
+      pool.forEach((item) => byId.set(item.puzzle.id, item));
+      pool = Array.from(byId.values());
+
+      if (pool.length > 0) break;
+
+      // Anonymous batch can repeat; fall back to single next puzzles.
+      for (let i = 0; i < 5; i += 1) {
+        const single = await this.fetchLichessPuzzle(config, signal);
+        if (!this.seenPuzzleIds.has(single.puzzle.id)) {
+          pool.push(single);
+          break;
+        }
+      }
+
+      if (pool.length > 0) break;
     }
 
-    return best;
+    if (pool.length === 0) {
+      // Last resort: allow a previously seen puzzle rather than failing the session.
+      const fallback = await this.fetchLichessPuzzle(config, signal);
+      return fallback;
+    }
+
+    const nearTarget = pool.filter(
+      (item) => Math.abs(item.puzzle.rating - config.targetRating) <= ratingWindow
+    );
+    const candidates = nearTarget.length > 0 ? nearTarget : pool;
+
+    // Prefer closer ratings, but pick randomly among the closest few for variety.
+    candidates.sort(
+      (a, b) =>
+        Math.abs(a.puzzle.rating - config.targetRating) -
+        Math.abs(b.puzzle.rating - config.targetRating)
+    );
+    const top = candidates.slice(0, Math.min(5, candidates.length));
+    return top[Math.floor(Math.random() * top.length)];
   }
 
   private async fetchLichessPuzzleBatch(
