@@ -235,11 +235,14 @@ class ProfileAnalysisService {
   async setupProfile(
     request: GameReportRequest & { userId: string; generateReport?: boolean }
   ): Promise<ProfileRefreshResult> {
+    const syncAllGames = request.allGames !== false;
+
     const profile: PlayerAnalysisProfile = {
       userId: request.userId,
       platform: request.platform,
       username: request.username,
       gameLimit: request.gameCount || DEFAULT_GAME_LIMIT,
+      syncAllGames,
       rated: request.rated,
       games: [],
       analyzedGameIds: [],
@@ -251,7 +254,7 @@ class ProfileAnalysisService {
     await this.saveProfile(profile);
 
     const synced = await this.syncProfileGames(request.userId, {
-      allGames: request.allGames,
+      allGames: syncAllGames,
       replaceExisting: true,
     });
 
@@ -266,10 +269,11 @@ class ProfileAnalysisService {
   }
 
   /**
-   * Dashboard "Refresh profile": pull only recent/new games. Never generates a report.
+   * Dashboard "Refresh profile": pull the player's full game history into Firebase.
+   * Never generates a report.
    */
   async refreshProfile(userId: string): Promise<ProfileRefreshResult> {
-    return this.syncProfileGames(userId);
+    return this.syncProfileGames(userId, { allGames: true });
   }
 
   /**
@@ -284,6 +288,9 @@ class ProfileAnalysisService {
       throw new Error('Please add your chess username first.');
     }
 
+    // Prefer an explicit option, then the saved profile flag, then full history.
+    const allGames = options?.allGames ?? profile.syncAllGames !== false;
+
     const importCount = Math.min(
       MAX_IMPORT_COUNT,
       Math.max(SYNC_BATCH_SIZE, Math.min(profile.gameLimit || SYNC_BATCH_SIZE, MAX_IMPORT_COUNT))
@@ -292,9 +299,9 @@ class ProfileAnalysisService {
     const latestGames = await gameImportService.importGames({
       platform: profile.platform,
       username: profile.username,
-      count: options?.allGames ? undefined : importCount,
+      count: allGames ? undefined : importCount,
       rated: profile.rated,
-      allGames: Boolean(options?.allGames),
+      allGames,
     });
 
     const knownGameIds = new Set([
@@ -309,6 +316,7 @@ class ProfileAnalysisService {
 
     const nextProfile: PlayerAnalysisProfile = {
       ...profile,
+      syncAllGames: allGames || Boolean(profile.syncAllGames),
       games: mergedGames,
       lastCheckedAt: new Date().toISOString(),
     };

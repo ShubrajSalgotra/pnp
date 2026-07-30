@@ -402,7 +402,7 @@ const DashboardPage: React.FC = () => {
             username,
             gameCount: request.gameCount,
             rated: request.rated,
-            allGames: request.allGames,
+            allGames: request.allGames !== false,
             generateReport: true,
           })
         : await profileAnalysisService.generateProfileReport(currentUser.id, {
@@ -430,19 +430,27 @@ const DashboardPage: React.FC = () => {
     setIsRefreshing(true);
     setError(null);
     setMessage(null);
-    setProgress(null);
+    setProgress({
+      stage: 'fetching',
+      message: 'Importing your full chess.com / Lichess game history…',
+      progress: 15,
+    });
 
     try {
       const result = await profileAnalysisService.refreshProfile(currentUser.id);
       setProfile(result.profile);
+      const total = result.profile.games.length;
       setMessage(
-        result.reusedCache || result.newGamesCount === 0
-          ? 'No new games found. Your archive is up to date.'
-          : `Synced ${result.newGamesCount} new game${result.newGamesCount === 1 ? '' : 's'}. Generate a report when you want an updated analysis.`
+        total === 0
+          ? 'No games found for this account.'
+          : result.newGamesCount === 0
+            ? `Archive up to date · ${total} game${total === 1 ? '' : 's'} stored in Firebase.`
+            : `Synced ${result.newGamesCount} new game${result.newGamesCount === 1 ? '' : 's'} · ${total} total now stored in Firebase.`
       );
     } catch (refreshError) {
       setError(refreshError instanceof Error ? refreshError.message : 'Could not refresh games.');
     } finally {
+      setProgress(null);
       setIsRefreshing(false);
     }
   };

@@ -11,7 +11,6 @@ import {
   getAdditionalUserInfo
 } from 'firebase/auth';
 import { auth } from '../services/firebase';
-import { profileAnalysisService } from '../services/profileAnalysisService';
 import { userDataService } from '../services/userDataService';
 import { userProfileService } from '../services/userProfileService';
 import { User } from '../types';
@@ -246,9 +245,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
-      
+
       if (user) {
-        // Every signed-in session upserts Auth identity into Firestore.
+        // Paint immediately from local cache so reloads aren't blocked on network.
+        const cached = userProfileService.getCachedProfile(user.uid);
+        if (cached) {
+          applyUser({
+            ...cached,
+            displayName: user.displayName || cached.displayName,
+            email: user.email || cached.email,
+            avatarUrl: user.photoURL ?? cached.avatarUrl,
+          });
+          setLoading(false);
+        }
+
+        // Upsert Auth identity into Firestore (may refresh fields after first paint).
         const userData = await syncProfile(user, {
           displayName: user.displayName || undefined,
           email: user.email || undefined,
@@ -256,25 +267,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
         applyUser(userData);
 
-        // Push any browser-local caches (games/reports/puzzles) into Firestore.
-        try {
-          await userDataService.migrateLocalCachesToCloud(user.uid);
-          const localProfile = profileAnalysisService.getProfile(user.uid);
-          if (localProfile) {
-            await profileAnalysisService.saveProfile(localProfile);
-          }
-        } catch (migrateError) {
-          console.error('Local→Firestore migration failed:', migrateError);
-        }
-        
         const token = await user.getIdToken();
         localStorage.setItem('authToken', token);
+
+        // Local→cloud migration is best-effort and must not block first paint.
+        void (async () => {
+          try {
+            await userDataService.migrateLocalCachesToCloud(user.uid);
+            const { profileAnalysisService } = await import('../services/profileAnalysisService');
+            const localProfile = profileAnalysisService.getProfile(user.uid);
+            if (localProfile) {
+              await profileAnalysisService.saveProfile(localProfile);
+            }
+          } catch (migrateError) {
+            console.error('Local→Firestore migration failed:', migrateError);
+          }
+        })();
       } else {
         currentUserRef.current = null;
         setCurrentUser(null);
         localStorage.removeItem('authToken');
       }
-      
+
       setLoading(false);
     });
 
@@ -297,7 +311,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {loading ? (
+        <div className="app-canvas flex min-h-screen items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-primary-600" />
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 };

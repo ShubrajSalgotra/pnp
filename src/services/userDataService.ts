@@ -11,8 +11,8 @@ import {
 } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadString } from 'firebase/storage';
 import { db, storage } from './firebase';
-import { ChessReport } from '../types/report';
-import { GameAnalysis } from '../types/analysis';
+import type { ChessReport } from '../types/report';
+import type { GameAnalysis } from '../types/analysis';
 import {
   DEFAULT_PUZZLE_PROGRESS,
   DEFAULT_USER_PREFERENCES,
@@ -22,7 +22,7 @@ import {
   StoredGameReview,
   UserPreferences,
 } from '../types/userData';
-import { ReviewAnalysis } from '../utils/gameReviewAnalysis';
+import type { ReviewAnalysis } from '../utils/gameReviewAnalysis';
 
 const toPlain = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
