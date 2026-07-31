@@ -24,6 +24,16 @@ const MAX_IMPORT_COUNT = 500;
 const FIRESTORE_BATCH_LIMIT = 400;
 
 class ProfileAnalysisService {
+  private progressCallback?: (progress: ReportGenerationProgress) => void;
+
+  private updateProgress(
+    stage: ReportGenerationProgress['stage'],
+    message: string,
+    progress: number
+  ) {
+    this.progressCallback?.({ stage, message, progress });
+  }
+
   private storageKey(userId: string) {
     return `player-analysis-profile-${userId}`;
   }
@@ -115,6 +125,7 @@ class ProfileAnalysisService {
   private async writeGamesSubcollection(userId: string, games: ChessGame[]): Promise<void> {
     const existing = await getDocs(this.gamesCollection(userId));
     const keepIds = new Set(games.map((game) => game.id));
+    const existingIds = new Set(existing.docs.map((item) => item.id));
     const toDelete = existing.docs.filter((item) => !keepIds.has(item.id));
 
     for (let i = 0; i < toDelete.length; i += FIRESTORE_BATCH_LIMIT) {
@@ -123,9 +134,14 @@ class ProfileAnalysisService {
       await batch.commit();
     }
 
-    for (let i = 0; i < games.length; i += FIRESTORE_BATCH_LIMIT) {
+    // Finished games never change, so only write the ones Firestore does not have yet.
+    // Rewriting the whole archive on every save made "Saving your report…" take
+    // as long as the analysis itself for players with large histories.
+    const toWrite = games.filter((game) => !existingIds.has(game.id));
+
+    for (let i = 0; i < toWrite.length; i += FIRESTORE_BATCH_LIMIT) {
       const batch = writeBatch(db);
-      games.slice(i, i + FIRESTORE_BATCH_LIMIT).forEach((game) => {
+      toWrite.slice(i, i + FIRESTORE_BATCH_LIMIT).forEach((game) => {
         batch.set(doc(this.gamesCollection(userId), game.id), this.toFirestoreData(game), { merge: true });
       });
       await batch.commit();
@@ -180,7 +196,12 @@ class ProfileAnalysisService {
   }
 
   async saveProfile(profile: PlayerAnalysisProfile) {
-    localStorage.setItem(this.storageKey(profile.userId), JSON.stringify(profile));
+    try {
+      localStorage.setItem(this.storageKey(profile.userId), JSON.stringify(profile));
+    } catch (cacheError) {
+      // Quota / private mode — never block Firestore persistence on cache failure.
+      console.warn('Could not cache profile in localStorage:', cacheError);
+    }
 
     try {
       await setDoc(this.firestoreRef(profile.userId), this.toFirestoreData(this.profileMetadata(profile)), {
@@ -225,17 +246,18 @@ class ProfileAnalysisService {
   }
 
   setProgressCallback(callback: (progress: ReportGenerationProgress) => void) {
+    this.progressCallback = callback;
     reportService.setProgressCallback(callback);
   }
 
   /**
    * First-time profile setup (registration / connect account).
-   * Can optionally pull full history, then optionally generate a report.
+   * Full history only when `allGames: true` (registration / Refresh).
    */
   async setupProfile(
     request: GameReportRequest & { userId: string; generateReport?: boolean }
   ): Promise<ProfileRefreshResult> {
-    const syncAllGames = request.allGames !== false;
+    const syncAllGames = request.allGames === true;
 
     const profile: PlayerAnalysisProfile = {
       userId: request.userId,
@@ -250,6 +272,14 @@ class ProfileAnalysisService {
       lastCheckedAt: null,
       lastAnalyzedAt: null
     };
+
+    this.updateProgress(
+      'fetching',
+      syncAllGames
+        ? 'Importing your full game history (can take a few minutes)…'
+        : `Fetching your latest ${profile.gameLimit} games…`,
+      8
+    );
 
     await this.saveProfile(profile);
 
@@ -273,6 +303,11 @@ class ProfileAnalysisService {
    * Never generates a report.
    */
   async refreshProfile(userId: string): Promise<ProfileRefreshResult> {
+    this.updateProgress(
+      'fetching',
+      'Importing your full game history (can take a few minutes)…',
+      10
+    );
     return this.syncProfileGames(userId, { allGames: true });
   }
 
@@ -288,12 +323,27 @@ class ProfileAnalysisService {
       throw new Error('Please add your chess username first.');
     }
 
-    // Prefer an explicit option, then the saved profile flag, then full history.
-    const allGames = options?.allGames ?? profile.syncAllGames !== false;
+    // Explicit option wins. Never imply full-history from a stale profile flag —
+    // that made "Generate report" hang for minutes with no UI updates.
+    const allGames = options?.allGames === true;
 
     const importCount = Math.min(
       MAX_IMPORT_COUNT,
-      Math.max(SYNC_BATCH_SIZE, Math.min(profile.gameLimit || SYNC_BATCH_SIZE, MAX_IMPORT_COUNT))
+      Math.max(
+        SYNC_BATCH_SIZE,
+        Math.min(
+          Math.max(profile.gameLimit || DEFAULT_GAME_LIMIT, SYNC_BATCH_SIZE),
+          MAX_IMPORT_COUNT
+        )
+      )
+    );
+
+    this.updateProgress(
+      'fetching',
+      allGames
+        ? 'Downloading full archive from chess.com / Lichess…'
+        : `Fetching up to ${importCount} recent games…`,
+      15
     );
 
     const latestGames = await gameImportService.importGames({
@@ -303,6 +353,12 @@ class ProfileAnalysisService {
       rated: profile.rated,
       allGames,
     });
+
+    this.updateProgress(
+      'fetching',
+      `Saving ${latestGames.games.length} games…`,
+      22
+    );
 
     const knownGameIds = new Set([
       ...profile.games.map((game) => game.id),
@@ -331,26 +387,36 @@ class ProfileAnalysisService {
   }
 
   /**
-   * Manual report generation only — uses games already on the profile
-   * (optionally after a light incremental sync first).
+   * Manual report generation — uses games already on the dashboard only.
+   * Never hits chess.com / Lichess; Refresh profile is for syncing new games.
    */
   async generateProfileReport(
     userId: string,
     request?: Partial<Pick<GameReportRequest, 'gameCount' | 'rated'>>
   ): Promise<ProfileRefreshResult> {
-    // Pick up any brand-new games before analyzing, without re-pulling full history.
-    const synced = await this.syncProfileGames(userId);
-    const profile = synced.profile;
+    this.updateProgress('fetching', 'Loading your saved games…', 8);
 
-    const gameCount = Math.max(
-      1,
-      Math.min(request?.gameCount || profile.gameLimit || DEFAULT_GAME_LIMIT, profile.games.length || DEFAULT_GAME_LIMIT)
-    );
-
-    const gamesToAnalyze = profile.games.slice(0, gameCount);
-    if (gamesToAnalyze.length === 0) {
-      throw new Error('No games available to analyze. Refresh your profile first.');
+    const profile = await this.loadProfile(userId);
+    if (!profile) {
+      throw new Error('Please add your chess username first.');
     }
+
+    if (profile.games.length === 0) {
+      throw new Error('No games on your dashboard yet. Use Refresh profile to import games first.');
+    }
+
+    const requestedCount = Math.max(
+      1,
+      Math.min(request?.gameCount || profile.gameLimit || DEFAULT_GAME_LIMIT, 100)
+    );
+    const gameCount = Math.min(requestedCount, profile.games.length);
+    const gamesToAnalyze = profile.games.slice(0, gameCount);
+
+    this.updateProgress(
+      'analyzing',
+      `Sending ${gamesToAnalyze.length} saved games to your coach (full move lists)…`,
+      28
+    );
 
     const report = await reportService.generateReportFromGamesWithUnifiedPrompts(
       {
@@ -379,12 +445,15 @@ class ProfileAnalysisService {
       lastAnalyzedAt: new Date().toISOString(),
     };
 
+    this.updateProgress('generating', 'Saving your report…', 96);
     await this.saveProfile(analyzedProfile);
+
+    this.updateProgress('complete', 'Report ready!', 100);
 
     return {
       profile: analyzedProfile,
-      newGamesCount: synced.newGamesCount,
-      reusedCache: false,
+      newGamesCount: 0,
+      reusedCache: true,
     };
   }
 

@@ -385,7 +385,11 @@ const DashboardPage: React.FC = () => {
     setIsRefreshing(true);
     setError(null);
     setMessage(null);
-    setProgress(null);
+    setProgress({
+      stage: 'fetching',
+      message: 'Starting report…',
+      progress: 3,
+    });
     profileAnalysisService.setProgressCallback(setProgress);
 
     try {
@@ -395,6 +399,7 @@ const DashboardPage: React.FC = () => {
         profile.username.trim().toLowerCase() !== username.toLowerCase() ||
         profile.platform !== request.platform;
 
+      // Report gen fetches only recent games. Full archive is the Refresh action.
       const result = needsNewProfile
         ? await profileAnalysisService.setupProfile({
             userId: currentUser.id,
@@ -402,7 +407,7 @@ const DashboardPage: React.FC = () => {
             username,
             gameCount: request.gameCount,
             rated: request.rated,
-            allGames: request.allGames !== false,
+            allGames: false,
             generateReport: true,
           })
         : await profileAnalysisService.generateProfileReport(currentUser.id, {
@@ -420,6 +425,8 @@ const DashboardPage: React.FC = () => {
     } catch (setupError) {
       setError(setupError instanceof Error ? setupError.message : 'Could not generate report.');
     } finally {
+      // Without this the progress bar stays pinned at its last value forever.
+      setProgress(null);
       setIsRefreshing(false);
     }
   };
@@ -435,6 +442,7 @@ const DashboardPage: React.FC = () => {
       message: 'Importing your full chess.com / Lichess game history…',
       progress: 15,
     });
+    profileAnalysisService.setProgressCallback(setProgress);
 
     try {
       const result = await profileAnalysisService.refreshProfile(currentUser.id);

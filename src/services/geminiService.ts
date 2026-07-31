@@ -10,12 +10,47 @@ import {
   ReportGenerationError 
 } from '../types/report';
 import { OpponentScoutIntel } from '../types/opponentScout';
+import { computeOpponentGameStats } from '../utils/opponentStats';
+import {
+  CriticalMoment,
+  buildGameEvidence,
+  formatCriticalMoments,
+  formatEvidenceProfile,
+} from '../utils/gameEvidence';
 import { videoRecommendationService } from './videoRecommendationService';
+
+const positiveIntFromEnv = (value: string | undefined, fallback: number): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+/** Ceiling for a single Gemini HTTP request. Without this the UI can spin forever. */
+const REQUEST_TIMEOUT_MS = positiveIntFromEnv(process.env.REACT_APP_GEMINI_TIMEOUT_MS, 100_000);
+/** Ceiling for one logical generation including every retry and model fallback. */
+const TOTAL_GENERATION_BUDGET_MS = positiveIntFromEnv(
+  process.env.REACT_APP_GEMINI_TOTAL_BUDGET_MS,
+  220_000
+);
+/** Longest backoff between retries — the old 30s cap alone blew the whole budget. */
+const MAX_RETRY_DELAY_MS = 6_000;
+
+/**
+ * How to ask a model to skip extended reasoning. Reports are strict JSON and gain nothing
+ * from chain-of-thought, but the knob differs by model generation: gemini-3.x rejects
+ * `thinkingBudget`, and older models do not know `thinkingLevel`. Tried in order.
+ */
+type ThinkingVariant = 'low' | 'zero' | 'none';
+const THINKING_VARIANTS: ThinkingVariant[] = ['low', 'zero', 'none'];
 
 class GeminiService {
   private genAI: GoogleGenerativeAI;
   private model: any;
   private modelNames: string[];
+  /**
+   * Per model, so the unsupported-config probe is paid once per session rather than per
+   * report — and so one model's downgrade does not slow down the others.
+   */
+  private thinkingVariantByModel = new Map<string, ThinkingVariant>();
 
   constructor() {
     const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
@@ -25,32 +60,120 @@ class GeminiService {
     
     this.genAI = new GoogleGenerativeAI(apiKey);
 
+    // Free-tier quota is per model per day, so the chain must span models: when one is
+    // exhausted the next still works. Ordered fastest-verified first.
     const configuredModel = process.env.REACT_APP_GEMINI_MODEL?.trim();
     this.modelNames = Array.from(new Set([
-      configuredModel || 'gemini-2.5-flash',
-      'gemini-flash-lite-latest',
-      'gemini-pro-latest'
+      configuredModel || 'gemini-3.5-flash',
+      'gemini-3.5-flash',
+      'gemini-flash-latest',
+      'gemini-3.6-flash',
+      'gemini-2.5-flash',
+      'gemini-2.0-flash'
     ].filter(Boolean)));
 
     this.model = this.createModel(this.modelNames[0]);
   }
 
-  private createModel(modelName: string): any {
-    return this.genAI.getGenerativeModel({ model: modelName });
+  private generationConfigFor(variant: ThinkingVariant): any {
+    const config: any = {
+      responseMimeType: 'application/json',
+      temperature: 1,
+      maxOutputTokens: 16384,
+    };
+
+    if (variant === 'low') config.thinkingConfig = { thinkingLevel: 'low' };
+    else if (variant === 'zero') config.thinkingConfig = { thinkingBudget: 0 };
+
+    return config;
   }
 
-  private async generateWithPrompt(prompt: string, maxRetries: number = 5): Promise<string> {
+  private createModel(
+    modelName: string,
+    variant: ThinkingVariant = this.thinkingVariantByModel.get(modelName) ?? 'low'
+  ): any {
+    return this.genAI.getGenerativeModel(
+      {
+        model: modelName,
+        generationConfig: this.generationConfigFor(variant),
+      },
+      { timeout: REQUEST_TIMEOUT_MS }
+    );
+  }
+
+  /** Hard ceiling per request — the SDK timeout does not cover a stalled response body. */
+  private async generateOnce(prompt: string): Promise<string> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        reject(
+          new ReportGenerationError(
+            'The AI service did not respond in time. Please try again with fewer games.',
+            'AI_ERROR'
+          )
+        );
+      }, REQUEST_TIMEOUT_MS + 5_000);
+    });
+
+    try {
+      const result = await Promise.race([this.model.generateContent(prompt), timeout]);
+      const response = await (result as any).response;
+      const text = response.text();
+      if (!text || !text.trim()) {
+        throw new ReportGenerationError('The AI returned an empty response.', 'AI_ERROR');
+      }
+      return text;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  /** Runs one model, downgrading the thinking config if this model rejects it. */
+  private async generateWithModel(modelName: string, prompt: string): Promise<string> {
+    const known = this.thinkingVariantByModel.get(modelName) ?? 'low';
+    const startIndex = Math.max(0, THINKING_VARIANTS.indexOf(known));
+
+    for (let i = startIndex; i < THINKING_VARIANTS.length; i++) {
+      const variant = THINKING_VARIANTS[i];
+      this.model = this.createModel(modelName, variant);
+
+      try {
+        const text = await this.generateOnce(prompt);
+        this.thinkingVariantByModel.set(modelName, variant);
+        return text;
+      } catch (error: any) {
+        const canDowngrade = i < THINKING_VARIANTS.length - 1;
+        if (!this.isInvalidArgumentError(error) || !canDowngrade) throw error;
+        console.warn(
+          `Model ${modelName} rejected thinking variant "${variant}"; trying "${THINKING_VARIANTS[i + 1]}".`
+        );
+      }
+    }
+
+    throw new ReportGenerationError('Could not configure the AI model.', 'AI_ERROR');
+  }
+
+  private async generateWithPrompt(prompt: string, maxRetries: number = 3): Promise<string> {
     let lastError: any;
+    const deadline = Date.now() + TOTAL_GENERATION_BUDGET_MS;
 
     for (let modelIndex = 0; modelIndex < this.modelNames.length; modelIndex++) {
       const modelName = this.modelNames[modelIndex];
-      this.model = this.createModel(modelName);
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        if (Date.now() >= deadline) {
+          throw this.createGeminiError(
+            lastError ||
+              new ReportGenerationError(
+                'Report generation timed out. Please try again with fewer games.',
+                'AI_ERROR'
+              )
+          );
+        }
+
         try {
-          const result = await this.model.generateContent(prompt);
-          const response = await result.response;
-          return response.text();
+          return await this.generateWithModel(modelName, prompt);
         } catch (error: any) {
           lastError = error;
 
@@ -71,16 +194,30 @@ class GeminiService {
             break;
           }
 
-          // If this is the last attempt or not a retryable error, throw immediately
-          if (attempt === maxRetries || !isRetryableError) {
+          // A per-day quota will not clear in a few seconds, so never burn retries on it.
+          if (!isRetryableError || this.isDailyQuotaError(error)) {
             throw this.createGeminiError(lastError);
           }
 
-          // Calculate delay with exponential backoff
-          const baseDelay = isRateLimitError ? 3000 : 1000; // Longer delay for rate limits
+          // Out of retries on this model. A transient outage (503 "high demand") is often
+          // model-specific, so hand off to the next model instead of failing the report.
+          if (attempt === maxRetries) {
+            if (hasFallbackModel) {
+              console.warn(`Gemini model ${modelName} kept failing. Trying ${this.modelNames[modelIndex + 1]}...`);
+              break;
+            }
+            throw this.createGeminiError(lastError);
+          }
+
+          const baseDelay = isRateLimitError ? 2500 : 800;
           const exponentialDelay = baseDelay * Math.pow(2, attempt - 1);
-          const jitter = Math.random() * 1000; // Add jitter to prevent thundering herd
-          const delay = Math.min(exponentialDelay + jitter, 30000); // Cap at 30 seconds
+          const jitter = Math.random() * 500;
+          const remaining = deadline - Date.now();
+          const delay = Math.min(exponentialDelay + jitter, MAX_RETRY_DELAY_MS, Math.max(0, remaining));
+
+          if (delay <= 0) {
+            throw this.createGeminiError(lastError);
+          }
 
           console.log(`API temporarily unavailable. Retrying in ${Math.round(delay)}ms... (attempt ${attempt + 1}/${maxRetries})`);
           await this.sleep(delay);
@@ -97,10 +234,30 @@ class GeminiService {
     const errorMessage = error.message?.toLowerCase() || '';
     return error.status === 404 ||
       error.status === 429 ||
+      // Every thinking variant was rejected, so this model cannot serve the request at all.
+      this.isInvalidArgumentError(error) ||
       errorMessage.includes('no longer available') ||
       errorMessage.includes('not found') ||
       errorMessage.includes('quota exceeded') ||
       errorMessage.includes('limit: 0');
+  }
+
+  private isInvalidArgumentError(error: any): boolean {
+    if (!error) return false;
+    const errorMessage = error.message?.toLowerCase() || '';
+    return error.status === 400 && errorMessage.includes('invalid argument');
+  }
+
+  /** A free-tier per-day cap, as opposed to a short per-minute burst limit. */
+  private isDailyQuotaError(error: any): boolean {
+    if (error?.status !== 429) return false;
+    const errorMessage = error.message?.toLowerCase() || '';
+    return (
+      errorMessage.includes('perday') ||
+      errorMessage.includes('per_day') ||
+      errorMessage.includes('free_tier') ||
+      errorMessage.includes('free tier')
+    );
   }
 
   private createGeminiError(error: any): ReportGenerationError {
@@ -115,8 +272,18 @@ class GeminiService {
     }
 
     if (error?.status === 429 || errorMessage.includes('quota exceeded')) {
+      // The free tier allows only ~20 requests per day per model, and it is by far the most
+      // common cause of report generation failing, so say so plainly.
+      const isDailyLimit =
+        errorMessage.includes('per_day') ||
+        errorMessage.includes('perday') ||
+        errorMessage.includes('free_tier') ||
+        errorMessage.includes('free tier');
+
       return new ReportGenerationError(
-        'Gemini quota exceeded for the configured model. Please use an API key/project with available Gemini quota, enable billing, or set REACT_APP_GEMINI_MODEL to a model with available quota.',
+        isDailyLimit
+          ? 'Your Gemini API key has used up its free daily report allowance (about 20 generations per day per model). It resets tomorrow — or enable billing on your Google AI Studio project to remove the cap.'
+          : 'Gemini is rate limiting this API key. Please wait a minute and try again, or enable billing on your Google AI Studio project.',
         'RATE_LIMIT',
         error
       );
@@ -133,6 +300,21 @@ class GeminiService {
     if (error?.status === 400 && errorMessage.includes('api key')) {
       return new ReportGenerationError(
         'Gemini rejected the API key. Please check REACT_APP_GEMINI_API_KEY in your environment settings.',
+        'AI_ERROR',
+        error
+      );
+    }
+
+    if (
+      error?.status === 400 &&
+      (errorMessage.includes('token') ||
+        errorMessage.includes('too long') ||
+        errorMessage.includes('too large') ||
+        errorMessage.includes('limit') ||
+        errorMessage.includes('payload'))
+    ) {
+      return new ReportGenerationError(
+        'The game sample was too large for the AI model. Try fewer games (e.g. 15–25) and generate again.',
         'AI_ERROR',
         error
       );
@@ -440,30 +622,265 @@ class GeminiService {
     return this.formatGamesCompact(games, username);
   }
 
-  /** Compact game payload — moves only, truncated — to cut AI latency. */
-  private formatGamesCompact(games: ChessGame[], username: string, maxGames = 30): string {
-    return games.slice(0, maxGames).map((game, index) => {
-      const userColor = game.white.name.toLowerCase() === username.toLowerCase() ? 'white' : 'black';
-      const opponent = userColor === 'white' ? game.black : game.white;
-      const moves = (game.moves?.length ? game.moves : []).slice(0, 80).join(' ');
-      const accuracy =
-        userColor === 'white' ? game.accuracy?.white : game.accuracy?.black;
+  /**
+   * Pre-computed, player-specific stats the model must ground claims in.
+   * This is the main antidote to generic "same for everyone" reports.
+   */
+  private buildAnalyticalFingerprint(games: ChessGame[], username: string): string {
+    const stats = computeOpponentGameStats(games, username);
+    const fmtOpening = (o: {
+      name: string;
+      eco?: string;
+      games: number;
+      winRate: number;
+      asColor: string;
+    }) =>
+      `${o.name}${o.eco ? ` (${o.eco})` : ''} as ${o.asColor}: ${o.winRate}% in ${o.games}g`;
 
-      return [
-        `G${index + 1}|id=${game.id}|${userColor}|vs ${opponent.name}(${opponent.rating ?? '?'})|${game.result}|${game.opening?.name || 'Unknown'}${game.opening?.eco ? ` ${game.opening.eco}` : ''}|tc=${game.timeControl}${typeof accuracy === 'number' ? `|acc=${accuracy}` : ''}`,
-        moves || '(no moves)',
-      ].join('\n');
-    }).join('\n\n');
+    return [
+      `PLAYER: ${username}`,
+      `Sample: ${stats.totalGames} games | Overall ${stats.overall.winRate}% (W${stats.overall.wins}/D${stats.overall.draws}/L${stats.overall.losses})`,
+      `Color split: White ${stats.asWhite.winRate}% in ${stats.asWhite.games}g | Black ${stats.asBlack.winRate}% in ${stats.asBlack.games}g`,
+      `Recent form (newest→oldest): ${stats.recentForm.join(' ') || 'n/a'}`,
+      `Current streak: ${stats.currentStreak.count}${stats.currentStreak.type} | Loss-after-loss tilt rate: ${stats.tiltRate}%`,
+      `Avg plies/game: ~${stats.averageMoves} | Preferred TC: ${stats.preferredTimeControl}`,
+      `Rating in sample: ${stats.ratingTrend.earliest ?? '?'} → ${stats.ratingTrend.latest ?? '?'} (Δ ${stats.ratingTrend.delta ?? 'n/a'})`,
+      `White repertoire: ${stats.openingsAsWhite.slice(0, 5).map(fmtOpening).join(' · ') || 'n/a'}`,
+      `Black repertoire: ${stats.openingsAsBlack.slice(0, 5).map(fmtOpening).join(' · ') || 'n/a'}`,
+      `Best openings (≥2g): ${stats.bestOpenings.slice(0, 3).map(fmtOpening).join(' · ') || 'n/a'}`,
+      `Worst openings (≥2g): ${stats.worstOpenings.slice(0, 3).map(fmtOpening).join(' · ') || 'n/a'}`,
+      `TC splits: ${
+        stats.timeControls
+          .slice(0, 4)
+          .map((t) => `${t.label} ${t.winRate}%/${t.games}g`)
+          .join(' · ') || 'n/a'
+      }`,
+    ].join('\n');
+  }
+
+  /** Full move list for a game — prefer SAN moves array, fall back to PGN history. */
+  private getFullMoveList(game: ChessGame): string[] {
+    if (game.moves?.length) return game.moves;
+    if (!game.pgn) return [];
+    try {
+      const chess = new Chess();
+      chess.loadPgn(game.pgn);
+      return chess.history();
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * One line per game: metadata plus the opening sequence only.
+   *
+   * Full move dumps cost ~90k characters for 30 games and taught the model nothing it
+   * could verify, which is what made reports generic. Concrete positions now arrive via
+   * the critical-moment evidence pack instead.
+   */
+  private formatGamesDigest(games: ChessGame[], username: string, openingPlies = 16): string {
+    const norm = username.trim().toLowerCase();
+
+    return games
+      .map((game, index) => {
+        const userColor = game.white?.name?.toLowerCase() === norm ? 'white' : 'black';
+        const opponent = userColor === 'white' ? game.black : game.white;
+        const moveList = this.getFullMoveList(game);
+        const opening = `${game.opening?.name || 'Unknown'}${
+          game.opening?.eco ? ` ${game.opening.eco}` : ''
+        }`;
+        const accuracy = userColor === 'white' ? game.accuracy?.white : game.accuracy?.black;
+
+        const header = [
+          `id=${game.id}`,
+          userColor,
+          `vs ${opponent?.name || '?'}(${opponent?.rating ?? '?'})`,
+          game.result,
+          opening,
+          `tc=${game.timeControl}`,
+          `moves=${Math.ceil(moveList.length / 2)}`,
+          typeof accuracy === 'number' ? `acc=${accuracy}` : '',
+          game.termination ? `end=${game.termination}` : '',
+        ]
+          .filter(Boolean)
+          .join(' | ');
+
+        return `G${index + 1} ${header}\n   opening line: ${
+          moveList.slice(0, openingPlies).join(' ') || '(no moves)'
+        }`;
+      })
+      .join('\n');
+  }
+
+  /** All provided games, full move lists — no truncation (caller chooses how many games). */
+  private formatGamesCompact(games: ChessGame[], username: string): string {
+    const norm = username.trim().toLowerCase();
+
+    return games
+      .map((game, index) => {
+        const whiteName = game.white?.name?.toLowerCase() || '';
+        const userColor = whiteName === norm ? 'white' : 'black';
+        const opponent = userColor === 'white' ? game.black : game.white;
+        const moveList = this.getFullMoveList(game);
+        const accuracy =
+          userColor === 'white' ? game.accuracy?.white : game.accuracy?.black;
+        const opening = `${game.opening?.name || 'Unknown'}${
+          game.opening?.eco ? ` ${game.opening.eco}` : ''
+        }`;
+        const date =
+          typeof game.date === 'string' ? game.date : String(game.date ?? '');
+
+        return [
+          `G${index + 1}|id=${game.id}|${userColor}|vs ${opponent?.name || '?'}(${opponent?.rating ?? '?'})|${game.result}|${opening}|tc=${game.timeControl}|date=${date}${typeof accuracy === 'number' ? `|acc=${accuracy}` : ''}${game.termination ? `|term=${game.termination}` : ''}|plies=${moveList.length}`,
+          moveList.join(' ') || '(no moves)',
+        ].join('\n');
+      })
+      .join('\n\n');
+  }
+
+  /**
+   * Closes structures left open by a response that hit the output token limit, so a long
+   * report degrades to "missing the last section" instead of failing outright.
+   */
+  private repairTruncatedJson(text: string): string | null {
+    const stack: string[] = [];
+    let inString = false;
+    let escaped = false;
+    let lastComplete = -1;
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (char === '\\') escaped = true;
+        else if (char === '"') inString = false;
+        continue;
+      }
+
+      if (char === '"') inString = true;
+      else if (char === '{' || char === '[') stack.push(char === '{' ? '}' : ']');
+      else if (char === '}' || char === ']') {
+        stack.pop();
+        if (stack.length === 0) lastComplete = i;
+      }
+    }
+
+    if (lastComplete >= 0) return text.slice(0, lastComplete + 1);
+    if (stack.length === 0) return null;
+
+    // Drop a dangling partial token, then close everything still open.
+    let cut = text.length;
+    while (cut > 0 && !'}]"0123456789eslutrn'.includes(text[cut - 1])) cut -= 1;
+    let repaired = text.slice(0, cut).replace(/,\s*$/, '');
+    if (inString) repaired += '"';
+    return repaired + stack.reverse().join('');
   }
 
   private parseJsonObject<T>(response: string): T {
     const fenced = response.match(/```(?:json)?\s*([\s\S]*?)```/i);
     const candidate = fenced?.[1] || response;
-    const jsonMatch = candidate.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('Invalid JSON response from Gemini');
+    const start = candidate.indexOf('{');
+    if (start === -1) {
+      throw new ReportGenerationError('The AI response was not valid JSON.', 'AI_ERROR');
     }
-    return JSON.parse(jsonMatch[0]) as T;
+
+    const body = candidate.slice(start);
+
+    try {
+      return JSON.parse(body) as T;
+    } catch {
+      const repaired = this.repairTruncatedJson(body);
+      if (repaired) {
+        try {
+          console.warn('Gemini returned truncated JSON; recovered the complete portion.');
+          return JSON.parse(repaired) as T;
+        } catch {
+          /* fall through to the error below */
+        }
+      }
+    }
+
+    throw new ReportGenerationError(
+      'The AI response was incomplete. Please try again with fewer games.',
+      'AI_ERROR'
+    );
+  }
+
+  /**
+   * Force every cited example onto a position the local scan actually verified.
+   *
+   * The model occasionally drifts a move number or reuses an id from the games digest, which
+   * used to surface as an example pointing at an unremarkable position (or none at all).
+   */
+  private snapExamplesToMoments(
+    weaknesses: RecurringWeakness[],
+    moments: CriticalMoment[]
+  ): RecurringWeakness[] {
+    if (moments.length === 0) return weaknesses;
+
+    const used = new Set<string>();
+    const momentKey = (moment: CriticalMoment) => `${moment.gameId}:${moment.moveNumber}`;
+
+    for (const weakness of weaknesses) {
+      if (!Array.isArray(weakness.examples)) continue;
+
+      weakness.examples = weakness.examples.map((example) => {
+        // Skipping already-used moments keeps the report from showing one position twice.
+        const exact = moments.find(
+          (moment) =>
+            moment.gameId === example.gameId &&
+            moment.moveNumber === Number(example.moveNumber) &&
+            !used.has(momentKey(moment))
+        );
+
+        // Same game is a near miss worth correcting; otherwise fall back to an unused moment.
+        const sameGame = moments
+          .filter((moment) => moment.gameId === example.gameId && !used.has(momentKey(moment)))
+          .sort(
+            (a, b) =>
+              Math.abs(a.moveNumber - Number(example.moveNumber)) -
+              Math.abs(b.moveNumber - Number(example.moveNumber))
+          )[0];
+
+        const target =
+          exact || sameGame || moments.find((moment) => !used.has(momentKey(moment)));
+        if (!target) return example;
+
+        used.add(momentKey(target));
+
+        // Use the scan's own FEN rather than re-deriving it from the PGN. The two
+        // derivations disagreed by a ply, which made the model's suggested moves illegal
+        // for the board actually rendered.
+        return {
+          ...example,
+          gameId: target.gameId,
+          moveNumber: target.moveNumber,
+          fenPosition: target.fen,
+          lastMove: target.movePlayed,
+          fromSquare: target.fromSquare,
+          toSquare: target.toSquare,
+          betterMove: this.preferVerifiedAlternative(example.betterMove, target),
+        };
+      });
+    }
+
+    return weaknesses;
+  }
+
+  /**
+   * Keep the model's explanation but anchor it to the move the local scan proved was
+   * better, so the recommendation always matches the position on the board.
+   */
+  private preferVerifiedAlternative(betterMove: string | undefined, moment: CriticalMoment): string {
+    const text = (betterMove || '').trim();
+    if (!moment.bestAlternative) return text;
+    if (text.includes(moment.bestAlternative)) return text;
+
+    const explanation = text.replace(/^[^\s]+\s*[-–—:]\s*/, '').trim();
+    return explanation
+      ? `${moment.bestAlternative} - ${explanation}`
+      : `${moment.bestAlternative} - wins material immediately in this position.`;
   }
 
   private enhanceWeaknessesWithFen(
@@ -483,6 +900,24 @@ class GeminiService {
           games.find((g) => g.id?.includes(example.gameId) || example.gameId?.includes(g.id));
 
         if (!game?.pgn || !example.moveNumber) continue;
+
+        // A position supplied by the local scan is already verified — only derive one when
+        // it is missing, and never overwrite the verified board.
+        if (example.fenPosition) {
+          this.validateAndFixMoveRecommendation(example, example.fenPosition);
+          const scanPlayerInfo = this.getPlayerInfo(
+            game.pgn,
+            example.moveNumber,
+            example.gameId,
+            username
+          );
+          if (scanPlayerInfo) {
+            example.playerColor = scanPlayerInfo.playerColor;
+            example.whitePlayer = scanPlayerInfo.whitePlayer;
+            example.blackPlayer = scanPlayerInfo.blackPlayer;
+          }
+          continue;
+        }
 
         const fenResult = this.getFenAtMove(game.pgn, example.moveNumber, example.gameId, username);
         const playerInfo = this.getPlayerInfo(game.pgn, example.moveNumber, example.gameId, username);
@@ -1790,6 +2225,7 @@ CRITICAL: You are analyzing a 1500+ FIDE rated player. They already know basic p
     }
   ): Promise<OpponentScoutIntel> {
     const gamesData = this.formatGamesForAnalysis(games, username);
+    const fingerprint = this.buildAnalyticalFingerprint(games, username);
     const weaknessLines =
       context?.weaknesses
         ?.slice(0, 5)
@@ -1800,11 +2236,14 @@ CRITICAL: You are analyzing a 1500+ FIDE rated player. They already know basic p
 
     const prompt = `
 You are "Pawnsposes," a world-renowned chess Grandmaster (FIDE 2650+) and elite second.
-You are preparing YOUR STUDENT to FACE and BEAT the opponent named '${username}'.
+You are preparing YOUR STUDENT to FACE and BEAT one specific opponent: '${username}'.
 This is NOT a coaching report for ${username}. Never tell ${username} how to improve.
-Write actionable scouting advice for the person who will sit across from them.
+If you swapped ${username} for another opponent, this scouting brief must become FALSE.
 
-Opponent games (PGN / summaries):
+OPPONENT FINGERPRINT:
+${fingerprint}
+
+Opponent games (cite real ids when useful):
 ${gamesData}
 
 Known recurring weaknesses of ${username}:
@@ -1821,29 +2260,31 @@ ${yourStrengthLines}
 
 Return ONLY valid JSON with this exact shape:
 {
-  "battlePlanHeadline": "one punchy sentence battle plan",
-  "playingStyle": "1-2 paragraph psychological / style read of how they play and what they hate",
+  "battlePlanHeadline": "one punchy sentence naming THEIR main soft spot",
+  "playingStyle": "1-2 paragraph style read citing openings/colors/habits from the fingerprint",
   "predictabilityScore": number (0-100, higher means more patterned / easier to prepare against),
-  "howToBeatThem": ["4-6 concrete, practical instructions"],
+  "howToBeatThem": ["4-6 concrete instructions naming openings/structures/phases"],
   "yourEdges": ["3-5 mismatch edges the student can exploit"],
-  "dangerZones": ["3-4 things this opponent does well — avoid walking into them"],
+  "dangerZones": ["3-4 things this opponent does well — name openings/structures"],
   "prepVsTheirWhite": {
-    "recommendation": "what to aim for when THEY have White (structures / systems)",
+    "recommendation": "structure/system that pressures THEIR White repertoire by name",
     "why": "why this pressures their habits",
     "keyIdeas": ["2-4 practical ideas, not deep theory dumps"]
   },
   "prepVsTheirBlack": {
-    "recommendation": "what to aim for when THEY have Black",
+    "recommendation": "structure/system that pressures THEIR Black repertoire by name",
     "why": "why this pressures their habits",
     "keyIdeas": ["2-4 practical ideas"]
   },
-  "preGameChecklist": ["5 short checklist items for the morning of the game"],
-  "overTheBoardTips": ["3-4 clock / practical tips once the game starts"],
-  "psychologicalNotes": ["2-4 tilt, resignation, time-trouble, or fighting-spirit notes"]
+  "preGameChecklist": ["5 short checklist items specific to THIS opponent"],
+  "overTheBoardTips": ["3-4 clock / practical tips based on THEIR form/tilt"],
+  "psychologicalNotes": ["2-4 tilt, resignation, time-trouble, or fighting-spirit notes from the sample"]
 }
 
 Rules:
-- Be specific to patterns in the games — no generic advice that fits any opponent
+- Every bullet must reference fingerprint openings, color gaps, tilt/form, or a cited game habit
+- BAN generic advice that fits any opponent ("play solid", "don't blunder", "control the center")
+- prepVsTheirWhite/Black must name openings from their actual White/Black repertoire
 - Prefer plans and structures over move dumps
 - Tone: direct second / prep coach, not parental improvement coach
 - Do not mention AI or that this was auto-generated
@@ -1921,84 +2362,95 @@ Rules:
     endgameAnalysis: EndgameAnalysis;
     improvementPlan: Partial<ActionableImprovementPlan>;
   }> {
-    const gamesData = this.formatGamesCompact(games, username);
+    const evidence = buildGameEvidence(games, username);
+    const gamesData = this.formatGamesDigest(games, username);
+    const fingerprint = this.buildAnalyticalFingerprint(games, username);
     const hint = localStatsHint
-      ? `Known stats (use these; do not invent different numbers): winRate=${localStatsHint.winRate}%, whiteWR=${localStatsHint.asWhiteWinRate}%, blackWR=${localStatsHint.asBlackWinRate}%, rating≈${localStatsHint.overallRating}, openings=${localStatsHint.favoriteOpenings.join(', ') || 'n/a'}, tc=${localStatsHint.timeControlPreference}`
+      ? `Authoritative numbers (do not invent different ones): winRate=${localStatsHint.winRate}%, whiteWR=${localStatsHint.asWhiteWinRate}%, blackWR=${localStatsHint.asBlackWinRate}%, rating≈${localStatsHint.overallRating}, openings=${localStatsHint.favoriteOpenings.join(', ') || 'n/a'}, tc=${localStatsHint.timeControlPreference}`
       : '';
 
-    const prompt = `You are Pawnsposes, a FIDE 2650+ coach. Analyze ${username}'s recent games. Be blunt, specific, and practical. No AI disclaimers.
+    const prompt = `You are Pawnsposes, a FIDE 2650+ coach writing a PRIVATE report for ONE player: ${username}.
+Your job is a fingerprint-level diagnosis — if you swapped ${username} for another account, this report must become FALSE.
+Be blunt, specific, and practical. No AI disclaimers. No parent-safe fluff that could apply to anyone.
+
+PLAYER FINGERPRINT (result-level facts — ground every claim here):
+${fingerprint}
 
 ${hint}
 
-GAMES (compact; id is authoritative):
+${formatEvidenceProfile(evidence.profile)}
+
+${formatCriticalMoments(evidence.moments)}
+
+GAMES PLAYED (opening lines only; the positions above are the analysed evidence):
 ${gamesData}
 
 Return ONLY valid JSON:
 {
   "executiveSummary": {
-    "strengthAreas": ["3-4 concrete strengths from these games"],
-    "keyInsights": ["3-4 sharp insights about style / psychology / patterns"],
+    "strengthAreas": ["3-4 strengths naming THEIR openings/colors/structures from the fingerprint"],
+    "keyInsights": ["3-4 insights that quote concrete patterns: opening names, color splits, form, tilt, or specific move habits"],
     "averageAccuracy": number
   },
   "recurringWeaknesses": [
     {
-      "title": "short concept name",
-      "description": "2-3 sentences on why this keeps costing them",
+      "title": "short concept unique to THIS sample (not a generic theme list pick)",
+      "description": "2-3 sentences: when it appears (opening/structure/phase), why it costs them, how often in THIS sample",
       "frequency": number,
       "examples": [
         {
           "gameId": "exact id from GAMES",
           "moveNumber": number,
-          "position": "brief",
-          "mistake": "e.g. 15...g5?! — what went wrong",
-          "betterMove": "e.g. 15...Nd7! — why better"
+          "position": "opening/structure + brief features (e.g. IQP, opposite castling)",
+          "mistake": "e.g. 15...g5?! — what went wrong in THIS position",
+          "betterMove": "e.g. 15...Nd7! — why better here"
         }
       ],
-      "improvementSuggestion": "one technical coaching line",
-      "technicalImprovement": "one master-principle line"
+      "improvementSuggestion": "one technical coaching line tied to their repertoire",
+      "technicalImprovement": "one master-principle line applied to THEIR structures"
     }
   ],
   "middlegameAnalysis": {
     "overallRating": 1-10,
-    "strengths": ["3 items"],
-    "weaknesses": ["3 items"],
+    "strengths": ["3 items naming their typical plans/structures"],
+    "weaknesses": ["3 items naming recurring middlegame failures from these games"],
     "patterns": {
       "positionalUnderstanding": 1-10,
       "tacticalAwareness": 1-10,
       "planFormation": 1-10,
       "pieceCoordination": 1-10
     },
-    "recommendations": ["3 actionable middlegame drills"],
+    "recommendations": ["3 drills referencing THEIR openings or worst structures"],
     "examplePositions": []
   },
   "endgameAnalysis": {
     "overallRating": 1-10,
-    "strengths": ["2-3 items"],
-    "weaknesses": ["2-3 items"],
-    "commonMistakes": ["2-3 items"],
+    "strengths": ["2-3 items from endgames that actually appear in the sample"],
+    "weaknesses": ["2-3 items from endgames that actually appear in the sample"],
+    "commonMistakes": ["2-3 concrete conversion/defense failures from these games"],
     "endgameTypes": [
       {"type": "string", "performance": 1-10, "gamesPlayed": number, "successRate": number}
     ],
-    "recommendations": ["2-3 items"],
+    "recommendations": ["2-3 items tied to their common endgame types"],
     "studyMaterial": ["2-3 specific drills"],
     "examplePositions": []
   },
   "improvementPlan": {
     "immediateActions": [
-      {"priority": "high|medium|low", "action": "short title", "description": "what to do next games", "timeframe": "e.g. Next 5 games"}
+      {"priority": "high|medium|low", "action": "short title naming a concrete habit to change", "description": "what to do in next games inside THEIR openings", "timeframe": "e.g. Next 5 games"}
     ],
     "weeklyFocus": [
-      {"week": 1, "focus": "theme", "exercises": ["2 drills"], "goals": ["1 measurable goal"]}
+      {"week": 1, "focus": "theme from THEIR worst pattern", "exercises": ["2 drills"], "goals": ["1 measurable goal"]}
     ],
     "monthlyGoals": [
-      {"month": 1, "goal": "string", "milestones": ["2 items"], "trackingMethod": "string"}
+      {"month": 1, "goal": "string tied to a fingerprint gap (color/opening/tilt)", "milestones": ["2 items"], "trackingMethod": "string"}
     ],
     "resources": {
-      "exercises": ["3 drills"],
+      "exercises": ["3 drills targeting THEIR gaps"],
       "masterGame": {
         "players": "White vs Black (Year)",
         "event": "event",
-        "description": "why it teaches their gap",
+        "description": "why it teaches THEIR specific gap",
         "relevantConcept": "concept",
         "keyMoves": "ideas to study"
       }
@@ -2006,12 +2458,18 @@ Return ONLY valid JSON:
   }
 }
 
-Rules:
-- Exactly 3 recurringWeaknesses, each with EXACTLY 2 examples using real gameIds/moveNumbers from the list
-- Critique strategic/positional choices, not forced recaptures or saving attacked pieces
-- Suggest legal replacement moves from the position BEFORE their move
-- Tailor depth to their rating (~${localStatsHint?.overallRating || 'unknown'})
-- Keep bullets concrete and game-specific — ban generic advice ("study more", "be careful")`;
+HARD RULES (violations = bad report):
+1. Exactly 3 recurringWeaknesses, each with EXACTLY 2 examples. Every example MUST copy its gameId and moveNumber verbatim from a CITABLE MOMENT above. Never invent a gameId or moveNumber.
+2. Group the moments into themes. A weakness title must describe the pattern the moments share (which phase they cluster in, which opening or structure, what kind of oversight), not just restate one move.
+3. Use the MOVE-LEVEL SCAN numbers explicitly: name the phase where most errors happen, the typical move number of the first error, and any thrown winning positions or endgame conversion problem. These are measured facts about ${username}.
+4. Every strengthArea, keyInsight, weakness description, and recommendation MUST anchor to at least one of: a named opening from the fingerprint, the White vs Black win-rate gap, a time-control split, the error-phase distribution, or a cited moment.
+5. BAN generic filler that could describe any club player: "study more", "be careful", "improve calculation", "watch king safety", "develop pieces", "control the center", "think about plans", "practice tactics", "manage time better" — unless you immediately attach THEIR specific evidence.
+6. In "betterMove", prefer the move given as \`better=\` on that moment when one is present; otherwise give a legal move from the \`fen\` shown. Explain why it is better in THAT position.
+7. In "position", describe the actual position from the moment's fen and opening — not a generic structure.
+8. Tailor depth to rating ~${localStatsHint?.overallRating || 'unknown'}.
+9. If White WR and Black WR differ by ≥10 points, the report MUST address that color gap.
+10. If worst openings are listed, at least one weakness or plan item MUST target the weakest opening by name.
+11. The scan is a heuristic material check, not an engine. Describe what the evidence shows; do not claim engine evaluations or centipawn numbers.`;
 
     try {
       const response = await this.generateWithPrompt(prompt, 3);
@@ -2024,7 +2482,10 @@ Rules:
       }>(response);
 
       const weaknesses = this.enhanceWeaknessesWithFen(
-        Array.isArray(parsed.recurringWeaknesses) ? parsed.recurringWeaknesses.slice(0, 3) : [],
+        this.snapExamplesToMoments(
+          Array.isArray(parsed.recurringWeaknesses) ? parsed.recurringWeaknesses.slice(0, 3) : [],
+          evidence.moments
+        ),
         games,
         username
       );
@@ -2038,6 +2499,8 @@ Rules:
       };
     } catch (error) {
       console.error('Error generating complete report (fast):', error);
+      // Preserve actionable messages (timeout, quota, truncation) instead of masking them.
+      if (error instanceof ReportGenerationError) throw error;
       throw new ReportGenerationError(
         'Failed to generate chess report',
         'AI_ERROR',
@@ -2070,92 +2533,108 @@ Rules:
     endgameAnalysis: EndgameAnalysis;
     scoutIntel: OpponentScoutIntel;
   }> {
-    const gamesData = this.formatGamesCompact(games, username);
+    const evidence = buildGameEvidence(games, username);
+    const gamesData = this.formatGamesDigest(games, username);
+    const fingerprint = this.buildAnalyticalFingerprint(games, username);
     const local = options?.localStatsHint;
     const yourStrengths = (options?.yourStrengths || []).slice(0, 4).join('; ') || 'Not provided';
     const hint = local
-      ? `Opponent stats: winRate=${local.winRate}%, whiteWR=${local.asWhiteWinRate}%, blackWR=${local.asBlackWinRate}%, rating≈${local.overallRating}, openings=${local.favoriteOpenings.join(', ') || 'n/a'}, tc=${local.timeControlPreference}`
+      ? `Authoritative opponent numbers: winRate=${local.winRate}%, whiteWR=${local.asWhiteWinRate}%, blackWR=${local.asBlackWinRate}%, rating≈${local.overallRating}, openings=${local.favoriteOpenings.join(', ') || 'n/a'}, tc=${local.timeControlPreference}`
       : '';
 
-    const prompt = `You are Pawnsposes, a FIDE 2650+ second. Prepare YOUR STUDENT to BEAT opponent "${username}".
-This is NOT a coaching report for ${username}. Frame everything as how to exploit them.
+    const prompt = `You are Pawnsposes, a FIDE 2650+ second. Prepare YOUR STUDENT to BEAT one specific opponent: "${username}".
+This is NOT a coaching report for ${username}. Never tell them how to improve — only how to exploit them.
+If you swapped ${username} for a different opponent, this dossier must become FALSE.
+
+OPPONENT FINGERPRINT (result-level facts — ground every claim here):
+${fingerprint}
 
 ${hint}
-Student strengths to leverage: ${yourStrengths}
+Student strengths to leverage (use in yourEdges when possible): ${yourStrengths}
 
-OPPONENT GAMES:
+${formatEvidenceProfile(evidence.profile)}
+
+${formatCriticalMoments(evidence.moments)}
+
+OPPONENT GAMES (opening lines only; the positions above are the analysed evidence):
 ${gamesData}
 
 Return ONLY valid JSON:
 {
   "executiveSummary": {
-    "strengthAreas": ["3 things THIS OPPONENT does well — danger zones"],
-    "keyInsights": ["3-4 scouting insights about how they play / tilt / patterns"],
+    "strengthAreas": ["3 danger zones naming THEIR strong openings/structures/colors"],
+    "keyInsights": ["3-4 scouting insights citing openings, color splits, tilt/form, or move habits from THIS sample"],
     "averageAccuracy": number
   },
   "recurringWeaknesses": [
     {
-      "title": "exploitable habit",
-      "description": "how to provoke / punish it",
+      "title": "exploitable habit unique to THIS opponent",
+      "description": "how to provoke/punish it — name the structure or opening where it appears",
       "frequency": number,
       "examples": [
         {
-          "gameId": "exact id",
+          "gameId": "exact id from OPPONENT GAMES",
           "moveNumber": number,
-          "position": "brief",
+          "position": "opening/structure brief",
           "mistake": "what THEY did wrong",
-          "betterMove": "what they should have played (for context)"
+          "betterMove": "what they should have played (context only)"
         }
       ],
-      "improvementSuggestion": "how YOU exploit this OTB",
-      "technicalImprovement": "one prep line / structure idea"
+      "improvementSuggestion": "how YOU exploit this OTB (actionable for the student)",
+      "technicalImprovement": "one prep line / structure idea against THEIR repertoire"
     }
   ],
   "middlegameAnalysis": {
     "overallRating": 1-10,
-    "strengths": ["3"],
-    "weaknesses": ["3"],
+    "strengths": ["3 things they do well in middlegames from these games"],
+    "weaknesses": ["3 middlegame soft spots you can steer into"],
     "patterns": {
       "positionalUnderstanding": 1-10,
       "tacticalAwareness": 1-10,
       "planFormation": 1-10,
       "pieceCoordination": 1-10
     },
-    "recommendations": ["3 ways to steer middlegames against them"],
+    "recommendations": ["3 ways to steer middlegames against THEIR habits"],
     "examplePositions": []
   },
   "endgameAnalysis": {
     "overallRating": 1-10,
-    "strengths": ["2-3"],
-    "weaknesses": ["2-3"],
-    "commonMistakes": ["2-3"],
+    "strengths": ["2-3 endgame strengths to avoid testing"],
+    "weaknesses": ["2-3 endgame types you should aim to reach"],
+    "commonMistakes": ["2-3 conversion/defense failures from these games"],
     "endgameTypes": [
       {"type": "string", "performance": 1-10, "gamesPlayed": number, "successRate": number}
     ],
-    "recommendations": ["2-3"],
+    "recommendations": ["2-3 practical ways to reach favorable endings"],
     "studyMaterial": ["2-3"],
     "examplePositions": []
   },
   "scoutIntel": {
-    "battlePlanHeadline": "one punchy sentence",
-    "playingStyle": "1-2 paragraphs on how they play and what they hate",
+    "battlePlanHeadline": "one punchy sentence naming THEIR main soft spot",
+    "playingStyle": "1-2 paragraphs: how THEY play, what they repeat, what they hate — cite openings/colors from fingerprint",
     "predictabilityScore": 0-100,
-    "howToBeatThem": ["4-6 concrete instructions"],
-    "yourEdges": ["3-5 mismatch edges"],
-    "dangerZones": ["3-4 things they do well"],
-    "prepVsTheirWhite": {"recommendation": "string", "why": "string", "keyIdeas": ["2-4"]},
-    "prepVsTheirBlack": {"recommendation": "string", "why": "string", "keyIdeas": ["2-4"]},
-    "preGameChecklist": ["5 items"],
-    "overTheBoardTips": ["3-4"],
-    "psychologicalNotes": ["2-4"]
+    "howToBeatThem": ["4-6 concrete instructions naming openings/structures/phases"],
+    "yourEdges": ["3-5 mismatch edges (student strength × opponent weakness)"],
+    "dangerZones": ["3-4 things they do well — name openings/structures"],
+    "prepVsTheirWhite": {"recommendation": "aim for a structure that pressures THEIR White repertoire by name", "why": "tie to a fingerprint weakness", "keyIdeas": ["2-4 practical ideas"]},
+    "prepVsTheirBlack": {"recommendation": "aim for a structure that pressures THEIR Black repertoire by name", "why": "tie to a fingerprint weakness", "keyIdeas": ["2-4 practical ideas"]},
+    "preGameChecklist": ["5 items specific to facing THIS opponent"],
+    "overTheBoardTips": ["3-4 clock/practical tips based on THEIR form/tilt"],
+    "psychologicalNotes": ["2-4 notes from streak/tilt/resignation patterns in the sample"]
   }
 }
 
-Rules:
-- Exactly 3 recurringWeaknesses with EXACTLY 2 real examples each
-- Specific to these games — no generic opponent advice
-- Prefer plans/structures over move dumps
-- Tone: elite second / prep coach`;
+HARD RULES:
+1. Exactly 3 recurringWeaknesses with EXACTLY 2 examples each. Every example MUST copy its gameId and moveNumber verbatim from a CITABLE MOMENT above. Never invent a gameId or moveNumber.
+2. Build the exploit plan from the MOVE-LEVEL SCAN: if their errors cluster in one phase, say how to steer the game into that phase; if they throw winning positions, say to keep playing; if their endgame conversion is weak, aim for endgames; if they blunder early, choose sharp lines.
+3. prepVsTheirWhite MUST name openings from their White repertoire; prepVsTheirBlack MUST name openings from their Black repertoire.
+4. battlePlanHeadline, howToBeatThem, and dangerZones MUST reference fingerprint openings, colour gaps, scan numbers, or cited moments — not generic "play solid / avoid blunders".
+5. BAN advice that fits any opponent: "play solid", "don't blunder", "control the center", "watch tactics", "manage your time" — unless tied to THEIR specific measured pattern.
+6. In "betterMove", prefer the move given as \`better=\` on that moment when present; otherwise a legal move from the \`fen\`. In "position", describe the real position from that fen.
+7. Prefer plans/structures over move dumps. Tone: elite second / prep coach.
+8. If tilt rate, loss streaks, or time losses are elevated, psychologicalNotes and overTheBoardTips MUST address it.
+9. predictabilityScore should reflect how repetitive their repertoire and habits actually are in this sample.
+10. The scan is a heuristic material check, not an engine. Do not claim engine evaluations or centipawn numbers.`;
 
     try {
       const response = await this.generateWithPrompt(prompt, 3);
@@ -2168,7 +2647,10 @@ Rules:
       }>(response);
 
       const weaknesses = this.enhanceWeaknessesWithFen(
-        Array.isArray(parsed.recurringWeaknesses) ? parsed.recurringWeaknesses.slice(0, 3) : [],
+        this.snapExamplesToMoments(
+          Array.isArray(parsed.recurringWeaknesses) ? parsed.recurringWeaknesses.slice(0, 3) : [],
+          evidence.moments
+        ),
         games,
         username
       );
@@ -2215,6 +2697,7 @@ Rules:
       };
     } catch (error) {
       console.error('Error generating opponent dossier (fast):', error);
+      if (error instanceof ReportGenerationError) throw error;
       throw new ReportGenerationError(
         'Failed to generate opponent scouting dossier',
         'AI_ERROR',

@@ -1,6 +1,8 @@
 import React from 'react';
 import { ChessReport } from '../types/report';
 import PositionDisplay from './PositionDisplay';
+import { buildOpeningAnalysis } from '../utils/reportStats';
+import { videoRecommendationService } from '../services/videoRecommendationService';
 import {
   Target,
   BookOpen,
@@ -23,15 +25,35 @@ const skillLabel = (key: string) =>
   key.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).trim();
 
 const priorityStyles: Record<string, string> = {
-  high: 'border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-200',
+  high: 'border-rose-400/50 bg-rose-50 text-rose-800 dark:border-rose-400/50 dark:bg-rose-900/70 dark:text-rose-100',
   medium:
-    'border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200',
-  low: 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200',
+    'border-amber-600/50 bg-amber-100 text-amber-950 dark:border-amber-300 dark:bg-amber-400 dark:text-amber-950',
+  low: 'border-emerald-400/50 bg-emerald-50 text-emerald-900 dark:border-emerald-400/50 dark:bg-emerald-900/70 dark:text-emerald-100',
 };
+
+const mutedLabel =
+  'text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300';
+const bodyText = 'text-sm leading-relaxed text-slate-700 dark:text-slate-200';
+const softText = 'text-xs text-slate-600 dark:text-slate-300';
+const cardBorder = 'rounded-xl border border-slate-200 dark:border-slate-600';
+const cardSurface = 'bg-slate-50/80 dark:bg-slate-800/70';
 
 const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
   const isOpponent = Boolean(report.scoutIntel);
   const scout = report.scoutIntel;
+
+  const openingAnalysis =
+    report.openingAnalysis ||
+    (report.rawGameData?.length
+      ? buildOpeningAnalysis(report.rawGameData, report.username)
+      : null);
+
+  const recommendedVideos = videoRecommendationService.getPersonalizedVideoRecommendations(
+    report.recurringWeaknesses || [],
+    report.middleGameAnalysis,
+    report.endgameAnalysis,
+    3
+  );
 
   const getGameAndOpponentInfo = (gameId: string): string => {
     const game = report.rawGameData.find((g) => g.id === gameId);
@@ -112,8 +134,7 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
     <div className="report-shell bg-[#F4F8F5] text-[#123826] dark:bg-slate-950 dark:text-slate-100">
       <div className="mx-auto max-w-5xl px-3 py-4 sm:px-5 sm:py-6">
         <article className="overflow-hidden rounded-2xl border border-primary-200/70 bg-white shadow-[0_10px_40px_rgba(18,56,38,0.08)] dark:border-slate-700 dark:bg-slate-900 dark:shadow-[0_10px_40px_rgba(0,0,0,0.35)]">
-          {/* Hero band */}
-          <header className="relative overflow-hidden border-b border-primary-100 bg-gradient-to-br from-[#185637] via-[#2C8A55] to-[#1f6d43] px-6 py-7 text-white sm:px-8">
+          <header className="relative overflow-hidden border-b border-primary-100 bg-gradient-to-br from-[#185637] via-[#2C8A55] to-[#1f6d43] px-6 py-7 text-white sm:px-8 dark:border-slate-700">
             <div
               className="pointer-events-none absolute inset-0 opacity-30"
               style={{
@@ -142,35 +163,29 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
                 <p className="mt-1 text-sm text-white/90">
                   {report.platform} · {report.gameCount} games
                 </p>
-                <p className="text-xs text-emerald-100/70">{generatedLabel}</p>
+                <p className="text-xs text-emerald-100/80">{generatedLabel}</p>
               </div>
             </div>
           </header>
 
           <div className="space-y-8 px-5 py-6 sm:px-8 sm:py-8">
-            {/* KPI strip */}
             <section aria-label="Key metrics">
               <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
                 {kpis.map((kpi) => (
                   <div
                     key={kpi.label}
-                    className="rounded-xl border border-slate-200/90 bg-[#F4F8F5]/80 px-3 py-3 transition-colors duration-200 hover:border-primary-300 dark:border-slate-700 dark:bg-slate-950/50 dark:hover:border-primary-700"
+                    className={`${cardBorder} ${cardSurface} px-3 py-3 transition-colors duration-200 hover:border-primary-400 dark:hover:border-primary-500`}
                   >
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                      {kpi.label}
-                    </p>
+                    <p className={mutedLabel}>{kpi.label}</p>
                     <p className="mt-1 font-display text-2xl font-semibold tracking-tight text-slate-900 dark:text-white">
                       {kpi.value}
                     </p>
-                    <p className="mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400">
-                      {kpi.hint}
-                    </p>
+                    <p className={`mt-0.5 truncate ${softText}`}>{kpi.hint}</p>
                   </div>
                 ))}
               </div>
             </section>
 
-            {/* Insights */}
             <section>
               <SectionHeader
                 icon={<Sparkles className="h-4 w-4" />}
@@ -180,7 +195,7 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
                 {report.executiveSummary.keyInsights.map((insight, index) => (
                   <li
                     key={index}
-                    className="rounded-lg border border-slate-200 bg-slate-50/80 px-3 py-2.5 text-sm leading-relaxed text-slate-700 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-200"
+                    className={`${cardBorder} ${cardSurface} px-3 py-2.5 ${bodyText}`}
                   >
                     <span className="mr-2 font-mono text-xs font-semibold text-primary-700 dark:text-primary-300">
                       {String(index + 1).padStart(2, '0')}
@@ -194,7 +209,7 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
                   {report.executiveSummary.strengthAreas.map((area) => (
                     <span
                       key={area}
-                      className="inline-flex items-center rounded-md border border-primary-200 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-900 dark:border-primary-800 dark:bg-primary-950/40 dark:text-primary-200"
+                      className="inline-flex max-w-full items-center rounded-md border border-amber-600/50 bg-amber-100 px-2.5 py-1 text-xs font-semibold leading-snug text-amber-950 shadow-sm dark:border-amber-300 dark:bg-amber-400 dark:text-amber-950"
                     >
                       {isOpponent ? `Danger · ${area}` : area}
                     </span>
@@ -203,24 +218,23 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
               )}
             </section>
 
-            {/* Opponent battle plan */}
             {isOpponent && scout && (
               <section>
                 <SectionHeader icon={<Swords className="h-4 w-4" />} title="Battle plan" />
                 <div className="mt-3 grid gap-3 lg:grid-cols-3">
                   <BattleCard
                     title="How to beat them"
-                    icon={<Crosshair className="h-4 w-4 text-primary-600" />}
+                    icon={<Crosshair className="h-4 w-4 text-primary-600 dark:text-primary-300" />}
                     items={scout.howToBeatThem}
                   />
                   <BattleCard
                     title="Your edges"
-                    icon={<TrendingUp className="h-4 w-4 text-amber-600" />}
+                    icon={<TrendingUp className="h-4 w-4 text-amber-600 dark:text-amber-300" />}
                     items={scout.yourEdges}
                   />
                   <BattleCard
                     title="Danger zones"
-                    icon={<ShieldAlert className="h-4 w-4 text-rose-600" />}
+                    icon={<ShieldAlert className="h-4 w-4 text-rose-600 dark:text-rose-300" />}
                     items={scout.dangerZones}
                   />
                 </div>
@@ -239,14 +253,14 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
                   />
                 </div>
                 {typeof scout.predictabilityScore === 'number' && (
-                  <div className="mt-3 rounded-xl border border-slate-200 px-4 py-3 dark:border-slate-700">
-                    <div className="mb-1.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  <div className={`mt-3 ${cardBorder} px-4 py-3`}>
+                    <div className="mb-1.5 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                       <span>Predictability</span>
-                      <span className="font-mono text-slate-800 dark:text-slate-200">
+                      <span className="font-mono text-slate-800 dark:text-slate-100">
                         {scout.predictabilityScore}/100
                       </span>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-primary-500 to-amber-400 transition-[width] duration-500"
                         style={{ width: `${Math.min(100, scout.predictabilityScore)}%` }}
@@ -257,7 +271,6 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
               </section>
             )}
 
-            {/* Weaknesses */}
             <section>
               <SectionHeader
                 icon={<Search className="h-4 w-4" />}
@@ -271,11 +284,10 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
                     : null;
 
                   return (
-                    <div
-                      key={`${weakness.title}-${index}`}
-                      className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700"
-                    >
-                      <div className="flex items-start gap-3 border-b border-slate-100 bg-slate-50/80 px-4 py-3 dark:border-slate-800 dark:bg-slate-950/50">
+                    <div key={`${weakness.title}-${index}`} className={`overflow-hidden ${cardBorder}`}>
+                      <div
+                        className={`flex items-start gap-3 border-b border-slate-200 ${cardSurface} px-4 py-3 dark:border-slate-700`}
+                      >
                         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary-600 font-mono text-xs font-bold text-white">
                           {index + 1}
                         </span>
@@ -283,9 +295,7 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
                           <h3 className="font-semibold text-slate-900 dark:text-white">
                             {weakness.title}
                           </h3>
-                          <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                            {weakness.description}
-                          </p>
+                          <p className={`mt-1 ${bodyText}`}>{weakness.description}</p>
                           {weakness.technicalImprovement && (
                             <p className="mt-2 text-sm font-medium text-primary-800 dark:text-primary-300">
                               {weakness.technicalImprovement}
@@ -297,7 +307,7 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
                       {example && (
                         <div className="grid gap-4 p-4 lg:grid-cols-2">
                           <div className="space-y-2 text-sm">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
                               Example · {getGameAndOpponentInfo(example.gameId)} · Move{' '}
                               {example.moveNumber}
                             </p>
@@ -306,19 +316,19 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
                                 href={positionUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-primary-700 underline-offset-2 transition-colors duration-200 hover:text-primary-900 hover:underline dark:text-primary-300"
+                                className="inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-primary-700 underline-offset-2 transition-colors duration-200 hover:text-primary-900 hover:underline dark:text-primary-300 dark:hover:text-primary-200"
                               >
                                 Open exact position
                                 <ExternalLink className="h-3 w-3" />
                               </a>
                             )}
-                            <p className="leading-relaxed text-slate-700 dark:text-slate-200">
+                            <p className={bodyText}>
                               <span className="font-semibold text-rose-700 dark:text-rose-300">
                                 Mistake:{' '}
                               </span>
                               {example.mistake}
                             </p>
-                            <p className="leading-relaxed text-slate-700 dark:text-slate-200">
+                            <p className={bodyText}>
                               <span className="font-semibold text-primary-800 dark:text-primary-300">
                                 Better:{' '}
                               </span>
@@ -345,10 +355,24 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
               </div>
             </section>
 
-            {/* Phase review */}
             <section>
               <SectionHeader icon={<Target className="h-4 w-4" />} title="Phase review" />
-              <div className="mt-3 grid gap-4 md:grid-cols-2">
+              <div className="mt-3 grid gap-4 lg:grid-cols-3">
+                {openingAnalysis && (
+                  <PhasePanel
+                    title="Openings"
+                    rating={openingAnalysis.overallRating}
+                    rows={openingAnalysis.repertoire.slice(0, 4).map((line) => ({
+                      label: `${line.asColor === 'white' ? 'W' : 'B'} · ${line.name}`,
+                      value: line.performance,
+                      detail: `${line.gamesPlayed}g · ${line.successRate}%`,
+                    }))}
+                    footer={
+                      openingAnalysis.recommendations[0] ||
+                      `White ${openingAnalysis.asWhiteWinRate}% · Black ${openingAnalysis.asBlackWinRate}%`
+                    }
+                  />
+                )}
                 <PhasePanel
                   title="Middlegame"
                   rating={report.middleGameAnalysis.overallRating}
@@ -372,7 +396,6 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
               </div>
             </section>
 
-            {/* Action plan */}
             <section>
               <SectionHeader
                 icon={<ListChecks className="h-4 w-4" />}
@@ -382,7 +405,7 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
                 {report.improvementPlan.immediateActions.slice(0, 4).map((action, index) => (
                   <div
                     key={index}
-                    className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-3 transition-colors duration-200 hover:border-primary-300 dark:border-slate-700 dark:bg-slate-950/40 dark:hover:border-primary-700"
+                    className={`flex items-start gap-3 ${cardBorder} ${cardSurface} px-3 py-3 transition-colors duration-200 hover:border-primary-400 dark:hover:border-primary-500`}
                   >
                     <span
                       className={`mt-0.5 shrink-0 rounded border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
@@ -393,17 +416,14 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
                     </span>
                     <div className="min-w-0">
                       <p className="font-semibold text-slate-900 dark:text-white">{action.action}</p>
-                      <p className="mt-0.5 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
-                        {action.description}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-500">{action.timeframe}</p>
+                      <p className={`mt-0.5 ${bodyText}`}>{action.description}</p>
+                      <p className={`mt-1 ${softText}`}>{action.timeframe}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </section>
 
-            {/* Resources */}
             <section>
               <SectionHeader icon={<BookOpen className="h-4 w-4" />} title="Study resources" />
               <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -413,22 +433,21 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
                   body={report.improvementPlan.resources.masterGame.description}
                   meta={report.improvementPlan.resources.masterGame.relevantConcept}
                 />
-                <ResourceCard
-                  eyebrow="Watch"
-                  title={report.improvementPlan.resources.recommendedVideo.title}
-                  body={report.improvementPlan.resources.recommendedVideo.description}
-                  meta={`${report.improvementPlan.resources.recommendedVideo.channel}${
-                    report.improvementPlan.resources.recommendedVideo.duration
-                      ? ` · ${report.improvementPlan.resources.recommendedVideo.duration}`
-                      : ''
-                  }`}
-                  href={report.improvementPlan.resources.recommendedVideo.url}
-                />
+                {recommendedVideos.map((video, index) => (
+                  <ResourceCard
+                    key={video.url}
+                    eyebrow={index === 0 ? 'Watch first' : `Also watch · ${index + 1}`}
+                    title={video.title}
+                    body={video.description}
+                    meta={`${video.channel}${video.duration ? ` · ${video.duration}` : ''}`}
+                    href={video.url}
+                  />
+                ))}
               </div>
             </section>
           </div>
 
-          <footer className="border-t border-slate-100 px-6 py-4 text-center text-xs text-slate-400 dark:border-slate-800">
+          <footer className="border-t border-slate-200 px-6 py-4 text-center text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
             Generated by Pawnsposes · {generatedLabel}
           </footer>
         </article>
@@ -440,7 +459,7 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report }) => {
 function SectionHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
     <h2 className="flex items-center gap-2 font-display text-sm font-semibold uppercase tracking-[0.16em] text-[#185637] dark:text-primary-300">
-      <span className="text-primary-600 dark:text-primary-400">{icon}</span>
+      <span className="text-primary-600 dark:text-primary-300">{icon}</span>
       {title}
     </h2>
   );
@@ -456,15 +475,17 @@ function BattleCard({
   items: string[];
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+    <div className={`${cardBorder} p-4`}>
       <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
         {icon}
         {title}
       </div>
       <ul className="space-y-1.5">
         {items.slice(0, 5).map((item, i) => (
-          <li key={i} className="text-sm leading-snug text-slate-600 dark:text-slate-300">
-            <span className="mr-1.5 font-mono text-[10px] text-slate-400">{i + 1}.</span>
+          <li key={i} className="text-sm leading-snug text-slate-700 dark:text-slate-200">
+            <span className="mr-1.5 font-mono text-[10px] text-slate-500 dark:text-slate-400">
+              {i + 1}.
+            </span>
             {item}
           </li>
         ))}
@@ -485,16 +506,16 @@ function PrepCard({
   ideas: string[];
 }) {
   return (
-    <div className="rounded-xl border border-primary-200/80 bg-primary-50/40 p-4 dark:border-primary-900 dark:bg-primary-950/20">
+    <div className="rounded-xl border border-primary-300/80 bg-primary-50/50 p-4 dark:border-primary-600 dark:bg-primary-950/40">
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-800 dark:text-primary-300">
         {title}
       </p>
       <p className="mt-1.5 text-sm font-semibold text-slate-900 dark:text-white">{recommendation}</p>
-      <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">{why}</p>
+      <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">{why}</p>
       {ideas.length > 0 && (
         <ul className="mt-2 space-y-1">
           {ideas.slice(0, 3).map((idea) => (
-            <li key={idea} className="text-xs text-slate-600 dark:text-slate-400">
+            <li key={idea} className="text-xs text-slate-600 dark:text-slate-300">
               · {idea}
             </li>
           ))}
@@ -516,7 +537,7 @@ function PhasePanel({
   footer?: string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+    <div className={`${cardBorder} p-4`}>
       <div className="mb-3 flex items-baseline justify-between gap-2">
         <h3 className="font-semibold text-slate-900 dark:text-white">{title}</h3>
         <span className="font-mono text-sm font-semibold text-primary-700 dark:text-primary-300">
@@ -528,9 +549,9 @@ function PhasePanel({
           <div key={row.label}>
             <div className="mb-1 flex items-center justify-between gap-2 text-xs">
               <span className="truncate text-slate-700 dark:text-slate-200">{row.label}</span>
-              <span className="shrink-0 font-mono text-slate-500">{row.detail}</span>
+              <span className="shrink-0 font-mono text-slate-600 dark:text-slate-300">{row.detail}</span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+            <div className="h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
               <div
                 className="h-full rounded-full bg-primary-600 transition-[width] duration-500 dark:bg-primary-400"
                 style={{ width: `${Math.min(100, (row.value / 10) * 100)}%` }}
@@ -540,7 +561,7 @@ function PhasePanel({
         ))}
       </div>
       {footer && (
-        <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">
+        <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
           {footer}
         </p>
       )}
@@ -563,10 +584,12 @@ function ResourceCard({
 }) {
   const content = (
     <>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{eyebrow}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">
+        {eyebrow}
+      </p>
       <p className="mt-1 font-semibold text-slate-900 dark:text-white">{title}</p>
-      <p className="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{body}</p>
-      {meta && <p className="mt-2 text-xs text-slate-500">{meta}</p>}
+      <p className="mt-1 text-sm leading-relaxed text-slate-700 dark:text-slate-200">{body}</p>
+      {meta && <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">{meta}</p>}
     </>
   );
 
@@ -576,16 +599,14 @@ function ResourceCard({
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="block cursor-pointer rounded-xl border border-slate-200 p-4 transition-colors duration-200 hover:border-primary-400 hover:bg-primary-50/40 dark:border-slate-700 dark:hover:border-primary-700 dark:hover:bg-primary-950/20"
+        className={`block cursor-pointer ${cardBorder} p-4 transition-colors duration-200 hover:border-primary-400 hover:bg-primary-50/50 dark:hover:border-primary-500 dark:hover:bg-primary-950/30`}
       >
         {content}
       </a>
     );
   }
 
-  return (
-    <div className="rounded-xl border border-slate-200 p-4 dark:border-slate-700">{content}</div>
-  );
+  return <div className={`${cardBorder} p-4`}>{content}</div>;
 }
 
 export default ReportDisplay;

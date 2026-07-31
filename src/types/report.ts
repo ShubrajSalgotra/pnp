@@ -42,6 +42,22 @@ export interface RecurringWeakness {
   technicalImprovement?: string; // Optional for backward compatibility
 }
 
+export interface OpeningAnalysis {
+  overallRating: number;
+  strengths: string[];
+  weaknesses: string[];
+  repertoire: {
+    name: string;
+    performance: number;
+    gamesPlayed: number;
+    successRate: number;
+    asColor: 'white' | 'black';
+  }[];
+  recommendations: string[];
+  asWhiteWinRate: number;
+  asBlackWinRate: number;
+}
+
 export interface MiddleGameAnalysis {
   overallRating: number;
   strengths: string[];
@@ -131,6 +147,8 @@ export interface ChessReport {
   generatedAt: Date;
   executiveSummary: ExecutiveSummary;
   recurringWeaknesses: RecurringWeakness[];
+  /** Computed from game PGN opening tags; optional on legacy saved reports. */
+  openingAnalysis?: OpeningAnalysis;
   middleGameAnalysis: MiddleGameAnalysis;
   endgameAnalysis: EndgameAnalysis;
   improvementPlan: ActionableImprovementPlan;

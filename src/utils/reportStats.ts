@@ -4,6 +4,7 @@ import {
   EndgameAnalysis,
   ExecutiveSummary,
   MiddleGameAnalysis,
+  OpeningAnalysis,
   RecurringWeakness,
 } from '../types/report';
 import { computeOpponentGameStats } from './opponentStats';
@@ -90,6 +91,87 @@ export function mergeExecutiveSummary(
     overallRating: local.overallRating || ai?.overallRating || 0,
     strengthAreas: Array.isArray(aiStrengths) ? aiStrengths.slice(0, 4) : [],
     keyInsights: Array.isArray(aiInsights) ? aiInsights.slice(0, 4) : [],
+  };
+}
+
+/** Build opening phase review from real game opening tags (local, accurate). */
+export function buildOpeningAnalysis(
+  games: ChessGame[],
+  username: string,
+  aiHints?: Partial<Pick<OpeningAnalysis, 'strengths' | 'weaknesses' | 'recommendations' | 'overallRating'>>
+): OpeningAnalysis {
+  const stats = computeOpponentGameStats(games, username);
+  const repertoire = [
+    ...stats.openingsAsWhite.slice(0, 4).map((o) => ({
+      name: o.name,
+      performance: Math.max(1, Math.min(10, Math.round(o.winRate / 10))),
+      gamesPlayed: o.games,
+      successRate: o.winRate,
+      asColor: 'white' as const,
+    })),
+    ...stats.openingsAsBlack.slice(0, 4).map((o) => ({
+      name: o.name,
+      performance: Math.max(1, Math.min(10, Math.round(o.winRate / 10))),
+      gamesPlayed: o.games,
+      successRate: o.winRate,
+      asColor: 'black' as const,
+    })),
+  ]
+    .sort((a, b) => b.gamesPlayed - a.gamesPlayed)
+    .slice(0, 6);
+
+  const best = stats.bestOpenings.slice(0, 2).map((o) => `${o.name} (${o.winRate}% in ${o.games})`);
+  const worst = stats.worstOpenings.slice(0, 2).map((o) => `${o.name} (${o.winRate}% in ${o.games})`);
+
+  const aiStrengths = aiHints?.strengths;
+  const aiWeaknesses = aiHints?.weaknesses;
+  const aiRecommendations = aiHints?.recommendations;
+
+  const strengths =
+    Array.isArray(aiStrengths) && aiStrengths.length > 0
+      ? aiStrengths.slice(0, 3)
+      : best.length > 0
+        ? best.map((b) => `Reliable results with ${b}`)
+        : [`White score ${stats.asWhite.winRate}%`, `Black score ${stats.asBlack.winRate}%`];
+
+  const weaknesses =
+    Array.isArray(aiWeaknesses) && aiWeaknesses.length > 0
+      ? aiWeaknesses.slice(0, 3)
+      : worst.length > 0
+        ? worst.map((w) => `Soft results in ${w}`)
+        : ['Narrow or inconsistent repertoire sample'];
+
+  const recommendations =
+    Array.isArray(aiRecommendations) && aiRecommendations.length > 0
+      ? aiRecommendations.slice(0, 3)
+      : [
+          worst[0]
+            ? `Prioritize repairing ${stats.worstOpenings[0]?.name || 'your weakest opening'}`
+            : 'Pick 1 main line as White and 1 as Black and deepen them',
+          stats.asWhite.winRate + 8 < stats.asBlack.winRate
+            ? 'White repertoire needs more practical systems'
+            : stats.asBlack.winRate + 8 < stats.asWhite.winRate
+              ? 'Black defenses need a clearer main weapon'
+              : 'Keep color balance — deepen your highest-volume lines',
+          'Study typical middlegame plans arising from your top 2 openings',
+        ];
+
+  const avgSuccess =
+    repertoire.length > 0
+      ? repertoire.reduce((sum, r) => sum + r.successRate, 0) / repertoire.length
+      : stats.overall.winRate;
+
+  return {
+    overallRating:
+      typeof aiHints?.overallRating === 'number'
+        ? aiHints.overallRating
+        : Math.max(1, Math.min(10, Math.round(avgSuccess / 10))),
+    strengths,
+    weaknesses,
+    repertoire,
+    recommendations,
+    asWhiteWinRate: stats.asWhite.winRate,
+    asBlackWinRate: stats.asBlack.winRate,
   };
 }
 

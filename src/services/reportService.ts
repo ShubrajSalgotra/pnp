@@ -9,6 +9,7 @@ import {
 import { ChessGame } from '../types/game';
 import {
   buildImprovementPlanFromAnalysis,
+  buildOpeningAnalysis,
   computeLocalReportStats,
   ensureEndgameAnalysis,
   ensureMiddleGameAnalysis,
@@ -47,12 +48,10 @@ class ReportService {
     let errorCode: ReportGenerationError['code'] = 'ANALYSIS_ERROR';
 
     if (error instanceof ReportGenerationError) {
+      // Keep the specific message (daily quota, timeout, truncation). Replacing it with a
+      // generic "high demand" line hid the real cause from users.
       errorMessage = error.message;
       errorCode = error.code;
-      if (error.code === 'RATE_LIMIT' && !error.message.toLowerCase().includes('quota')) {
-        errorMessage =
-          'The AI service is currently experiencing high demand. Please wait a few minutes and try again.';
-      }
     } else if (error instanceof Error) {
       errorMessage = error.message;
     }
@@ -81,6 +80,7 @@ class ReportService {
 
     this.updateProgress('generating', 'Packaging improvement plan...', 90);
     const executiveSummary = mergeExecutiveSummary(localStats, ai.executiveSummary);
+    const openingAnalysis = buildOpeningAnalysis(games, request.username);
     const middleGameAnalysis = ensureMiddleGameAnalysis(ai.middlegameAnalysis);
     const endgameAnalysis = ensureEndgameAnalysis(ai.endgameAnalysis);
     const recurringWeaknesses = Array.isArray(ai.recurringWeaknesses)
@@ -104,6 +104,7 @@ class ReportService {
       generatedAt: new Date(),
       executiveSummary,
       recurringWeaknesses,
+      openingAnalysis,
       middleGameAnalysis,
       endgameAnalysis,
       improvementPlan,
@@ -162,6 +163,7 @@ class ReportService {
 
       this.updateProgress('generating', 'Packaging prep checklist...', 88);
       const executiveSummary = mergeExecutiveSummary(localStats, dossier.executiveSummary);
+      const openingAnalysis = buildOpeningAnalysis(games, request.username);
       const middleGameAnalysis = ensureMiddleGameAnalysis(dossier.middlegameAnalysis);
       const endgameAnalysis = ensureEndgameAnalysis(dossier.endgameAnalysis);
       const recurringWeaknesses = Array.isArray(dossier.recurringWeaknesses)
@@ -196,6 +198,7 @@ class ReportService {
         generatedAt: new Date(),
         executiveSummary,
         recurringWeaknesses,
+        openingAnalysis,
         middleGameAnalysis,
         endgameAnalysis,
         improvementPlan,
@@ -219,9 +222,9 @@ class ReportService {
     }
   }
 
-  /** Rough wall-clock estimate in seconds (single AI pass). */
+  /** Rough wall-clock estimate in seconds: local replay scan plus a single AI pass. */
   estimateGenerationTime(gameCount: number): number {
-    return 25 + Math.min(gameCount, 40) * 0.4 + 35;
+    return 12 + Math.min(gameCount, 40) * 0.5;
   }
 
   async generateReportFromGamesWithUnifiedPrompts(

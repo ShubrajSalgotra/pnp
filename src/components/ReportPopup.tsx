@@ -434,16 +434,21 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
                   <p className="text-sm text-primary-800 dark:text-primary-200">{message}</p>
                 )}
 
-                {isRefreshing && progress && (
+                {isRefreshing && (
                   <div className="space-y-2">
                     <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400">
-                      <span>{progress.message}</span>
-                      <span>{progress.progress}%</span>
+                      <span>
+                        {progress?.message ||
+                          (isOpponent
+                            ? 'Building opponent dossier…'
+                            : 'Preparing your report…')}
+                      </span>
+                      <span>{progress?.progress ?? 5}%</span>
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-primary-100 dark:bg-slate-800">
                       <div
                         className="h-full rounded-full bg-primary-600 transition-all duration-300 dark:bg-primary-400"
-                        style={{ width: `${progress.progress}%` }}
+                        style={{ width: `${progress?.progress ?? 5}%` }}
                       />
                     </div>
                   </div>
