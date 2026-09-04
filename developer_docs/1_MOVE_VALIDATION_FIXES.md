@@ -51,11 +51,11 @@ When an invalid move is detected:
   - Applied validation to all weakness examples with FEN positions
 
 ## Expected Results
-✅ **All move suggestions are now validated to be legal**
-✅ **AI receives correct position context (before user's move)**
-✅ **Invalid suggestions are automatically corrected**
-✅ **Better chess notation and valid alternatives**
-✅ **Users see accurate, playable move recommendations**
+- All move suggestions are now validated to be legal
+- AI receives correct position context (before user's move)
+- Invalid suggestions are automatically corrected
+- Better chess notation and valid alternatives
+- Users see accurate, playable move recommendations
 
 ## Testing
 - Validation function tested with sample positions

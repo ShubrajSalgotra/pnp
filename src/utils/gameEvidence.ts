@@ -319,6 +319,14 @@ function scanGame(game: ChessGame, color: 'white' | 'black'): GameScan | null {
   scan.plies = totalPlies;
 
   for (const candidate of candidates) {
+    // Skip if the player is already in a losing position (down >=3 pawns)
+    // as mistakes in completely lost positions are not instructive.
+    if (candidate.balanceBefore <= -3) {
+      if (!candidate.mate || candidate.played.endsWith('#')) {
+        continue;
+      }
+    }
+
     const settled = settledPlyIndex(candidate.ply, moves, totalPlies, ownParity);
     const drop = candidate.balanceBefore - playerBalance(fenAfterPly[settled], color);
     const shared = {

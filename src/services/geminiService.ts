@@ -245,7 +245,10 @@ class GeminiService {
   private isInvalidArgumentError(error: any): boolean {
     if (!error) return false;
     const errorMessage = error.message?.toLowerCase() || '';
-    return error.status === 400 && errorMessage.includes('invalid argument');
+    return (
+      error.status === 400 &&
+      (errorMessage.includes('invalid argument') || errorMessage.includes('thinking'))
+    );
   }
 
   /** A free-tier per-day cap, as opposed to a short per-minute burst limit. */
@@ -513,25 +516,27 @@ class GeminiService {
   private getPlayerInfo(pgn: string, moveNumber: number, gameId: string, username: string): { playerColor: 'white' | 'black', whitePlayer: string, blackPlayer: string } | null {
     try {
       // Extract player names from PGN headers
-      const whiteMatch = pgn.match(/\[White\s+"([^"]+)"\]/);
-      const blackMatch = pgn.match(/\[Black\s+"([^"]+)"\]/);
+      const whiteMatch = pgn.match(/\[White\s+"([^"]+)"\]/i);
+      const blackMatch = pgn.match(/\[Black\s+"([^"]+)"\]/i);
       const whitePlayer = whiteMatch ? whiteMatch[1] : 'Unknown';
       const blackPlayer = blackMatch ? blackMatch[1] : 'Unknown';
       
       console.log(`[${gameId}] Players - White: "${whitePlayer}", Black: "${blackPlayer}", Username: "${username}"`);
       
+      const w = whitePlayer.trim().toLowerCase();
+      const b = blackPlayer.trim().toLowerCase();
+      const u = username.trim().toLowerCase();
+      
       // Determine which color the user played
       let playerColor: 'white' | 'black';
-      if (whitePlayer.toLowerCase().includes(username.toLowerCase()) || username.toLowerCase().includes(whitePlayer.toLowerCase())) {
+      if (w.includes(u) || u.includes(w)) {
         playerColor = 'white';
-      } else if (blackPlayer.toLowerCase().includes(username.toLowerCase()) || username.toLowerCase().includes(blackPlayer.toLowerCase())) {
+      } else if (b.includes(u) || u.includes(b)) {
         playerColor = 'black';
       } else {
-        // Fallback: determine by move number if we can't match names
-        // If moveNumber is odd (1, 3, 5...), it's White's move
-        // If moveNumber is even (2, 4, 6...), it's Black's move
-        playerColor = (moveNumber % 2) === 1 ? 'white' : 'black';
-        console.log(`[${gameId}] Could not match username to player names, using move number fallback`);
+        // Safe fallback if name inclusion fails
+        playerColor = 'white';
+        console.warn(`[${gameId}] Could not match username "${username}" to White "${whitePlayer}" or Black "${blackPlayer}". Defaulting to white.`);
       }
       
       console.log(`[${gameId}] Move ${moveNumber} - User played as ${playerColor}. White: ${whitePlayer}, Black: ${blackPlayer}`);
@@ -2373,6 +2378,11 @@ Rules:
 Your job is a fingerprint-level diagnosis — if you swapped ${username} for another account, this report must become FALSE.
 Be blunt, specific, and practical. No AI disclaimers. No parent-safe fluff that could apply to anyone.
 
+CRITICAL ROLE / MOVE ATTRIBUTION RULES:
+- Every citable moment in the "CITABLE MOMENTS" list represents a mistake, blunder, or oversight made by ${username} themselves.
+- The move in "played=..." is the move played by ${username}.
+- Do NOT attribute or describe opponent moves or opponent blunders as ${username}'s mistakes. All "recurringWeaknesses" must focus strictly on the flaws in ${username}'s own moves.
+
 PLAYER FINGERPRINT (result-level facts — ground every claim here):
 ${fingerprint}
 
@@ -2545,6 +2555,11 @@ HARD RULES (violations = bad report):
     const prompt = `You are Pawnsposes, a FIDE 2650+ second. Prepare YOUR STUDENT to BEAT one specific opponent: "${username}".
 This is NOT a coaching report for ${username}. Never tell them how to improve — only how to exploit them.
 If you swapped ${username} for a different opponent, this dossier must become FALSE.
+
+CRITICAL ROLE / MOVE ATTRIBUTION RULES:
+- Every citable moment in the "CITABLE MOMENTS" list represents a mistake, blunder, or oversight made by the opponent "${username}" themselves.
+- The move in "played=..." is the move played by "${username}".
+- Do NOT attribute or describe your student's moves or your student's blunders as "${username}"'s recurring weaknesses. All weaknesses must focus strictly on the flaws in "${username}"'s own moves.
 
 OPPONENT FINGERPRINT (result-level facts — ground every claim here):
 ${fingerprint}
