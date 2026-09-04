@@ -16,11 +16,58 @@ import {
   Trophy
 } from 'lucide-react';
 
+const countryCodes = [
+  { code: '+1', name: '🇺🇸 +1' },
+  { code: '+1', name: '🇨🇦 +1' },
+  { code: '+91', name: '🇮🇳 +91' },
+  { code: '+44', name: '🇬🇧 +44' },
+  { code: '+61', name: '🇦🇺 +61' },
+  { code: '+971', name: '🇦🇪 +971' },
+  { code: '+65', name: '🇸🇬 +65' },
+  { code: '+49', name: '🇩🇪 +49' },
+  { code: '+33', name: '🇫🇷 +33' },
+  { code: '+39', name: '🇮🇹 +39' },
+  { code: '+34', name: '🇪🇸 +34' },
+  { code: '+31', name: '🇳🇱 +31' },
+  { code: '+41', name: '🇨🇭 +41' },
+  { code: '+46', name: '🇸🇪 +46' },
+  { code: '+47', name: '🇳🇴 +47' },
+  { code: '+45', name: '🇩🇰 +45' },
+  { code: '+353', name: '🇮🇪 +353' },
+  { code: '+64', name: '🇳🇿 +64' },
+  { code: '+27', name: '🇿🇦 +27' },
+  { code: '+55', name: '🇧🇷 +55' },
+  { code: '+52', name: '🇲🇽 +52' },
+  { code: '+81', name: '🇯🇵 +81' },
+  { code: '+82', name: '🇰🇷 +82' },
+  { code: '+86', name: '🇨🇳 +86' },
+  { code: '+852', name: '🇭🇰 +852' },
+  { code: '+60', name: '🇲🇾 +60' },
+  { code: '+63', name: '🇵🇭 +63' },
+  { code: '+966', name: '🇸🇦 +966' },
+  { code: '+974', name: '🇶🇦 +974' },
+  { code: '+968', name: '🇴🇲 +968' },
+  { code: '+965', name: '🇰🇼 +965' },
+  { code: '+973', name: '🇧🇭 +973' },
+  { code: '+92', name: '🇵🇰 +92' },
+  { code: '+880', name: '🇧🇩 +880' },
+  { code: '+94', name: '🇱🇰 +94' },
+  { code: '+977', name: '🇳🇵 +977' },
+  { code: '+20', name: '🇪🇬 +20' },
+  { code: '+234', name: '🇳🇬 +234' },
+  { code: '+254', name: '🇰🇪 +254' },
+  { code: '+54', name: '🇦🇷 +54' },
+  { code: '+56', name: '🇨🇱 +56' },
+  { code: '+57', name: '🇨🇴 +57' }
+];
+
 const LandingPage: React.FC = () => {
   const coachingEmail = 'Pawnsposes@gmail.com';
   const [contactForm, setContactForm] = useState({
     name: '',
     email: '',
+    countryCode: '+1',
+    whatsapp: '',
     ageGroup: 'Under 8',
     interest: 'Personalized coaching',
     mode: 'Online',
@@ -118,7 +165,32 @@ const LandingPage: React.FC = () => {
     setContactStatus('sending');
     setContactError('');
 
-    const subject = `Coaching request from ${contactForm.name || 'Pawnsposes student'}`;
+    const trimmedName = contactForm.name.trim();
+    const trimmedEmail = contactForm.email.trim();
+    const trimmedWhatsapp = contactForm.whatsapp.trim();
+    const fullWhatsappNumber = `${contactForm.countryCode} ${trimmedWhatsapp}`;
+
+    if (!trimmedName || !trimmedEmail || !trimmedWhatsapp) {
+      setContactStatus('error');
+      setContactError('Please fill in all required fields (Name, Email, and WhatsApp number).');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      setContactStatus('error');
+      setContactError('Please enter a valid email address (e.g., name@example.com).');
+      return;
+    }
+
+    const digitsOnly = trimmedWhatsapp.replace(/\D/g, '');
+    if (digitsOnly.length < 5 || digitsOnly.length > 14) {
+      setContactStatus('error');
+      setContactError('Please enter a valid phone number for your selected country code.');
+      return;
+    }
+
+    const subject = `Coaching request from ${trimmedName || 'Pawnsposes student'}`;
 
     try {
       const response = await fetch(`https://formsubmit.co/ajax/${coachingEmail}`, {
@@ -131,9 +203,10 @@ const LandingPage: React.FC = () => {
           _subject: subject,
           _template: 'table',
           _captcha: 'false',
-          _replyto: contactForm.email,
-          name: contactForm.name,
-          email: contactForm.email,
+          _replyto: trimmedEmail,
+          name: trimmedName,
+          email: trimmedEmail,
+          whatsapp: fullWhatsappNumber,
           ageGroup: contactForm.ageGroup,
           interest: contactForm.interest,
           preferredMode: contactForm.mode,
@@ -150,6 +223,8 @@ const LandingPage: React.FC = () => {
       setContactForm({
         name: '',
         email: '',
+        countryCode: '+1',
+        whatsapp: '',
         ageGroup: 'Under 8',
         interest: 'Personalized coaching',
         mode: 'Online',
@@ -372,8 +447,8 @@ const LandingPage: React.FC = () => {
                 <Mail className="h-4 w-4 text-gold-600" />
                 Direct email
               </div>
-              <a href={`mailto:${coachingEmail}`} className="text-primary-700 hover:text-primary-900">
-                {coachingEmail}
+              <a href="mailto:contact@pawnsposes.com" className="text-primary-700 hover:text-primary-900">
+                contact@pawnsposes.com
               </a>
             </div>
             <div className="mt-6 flex items-center gap-3 text-sm text-primary-900">
@@ -385,7 +460,7 @@ const LandingPage: React.FC = () => {
           <form onSubmit={handleContactSubmit} className="rounded-lg border border-primary-900/10 bg-white p-6 shadow-sm">
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <label className="text-sm font-medium text-primary-900">
-                Student or parent name
+                Student or parent name <span className="text-red-500">*</span>
                 <input
                   required
                   name="name"
@@ -396,7 +471,7 @@ const LandingPage: React.FC = () => {
                 />
               </label>
               <label className="text-sm font-medium text-primary-900">
-                Email
+                Email <span className="text-red-500">*</span>
                 <input
                   required
                   type="email"
@@ -406,6 +481,32 @@ const LandingPage: React.FC = () => {
                   className="mt-2 h-11 w-full rounded-md border-gray-300 text-sm focus:border-primary-600 focus:ring-primary-600"
                   placeholder="you@example.com"
                 />
+              </label>
+              <label className="text-sm font-medium text-primary-900">
+                WhatsApp number <span className="text-red-500">*</span>
+                <div className="mt-2 flex rounded-md shadow-sm">
+                  <select
+                    name="countryCode"
+                    value={contactForm.countryCode}
+                    onChange={updateContactField}
+                    className="h-11 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 pl-2 pr-7 text-xs sm:text-sm font-medium text-gray-700 focus:border-primary-600 focus:ring-primary-600 shrink-0"
+                  >
+                    {countryCodes.map((item, index) => (
+                      <option key={`${item.code}-${index}`} value={item.code}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    required
+                    type="tel"
+                    name="whatsapp"
+                    value={contactForm.whatsapp}
+                    onChange={updateContactField}
+                    className="h-11 w-full rounded-r-md border border-gray-300 text-sm focus:border-primary-600 focus:ring-primary-600"
+                    placeholder="Mobile / WhatsApp number"
+                  />
+                </div>
               </label>
               <label className="text-sm font-medium text-primary-900">
                 Age group
@@ -437,7 +538,7 @@ const LandingPage: React.FC = () => {
                   <option>Group classes</option>
                 </select>
               </label>
-              <label className="text-sm font-medium text-primary-900 md:col-span-2">
+              <label className="text-sm font-medium text-primary-900">
                 Preferred class mode
                 <select
                   name="mode"

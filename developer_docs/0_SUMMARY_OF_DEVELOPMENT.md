@@ -27,6 +27,9 @@ Documents the upgrade of the practice arena to a fully interactive chessboard. I
 ### 5. [5_REPORT_QUALITY_IMPROVEMENTS.md](file:///d:/F%20drive/client%20projects/pnp/pawns-poses-insight/developer_docs/5_REPORT_QUALITY_IMPROVEMENTS.md)
 Details report accuracy improvements: excluding material blunders/missed material that occur when the player is already down by 3 or more pawns (losing positions) and adding strict move/role attribution prompts to prevent misattributing opponent blunders.
 
+### 6. [6_WHATSAPP_CONTACT_FIELD.md](file:///d:/F%20drive/client%20projects/pnp/pawns-poses-insight/developer_docs/6_WHATSAPP_CONTACT_FIELD.md)
+Documents the addition of a WhatsApp phone number field with an international country code select dropdown (`countryCodes`), mandatory field enforcement (Name, Email, WhatsApp), email format validation, public email display (`contact@pawnsposes.com`), and FormSubmit integration.
+
 ---
 
 ## 🛠️ General System Architecture & Context
