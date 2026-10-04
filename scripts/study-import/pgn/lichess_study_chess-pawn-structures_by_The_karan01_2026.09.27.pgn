@@ -1,0 +1,1097 @@
+[Event "Chess Pawn Structures: Chess Structures: Introduction"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "Chess Structures: Introduction"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/cSPImwxG"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/8/8/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+{ [%anno "jomega", jomega] [Last Modified: 8/27/2025]
+-
+This study is the top level of a collection of studies on the topic of "Chess Structures", or what is also called "Pawn Structure Chess".
+
+A study of chess structures is aimed at providing a strategic guide to the most frequently occurring classes of positions in the openings. Those positions are based on the pawn structures that occur.
+
+For a formation of pawns to be considered part of a particular named "structure", it need not have a pawn position identical to the corresponding diagram. The formation of the pawns need only be close enough that the major themes are unchanged.
+
+The same formation of pawns with colors reversed is also considered the same structure; with the White and Black plans reversed.
+
+Pawn structures can transpose into one another. Such transpositions must be studied as they often change the plans for both sides.
+
+Obviously, the exact position that occurs in some game, including whose move it is, will determine the viability of the plans.
+
+There are many sources for this topic. I have gone through many of those sources and completed a comparative analysis. I believe that one of the best of the sources is "Chess Structures: A Grandmaster Guide", by Mauricio Flores Rios.
+
+In this collection of studies you will find every structure that Flores Rios presents in his book. You will also find all the games and exercises from the book. Most of those games are from the 21st century.
+
+I have also included three structures from the other sources that were not in Flores Rios. Every other structure from the other sources is in Fores Rios. Indeed, many of those sources used Flores Rios as a reference.
+
+I previously tackled this topic years ago in my Intermediate Course on Lichess. That was a more gentle introduction to the topic. At that time, I based my course on the book "Pawn Structure Chess" by Andrew Soltis, 1976, and the Wikipedia page on the topic at the time I created the course. The games I used as examples for the Intermediate Course were from the 20th century. See the References chapter in this study for links to my course, and also a list of the sources I used.
+
+These studies are "bare bones"; meaning that there are no comments in the main Lichess chapters, and no annotations in the games. This was done so that you could clone the studies and do with them as you please.
+
+I plan to clone these studies myself and that is where I will include such things as the themes for the structures, and my own annotations on the games.
+
+The Lichess chapters 3-5 in this study are quotes from [FLORESRIOS]. They explain what the topic "Chess Structures" is about, the families of structures as organized by Flores Rios, and his reasons for the structure choices he made.
+
+The supporting games from [FLORESRIOS] are in 4 studies
+starting here:
+Chess Structures: Games and Positions: Chapters 1-8
+https://lichess.org/study/AxW3sYhA
+
+The exercises from [FLORESRIOS] are here:
+Chess Structures: Exercises: Chapter 23
+https://lichess.org/study/PrxEvNOQ
+
+Also see a series of corresponding studies:
+Chess Structures: Opening Connections
+https://lichess.org/study/CTycB4Hi
+----------
+I have written many Lichess studies. All my studies are cross linked. Here is a table of contents for all my studies.
+Jomega Studies Table of Contents
+https://lichess.org/study/ac6JRqJk }
+ *
+
+
+[Event "Chess Pawn Structures: Prerequisites"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "Prerequisites"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/EIXLKUIn"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/8/8/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+{ [%anno "jomega", jomega] Prerequisites
+-
+Readers of this study should have the book "Chess Structures: A Grandmaster Guide", Mauricio Flores Rios, Quality Chess, First Edition 2015.
+
+The corresponding chapter introductions in the book have White's plans and Black's plans for each structure.
+
+The reader should either already have a good grasp of chess terminology and chess ideas, and the basics of chess openings, or is willing to learn what is necessary. For example, the material covered in "The Complete Book of Chess Strategy", by Jeremy Silman.
+
+This book by Silman is a good reference book for openings, chess terminology and chess ideas. Silman gives the ideas behind selected openings in the first part of the book, while the second part of the book is a glossary of chess ideas. }
+ *
+
+
+[Event "Chess Pawn Structures: The Structure Names"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "The Structure Names"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/EKsP1Irq"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/8/8/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+{ [%anno "jomega", jomega] The Structure Names
+-
+In my research on the names people have given to these structures, I found a number of issues.
+
+- The names are not always descriptive of the structure.
+- Different names are sometimes used for the same structure.
+
+The reasons that these things are issues:
+a) when trying to communicate with someone a common understanding of what the names means is necessary, and
+b) making the names be descriptive would be a help in remembering what the structure is.
+
+By "descriptive" I mean something in the name that would be a clue as to what the structure entailed.
+
+An example of a name that is descriptive is "Hanging Pawns". Once one knows the definition of hanging pawns, the name is very descriptive.
+
+As an example of a non descriptive name we have "Najdorf Type I". If one knows the Najdorf variation of the Sicilian Defense, then this is somewhat descriptive. However, the "Type I" and "Type II" extensions on the names is not a standard, and I have only found it in Flores Rios.
+
+Because of that, I added to the Lichess chapter name the status of the main White pawns; assuming that one would find Najdorf descriptive of the Black pawns. Hence, arriving at the Lichess chapter name "Najdorf Type I: White d-pawn, no White e-pawn".
+
+As examples of different names being used for the same structure, we have "Carlsbad", which is also known as "Orthodox Exchange", and the "Open KID", which is also known as the "Boleslavsky Wall". }
+ *
+
+
+[Event "Chess Pawn Structures: References"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "References"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/XOCte0KB"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/8/8/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+{ [%anno "jomega", jomega] References
+-
+- My studies
+Intermediate: (Soltis) Pawn Structures
+https://lichess.org/study/B5upGe9A
+Intermediate: Features Determined by Pawn Structure
+https://lichess.org/study/6AnWFDzO
+
+- Pawn structure references
+[FLORESRIOS] "Chess Structures", Mauricio Flores Rios, 2015
+[WIKI-PS] https://en.wikipedia.org/wiki/Pawn_structure, as of 9/6/2023
+[CGPS] The Complete Guide To Pawn Structures, 12/3/2018
+https://simplifychess.com/pawn-structures/complete-guide-chess-pawn-structures/index.html
+[PSC] "Pawn Structure Chess" by Andrew Soltis, 1976
+[PSCR] Pawn Structure Chess Resources
+https://bishopsbounty.blogspot.com/2008/12/pawn-structure.html
+[PCC] "Pawn Power in Chess" by Hans Kmoch, 1959
+https://lichess.org/study/XUdwFcK6
+
+- General references
+[CBCS]=[SILMAN] "The Complete Book of Chess Strategy", Jeremy Silman
+[RYC] "How to Reassess Your Chess" by Jeremy Silman, 1993
+This book is on the Silman Imbalance Theory of chess.
+[PCC] "Point Count Chess", I. A. Horowitz, Geoffrey Mott-Smith, 1960
+[SC]=[STEAN] "Simple Chess", New Algebraic Edition, Michael Stean, 1978
+[TLG]=[KOTOV] "Think Like a Grandmaster", Alexander Kotov, 1973
+[WIKI-GLOS] https://en.wikipedia.org/wiki/Glossary_of_chess }
+ *
+
+
+[Event "Chess Pawn Structures: The Aims of Chess Structures"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "The Aims of Chess Structures"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/grkYaE8Y"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/8/8/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+{ [%anno "jomega", jomega] The Aims of Chess Structures
+Quoted from the book.
+-
+I do not intend to teach rules applicable to every position. Such rules typically do not exist. Moreover, even if such rules existed, the chance that such a complex message will be misunderstood is far too high. Let's not risk it! My aim is to provide an easy-to-understand strategic guide to the most frequently-occurring classes of positions in chess. I hope readers will find this helpful, as it greatly reduces ambiguity; it is clear when rules will be valid and when they will not.
+-[Preface]
+
+Naturally, the best (and least ambiguous) way to classify chess positions is based on their pawn structure. I divide this book into twenty-four chapters, which discuss the most interesting and common structures in modern practice.
+-[Preface]
+
+Chapters are ordered so that similar structures are close to one another. In fact, these structures are implicitly divided into five classes or families, each of which is more closely associated with one particular type of opening.
+-[Introduction] }
+ *
+
+
+[Event "Chess Pawn Structures: The Structure Families"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "The Structure Families"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/vAGDgG29"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/8/8/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+{ [%anno "jomega", jomega] The Structure Families
+Quoted from the book.
+-
+Family One: d4 and ... d5
+This family consists of the structures that will typically arise when the moves d2-d4 and ... d7 -d5 occur early in the game. Typical openings would be the Queen's Gambit Orthodox Defence, the Slav or the Queen's Indian Defence, but there are many others, such as the Scandinavian, the Caro-Kann or the Alapin Variation against the Sicilian Defence. This family encompasses Chapters 1 through 7. In addition, I discuss the Panov structure in the Caro-Kann and the 3-3 vs. 4-2 pawn structure, which are related to this family, in Chapter 22 [Ed: Miscellaneous].
+---
+Family Two: Open Sicilian
+This family includes those structures that typically occur in the Open Sicilian. It focuses on two types of positions: those that occur when Black plays ... e7-e5 instead of ... e7-e6; and then Hedgehog and Maroczy positions. This family spans Chapters 8 through 11. The Scheveningen and Dragon structures are discussed in Chapter 22.
+---
+Family Three: Benoni
+This small family is devoted to those structures in which Black confronts the queen's pawn opening with a ... c7-c5 strategy and White replies with d4-d5. Later, when Black challenges the centre with ... e7-e6 and ... exd5, White must choose between cxd5 and exd5. Chapter 12 [Ed: Asymmetric Benoni] is devoted to studying the first option, which is typically known as a Benoni-type position, while Chapter 13 [Ed: Symmetric Benoni] studies the alternative exd5. The related Benko structure is discussed in Chapter 22 [Ed: Miscellaneous].
+--
+Family Four: King's Indian
+This family of five chapters is devoted to the multiple types of structure arising from the King's Indian Defence and its relatives. It is an extremely interesting and complex group of chapters to study, but it contains plenty of tactical and strategic ideas. This family encompasses Chapters 14 to 18. The related structures of the Closed Ruy Lopez and Lopez Formation are discussed in Chapter 22 [Ed: Miscellaneous].
+--
+Family Five: French
+This family of three chapters studies the pawn chains that typically arise in the French Defence. It should be noted that such structures often occur in the Sicilian, the anti- Sicilian, the English Opening, the Catalan and many others. It covers Chapters 19 to 21.
+-
+Miscellaneous Chapter
+As you may see from the list above, Chapter 22 covers many structures. This chapter allows me to discuss structures which are in some sense too "strategically limited" to deserve a full chapter, or simply not so popular. Still, this chapter presents some of the interesting points of these structures, and deserves a close look. }
+ *
+
+
+[Event "Chess Pawn Structures: Structure Selection"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "Structure Selection"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/VP4pdmgO"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/8/8/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+{ [%anno "jomega", jomega] Structure selection
+Quoted from the book.
+-
+Naturally it would be impossible to cover every structure. It was a challenge to decide which structures were worthy of inclusion, and which ones were not. I gave priority to the following:
+
+Strategic over tactical: I prefer discussing structures with a substantial strategic component. Structures like the Dragon are discussed only briefly in Chapter 22. The reason is that tactics and opening knowledge tend to predominate, offering fewer long-term plans for us to study.
+
+Frequent over rare: I gave priority to those structures that arise more often, to offer a practical selection that the reader would be likely to encounter in play. Rare structures are not included.
+
+Fixed over flexible: Plans often begin to form after something happens with the pawn structure. That is, pawns are traded, a pawn chain is formed or there is tension in the centre. This creates a semi-stable pawn structure. I only chose structures in which this was the case. If there is no pawn contact whatsoever, then multiple options remain open, but the game is likely to reach one of our structures at a later stage.
+
+Generally relevant over specific: I tried to avoid structures that occur in only one opening. For this reason, I do not discuss the Exchange Variation of the Ruy Lopez, or the doubled pawn arising in the Trompowsky, or the Winawer or MacCutcheon variations of the French. I do mention the Benko structure in Chapter 22, but primarily because it is relevant to the asymmetric Benoni studied in Chapter 12. }
+ *
+
+
+[Event "Chess Pawn Structures: Family One - d4 and ...d5"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "Family One - d4 and ...d5"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/dbJBBw2x"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/8/8/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 1. Isolani"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "1. Isolani"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/xYOGlJtT"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/4p3/8/3P4/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 2. Hanging Pawns"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "2. Hanging Pawns"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/fnPM8CpH"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/4p3/8/2PP4/8/P4PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 3. Caro-Kann"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "3. Caro-Kann"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/mdXJ2Ev8"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/2p1p3/8/3P4/2P5/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 4. Slav"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "4. Slav"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/JKGMB7xF"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/2p1p3/8/3P4/4P3/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 5. Carlsbad: aka Orthodox Exchange"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "5. Carlsbad: aka Orthodox Exchange"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/uZaRQz1g"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/ppp2ppp/8/3p4/3P4/4P3/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 6. Stonewall"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "6. Stonewall"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/sZ4lafro"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/ppp3pp/4p3/3p1p2/3P4/8/PPP1PPPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 7. Grunfeld Center"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "7. Grunfeld Center"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/1pZ2ohD7"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp2pppp/8/2p5/3PP3/2P5/P4PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: Family Two - Open Sicilian"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "Family Two - Open Sicilian"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/C4GQhWDr"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/8/8/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 8. Najdorf Type I: White d-pawn, no White e-pawn"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "8. Najdorf Type I: White d-pawn, no White e-pawn"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/uZtbna38"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/3p4/3Pp3/8/8/PPP2PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 9. Najdorf Type II: White e-pawn, no White d-pawn"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "9. Najdorf Type II: White e-pawn, no White d-pawn"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/qlQn5s1I"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/3p4/4p3/4P3/8/PPP2PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 10. Hedgehog"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "10. Hedgehog"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/EA9BVQAK"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/5ppp/pp1pp3/8/2P1P3/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 11. Maroczy"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "11. Maroczy"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/KHWx6Wwf"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp2pp1p/3p2p1/8/2P1P3/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 11.1 Symmetric Transformation of the Maroczy"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "11.1 Symmetric Transformation of the Maroczy"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/ffDnm9c2"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp2pp1p/3p2p1/3P4/4P3/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 11.2 Asymmetric Transformation of the Maroczy"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "11.2 Asymmetric Transformation of the Maroczy"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/n89Z3pOS"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp2pp1p/3p2p1/3P4/2P5/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: Family Three - Benoni"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "Family Three - Benoni"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/dqVhda0Z"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/8/8/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 12. Asymmetric Benoni, aka Modern Benoni"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "12. Asymmetric Benoni, aka Modern Benoni"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/UGACbQZQ"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/3p4/2pP4/4P3/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 13. Symmetric Benoni"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "13. Symmetric Benoni"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/eF2JrBKI"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/3p4/2pP4/2P5/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: Family Four - King's Indian"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "Family Four - King's Indian"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/dwiJ4qsR"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/8/8/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 14. KID Type I: d5 chain, no c-pawns"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "14. KID Type I: d5 chain, no c-pawns"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/4bTFbGoy"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/3p4/3Pp3/4P3/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 15. KID Type II: d5 chain, blocked c4/c5"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "15. KID Type II: d5 chain, blocked c4/c5"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/oqI7jCr5"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/3p4/2pPp3/2P1P3/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 15.1 KID Type II: Transformation A"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "15.1 KID Type II: Transformation A"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/ct1c7f67"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp5p/3p4/2pPpp2/2P5/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 15.2 KID Type II: Transformation B"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "15.2 KID Type II: Transformation B"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/KO9Nbs3h"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp4pp/3p4/2pPp3/2P5/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 16. KID Type III: d5 chain with (c2 or c4)/c7"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "16. KID Type III: d5 chain with (c2 or c4)/c7"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/UChJ8lzz"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/ppp2ppp/3p4/3Pp3/2P1P3/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 16.1 KID Type III: Transformation A"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "16.1 KID Type III: Transformation A"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/WtGWmZ3Q"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/ppp4p/3p4/3Ppp2/2P5/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 16.2 KID Type III: Transformation B"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "16.2 KID Type III: Transformation B"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/HXfZqcTS"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/ppp3pp/3p4/3Pp3/2P5/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 17. Open KID: aka Boleslavsky Wall"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "17. Open KID: aka Boleslavsky Wall"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/u5DQUg4y"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/ppp2ppp/3p4/8/2P1P3/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 18. KID Complex"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "18. KID Complex"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/7NRBSPfb"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/2pp4/4p3/2PPP3/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 18.1 Rauzer"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "18.1 Rauzer"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/rGicHym1"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/2p5/4p3/2P1P3/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: Family Five - French"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "Family Five - French"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/mPwpFkhT"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/8/8/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 19. French Type I: e5 chain, no White e-pawn, no Black f-pawn"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "19. French Type I: e5 chain, no White e-pawn, no Black f-pawn"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/dg6oqjDd"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/ppp3pp/4p3/3p4/3P4/8/PPP2PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 20. French Type II: e5 chain, no White d-pawn, no Black c-pawn"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "20. French Type II: e5 chain, no White d-pawn, no Black c-pawn"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/ejJcMZx7"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/4p3/3pP3/8/2P5/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 21. French Type III: aka French Advance"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "21. French Type III: aka French Advance"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/iWeE5qg1"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/ppp2ppp/4p3/3pP3/3P4/8/PPP2PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 22. Miscellaneous: Various Structures"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "22. Miscellaneous: Various Structures"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/c3R1io9m"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/8/8/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 22.1 3-3 vs. 4-2"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "22.1 3-3 vs. 4-2"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/MdSUcKqH"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/4p3/8/8/2P5/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 22.2 Panov"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "22.2 Panov"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/S2Xs1Ogm"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp2pppp/8/2Pp4/3P4/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 22.3 Dragon"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "22.3 Dragon"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/bV14I3iD"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp2pp1p/3p2p1/8/4P3/8/PPP2PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 22.4 Scheveningen"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "22.4 Scheveningen"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/k0pg1com"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/3pp3/8/4P3/8/PPP2PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 22.5 Benko"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "22.5 Benko"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/e2FXUk2l"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/4pp1p/3p2p1/2pP4/4P3/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 22.6 Closed Ruy Lopez"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "22.6 Closed Ruy Lopez"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/dN4K7WVu"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/p4ppp/3p4/1p1Pp3/2p1P3/2P5/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 22.7 Lopez"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "22.7 Lopez"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/9cvCEnRh"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/3p4/2p1p3/3PP3/2P5/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: 22.7.1 Lopez - double exchange on d4"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "22.7.1 Lopez - double exchange on d4"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/1ZKaS7tp"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/3p4/8/4P3/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: Formations not in Flores Rios"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "Formations not in Flores Rios"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/5wY1TVbJ"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/8/8/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: Giuoco Piano - Isolani"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "Giuoco Piano - Isolani"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/GFTT8QUy"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/ppp2ppp/8/8/3P4/8/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: Botvinnik system"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "Botvinnik system"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/Sur5RmAV"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp3ppp/3p4/2p1p3/2P1P3/3P4/PP3PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+
+[Event "Chess Pawn Structures: Closed Sicilian"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Chess Pawn Structures"]
+[ChapterName "Closed Sicilian"]
+[ChapterURL "https://lichess.org/study/A2DZd7OE/u9Liqdhz"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/pp2pppp/3p4/2p5/4P3/3P4/PPP2PPP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:45:25"]
+
+ *
+
+

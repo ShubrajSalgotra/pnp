@@ -1,0 +1,1603 @@
+[Event "ENDGAMES FOR EXPERTS (2000-2199): INTRO"]
+[Site "https://lichess.org/study/7Sq816Cs/1pI7qgSI"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): INTRO"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/iUFpKRf1"]
+[FEN "8/8/8/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ At this point you know enough basics to change your general mode of study. Instead of looking at isolated positions, we will look at more complex situations that are made easy by being firmly schooled in all the foundation endgames. Here you'll be introduced to the concept of solving complicated positions by beginning with a very simple idea (i.e., your previously acquired knowledge), then adding a bit more complexity to it, and adding toit again. This “flow” of information, in essence a Flowchart,
+can be used to deconstruct a surprising amount of endings, no matter how advanced they might appear to beat first glance.
+
+Rook Endgames :
+
+Rook endgames are a mystery to most players. The fact is, if you don’t know the building blocks of Rook endgames, you won’t be able to play any Rook endgame properly. In other words, knowledge is a must. Since you're reading this Expert section, you should be well acquainted with the ins-and-outs of basic Rook endgame theory. This will allow you to understand the more complex situations that we’ll be addressing here, and also make the concept of the Flowchart rather easy to grasp.
+
+We will now take a leap into Flowchart mentality—a simple technique that will enable you to turn many complex positions, which at first glance will appear unintelligible, into simple situations that you have already mastered.
+
+The Flowchart mentality is, in reality, a form of transition where you take the game from one situation to another and, perhaps, to yet another! This can mean maneuvering a complex Rook endgame into a basic, well known situation, or it can mean going from one specific kind of endgame to a completely different situation (for example, a Rook and minor piece can turn into a favorable Rook endgame if you exchange the minor pieces, and this can turn into a winning King and pawn endgame if you later exchange the Rooks).
+
+Let’s start with the following “confusing” position. }
+ *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Building Block 1"]
+[Site "https://lichess.org/study/7Sq816Cs/Yt5trTrm"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Building Block 1"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/gZqiHev1"]
+[FEN "8/R7/6k1/8/8/8/p5K1/r7 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ First of all, look at these 6 Building Blocks positions. Once done, continue the Flowchart understanding.
+
+A dead draw
+
+This is a position you already have in your internal “basics” database. As long as white’s King stays on h2 or g2, and as long as the Rook remains on the a-file and checks the black King every time it touches its pawn, the game can’t be won. }
+1... Kf5 (1... Kf6 2. Kf2 (2. Kf3 Rf1+ { [%cal Ga2a1] }) (2. Kg3 Rg1+) 2... Rh1 { [%csl Gh1,Ga2][%cal Gh1h2,Gh2a2] } 3. Rxa2 (3. Kg2 a1=Q 4. Rxa1 Rxa1 { [%csl Ga1] }) 3... Rh2+ { [%csl Ga2][%cal Gh2a2] }) 2. Kh2 (2. Ra5+ Ke4 3. Ra4+ Kd3 4. Ra3+ (4. Ra7 Kc2 5. Rc7+ Kb3 6. Rb7+ Kc4 7. Rc7+ Kb5 8. Ra7 Kb6 9. Ra8 Kb7 { [%csl Ga3] } 10. Ra3 Kb6 11. Ra8 Kb7 12. Ra3) 4... Kc2 5. Ra8 Kb2 6. Rb8+ Kc3 7. Rc8+ Kb4 8. Rb8+ Ka5 9. Ra8+ Kb6 10. Ra3 (10. Rb8+ Ka7 11. Rb2 Rg1+ 12. Kxg1 a1=Q+ { [%csl Gb2][%cal Ga1b2] }) 10... Kb5 11. Kh2 (11. Ra8 Kb6 12. Ra3 Kc5 13. Ra5+ Kb4 14. Ra8 Kb3 15. Rb8+) 11... Kb4 12. Ra8 Kb5 13. Rb8+ Ka6 14. Ra8+ Kb7 15. Ra3) (2. Kg3 Rg1+ { [%csl Gg3,Ga1][%cal Gg1g3,Ga2a1] }) (2. Kf2 Rh1 3. Rxa2 { [%csl Gh2,Ga2][%cal Gh1h2,Gh2a2] } (3. Ke3 a1=Q) (3. Ke2 a1=Q 4. Rxa1 Rxa1) 3... Rh2+ { [%csl Ga2][%cal Gh2a2] }) (2. Rb7 Rg1+ 3. Kxg1 a1=Q+ { [%csl Gg1][%cal Ga1g1] }) (2. Kf3 Rf1+ { [%csl Ga1,Gf4][%cal Ga2a1,Gf1f4] } 3. Ke2 (3. Ke3 a1=Q 4. Rxa1 Rxa1 { [%csl Ga1] }) 3... a1=Q 4. Rxa1 Rxa1 { [%csl Ga1] }) 2... Ke4 3. Kg2 Kd3 4. Kh2 Kc2 5. Rc7+ (5. Kg2 Kb2 6. Rb7+ Ka3 7. Ra7+ Kb4 8. Rb7+ Ka5 9. Ra7+ Kb6 10. Ra3 Kb5 11. Ra8 Kb6 12. Ra3 Kb5 13. Ra8 Kb4 14. Rb8+ Kc5 15. Rd8 (15. Rc8+ Kb6 { [%csl Gb8][%cal Gc8b8] } 16. Rb8+ (16. Ra8) 16... Ka7 { [%cal Ga8a1] })) 5... Kb2 6. Rb7+ Kc2 7. Rc7+ Kb3 8. Rb7+ Kc4 9. Ra7 (9. Rc7+ Kb5 10. Ra7 Kb6) 9... Kb5 { [%csl Ga2][%cal Ga7a2] } 10. Rb7+ { [%cal Gb7b1,Gb5a6] } (10. Ra8 Kb4 (10... Kb6 11. Ra3) 11. Rb8+ Ka5 12. Ra8+ Kb6 13. Rb8+ Ka7) (10. Ra3 Kb4 11. Ra8 { [%csl Ga2][%cal Ga8a2] } 11... Kb3 12. Rb8+ Kc2 13. Rc8+) 10... Ka6 11. Rb2 { [%csl Gh1][%cal Ga1h1] } (11. Rb8 Ka7 12. Rb2 Rh1+ { [%csl Gh2][%cal Gh1h2] } 13. Kxh1 a1=Q+ { [%csl Gb2][%cal Ga1b2] }) 11... Rh1+ 12. Kxh1 a1=Q+ { [%csl Gb2][%cal Ga1b2] } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Building Block 2"]
+[Site "https://lichess.org/study/7Sq816Cs/0Dn0ivIL"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Building Block 2"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/bHprO9bd"]
+[FEN "8/R7/6k1/7p/8/8/p5K1/r7 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ A dead draw
+
+RULE
+King and Rook draw vs. King, Rook, a-pawn on the 7th (with its Rook trapped in front of it), and an h-pawn.
+
+This is new, and should be added to your rapidly growing store of memorized basic positions. Black can’t win because the h-pawn isn’t able to deprive the white King of both critical squares (it can take away g2, but not h2). Thus: }
+1... h4 2. Kh2 (2. Ra6+ Kf5 3. Ra5+ Ke4 4. Ra4+ Kd5 5. Ra5+ Kc4 6. Ra8 Kb3 7. Rb8+ Ka4 8. Ra8+ Kb5 9. Rb8+ Ka6 10. Ra8+ Kb7 11. Ra3 Kb6 12. Rb3+ Ka5 13. Ra3+ Kb4 14. Ra8) (2. Kf2 Rh1 3. Rxa2 Rh2+ { [%cal Gh2a2] }) (2. Ra5 h3+ { [%cal Bg2h3] } 3. Kxh3 Rh1+ { [%csl Ra1][%cal Gh1h3,Ra2a1] }) 2... h3 3. Ra8 (3. Kxh3?? Rh1+ $19 { [%cal Ga2a1] }) 3... Kf5 4. Ra7 Ke4 5. Ra8 Kd3 6. Ra7 Kc2 7. Ra8 Kb3 8. Rb8+ Kc3 9. Ra8 $10 { Black’s King can wanderthe Earth like Cain, but it can’t bother white’s King, nor can it help extricate its Rook from the prison on al. } 9... Kb3 10. Rb8+ Ka4 11. Ra8+ { [%csl Rh2] } 11... Kb5 12. Rb8+ Ka6 13. Ra8+ Kb7 { [%csl Ga2][%cal Ga8a2] } 14. Ra3 Kb6 15. Rb3+ Ka5 16. Ra3+ Kb4 17. Ra8 Kb3 18. Rb8+ *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Building Block 3"]
+[Site "https://lichess.org/study/7Sq816Cs/oJKJgTst"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Building Block 3"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/UScTEPGF"]
+[FEN "8/R7/6k1/6p1/8/8/p5K1/r7 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ A dead draw
+
+Another new position. This is also drawn because the pawn can take the h2- square away from white’s King, but not g2.
+
+RULE :
+King and Rook draw vs. King, Rook, a-pawn on the 7th (with its rook trapped in front of it) and g pawn. }
+1... g4 (1... Kf5 { [%csl Gg2] } 2. Ra5+ Kg6 (2... Ke6 3. Ra6+ Kd5 4. Ra5+ Kc4 5. Ra4+ Kb3 6. Ra8 Kb2 7. Rb8+ Kc3 8. Rc8+ Kb4 9. Rb8+ Ka5 10. Ra8+ Kb6 { [%csl Gb8][%cal Ga8b8] } 11. Rb8+ (11. Ra3 g4 12. Kh2 g3+ 13. Kg2 { [%csl Rg2] }) 11... Ka7 { [%csl Ga1][%cal Ga2a1] }) 3. Ra4 g4 4. Ra3 g3 5. Ra6+ Kf5 6. Ra5+ Ke4 7. Ra4+ Kd3 8. Ra3+ Kc4 9. Ra8) 2. Ra8 (2. Ra6+ Kg5 (2... Kf7 3. Ra7+ Ke6 4. Ra6+ Kd5 5. Ra5+ Kc6 6. Ra6+ Kb5 7. Ra8 Kb4) 3. Ra5+ Kh4 4. Ra8 g3 5. Rh8+ Kg4) 2... g3 $10 3. Ra7 (3. Ra6+ $10 { also more than sufficient to split the point }) 3... Kf5 4. Ra8 Kf4 5. Ra7 $10 { Black can’t come close to winning. } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Building Block 4"]
+[Site "https://lichess.org/study/7Sq816Cs/jYh2gWnN"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Building Block 4"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/ljpURjAQ"]
+[FEN "8/R7/6k1/5p2/8/8/p5K1/r7 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White should resign
+
+RULE
+King and Rooklose vs. King, Rook, a-pawn on the 7th (with its Rook trapped in front of it), and an f-pawn.
+
+New and very important! The win is suddenly effortless since the f-pawn will successfully pull white’s King off of both critical squares on h2 and g2. Infact, Black doesn’t even need to use his King to claim to full point. }
+1... f4 { [%cal Gf4f3,Gf3f2] } (1... Kg5) 2. Ra8 (2. Ra6+ { doesn’t accomplish anything since black’s King would just march towards the Rook } 2... Kf7 (2... Kf5 3. Ra5+ Ke6 4. Ra6+ Kd5 5. Ra5+ Kc6 6. Ra6+ Kb5 7. Ra8 f3+ 8. Kh2 f2 9. Rf8 f1=Q 10. Rxf1 Rxf1 11. Kg2 Rf7 (11... a1=Q 12. Kg3 Qg7+ 13. Kh3 Rh1#) 12. Kg3) (2... Kg5 3. Ra5+ Kg4 4. Ra4 Kg5 5. Ra5+ Kf6 6. Ra4 Ke5 7. Ra3 Kd4 8. Ra4+ Kc3 9. Ra3+ Kb4 10. Ra8 f3+ 11. Kxf3 (11. Kh2 f2 12. Rf8 Rh1+ 13. Kxh1 a1=Q+) 11... Rf1+) 3. Ra7+ Ke6 4. Ra6+ Kd7 5. Ra7+ Kc6 6. Ra6+ Kb7 { and then continue pushing the f-pawn once the checks ended. }) 2... f3+! 3. Kh2 { [%csl Rh2][%cal Gf3f2] } (3. Kxf3 { [%csl Gf1][%cal Ga1f1] } 3... Rf1+ { [%csl Ga1][%cal Ga2a1] } 4. Kg2 a1=Q $19) (3. Kf2 Rh1 { [%csl Ra2] } 4. Rxa2 Rh2+ $19 { [%cal Gh2a2] }) 3... f2 $19 { [%csl Gf1] } 4. Rf8 { [%csl Ga2][%cal Gf2f1] } 4... Rh1+ { [%csl Gh1,Ga1][%cal Ga2a1] } 5. Kxh1 a1=Q+ 6. Kg2 Qg1+ *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Building Block 5"]
+[Site "https://lichess.org/study/7Sq816Cs/DpI7tdoG"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Building Block 5"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/23pYurqI"]
+[FEN "8/R7/6k1/6p1/6P1/8/p5K1/r7 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Draw.
+This must be a draw since even if Black manages to win the g4-pawn, it takes us back to the dead drawn position in Building Block 3. }
+ *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Building Block 6"]
+[Site "https://lichess.org/study/7Sq816Cs/fXtsvwUE"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Building Block 6"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/ukik9YSy"]
+[FEN "8/3k4/R7/5p2/5P2/8/p5K1/r7 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Black wins with accurate play
+
+Since building block four was an easy win for White, it’s clear that the same holds true here if Black can win the f4-pawn. The winning method is simple and instructive. }
+1... Kc7 { If Black wants to make contact with the f4-pawn, he must break through the 6th rank. } 2. Kh2 { [%csl Gb7][%cal Gc7b7] } (2. Ra3 Kc6) 2... Kb7 3. Ra3 { [%csl Ga3,Re4][%cal Gb7b5,Ga6d6,Ga5d5] } (3. Ra4 Kb6 4. Ra8 Kb5 5. Ra7 Kc4 6. Ra4+ (6. Ra5 Kd4 7. Ra4+ Ke3 8. Kg2 Ke2 9. Ra3 Kd2 10. Ra4 { [%csl Gc2,Ga8][%cal Gd2c2,Ga4a8] } 10... Ke3 11. Ra3+ Kxf4) 6... Kd3 7. Kg2 Ke3) (3. Rg6 Rh1+ { [%csl Ga1][%cal Ga2a1] }) 3... Kb6 4. Kg2 Kb5 5. Ra8 Kb4 6. Ra7 Kc3 7. Ra5 Kd3 { Of course, White has no fear of 8.Rxf5 } 8. Ra8 (8. Rxf5 Rb1 $19 { [%cal Ga2a1] }) 8... Ke4! { [%cal Ga8a4] } (8... Ke3?! 9. Ra4!? { Black wants White to move here! Black to move can’t force White to implode, so he would have to dance around a bit until this same position is reached with White to move } 9... Kd3 10. Kh2 (10. Ra8 Ke4 { transposes to our main line }) 10... Ke2 { [%cal Re2f2,Re2f3] } 11. Kg2 Ke3 $19 { reaching the diagrammed position with White to move and winning due to zugszwang, as explained in our mainline. }) 9. Ra4+ Ke3 { Zugzwang! White is forced to drop his pawn or move his King to a poor square. } { [%cal Ga4a3] } 10. Kh2 (10. Ra3+ Ke2 { [%cal Ga3a4] } 11. Ra4 Ke3 { [%cal Gg2h2] } 12. Kh2 Kf3 13. Kh3) 10... Kf3 { and White must give up the pawn } 11. Ra8 (11. Kh3?? Rh1#) 11... Kxf4 { we are back to building block four.
+These six building block positions should give you enough Flowchart knowledge to make solving our original two “problems” possible. } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Rook Endgames : The Flowchart - Taking a Simple Position Into Deeper Water"]
+[Site "https://lichess.org/study/7Sq816Cs/TNwVVHFI"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Rook Endgames : The Flowchart - Taking a Simpl"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/espwWSkU"]
+[FEN "8/R4p2/6k1/p4p2/8/r5P1/6K1/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ REMEMBER : A flowchart is nothing more than a way of using basic knowledge to solve positions that seem extremely complex.
+
+Black to move, can he win?
+
+Compare this position with the next one.
+
+This position, though, seems very winnable because we can see a clear “light at the end of the tunnel.” Using building block four as our guidepost, we know that pushing the a-pawn to a2 (which freezes the white King) and then exchanging the f5-pawn for the g3-pawn would be game over.
+
+Furthermore, building block six showed us that we would win the position even if we got the a~pawn to a2 and dragged white’s g-pawn to f4. Once we have a goal position in mind, coming up with the actual moves that allow us to reach our dream position is rather easy : }
+1... a4 { Black immediately rushes his pawn to a2, knowing that this will leave the white King shackled to the h2- and g2-squares. } 2. Kf2 Ra1 3. Kf3 a3 4. Kg2 (4. Kf4?? a2 $19 { White can’t stop a back rank check followed by the promotion of the a-pawn. }) 4... a2 { Black’s first goal is accomplished! white’s King is now stuck on h2 and g2. If you are not completely familiar with this, the material in Part Six should refresh your memory. } 5. Kh2 { [%csl Gf4,Ga2,Gb2][%cal Gf5f4] } 5... f4! { [%cal Gg6f5,Gf5f4] } 6. gxf4 { [%cal Gf7f5] } 6... f5! { and we've reached building block six, which we should now know is a basic win for Black.
+We'll be looking at other complex situations in Part Seven where Flowcharts prove useful, but all of them are only comprehensible if you’ve retained the lessons learnedin the first six parts of this book. } { [%csl Gf4,Gf1][%cal Gg6h5,Gh5g4,Gg4f4,Gf5f1] } 7. Ra6+ (7. Ra8 Kh5 { [%cal Gf8f1] } 8. Rg8 Rh1+ { [%csl Ra1][%cal Ga2a1] }) 7... Kh5 8. Ra7 { [%csl Gf4][%cal Gh5g4,Gg4f4] } 8... Kg4 9. Kg2 Kxf4 *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Rook Endgames : The Flowchart - Taking a Simple Position Into Deeper Water (2)"]
+[Site "https://lichess.org/study/7Sq816Cs/TP3uxeVH"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Rook Endgames : The Flowchart - Taking a Simpl"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/DgsVLVwA"]
+[FEN "8/R5p1/7k/p5p1/8/r6P/6K1/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Black to move, can he win ?
+
+A quick guess would tell us that Black can’t win because if he pushes his a pawn to a2 and trades the g5-pawn for white’s h3-pawn, the resulting two extra pawn position is drawn, as shown in building block three. }
+ *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Rook and Two Connected Passed Pawns vs. Rook and Pawn"]
+[Site "https://lichess.org/study/7Sq816Cs/3SCKR5C9"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Rook and Two Connected Passed Pawns vs. Rook a"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/il0va5YZ"]
+[FEN "8/6p1/6k1/1r6/3PR3/2P5/8/6K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White wins.
+
+Positions featuring two passed pawns vs. one enemy passed pawn are usually winning for the two pawns. Previous knowledge is important here, too, since many positions are won by following basic rules, and by exchanging a pair of pawns and creating a winning Rook and one vs. Rook position. }
+1. Kf2 { The King MUST take part in this battle! } (1. c4 Rb4 { [%csl Gb4] } 2. c5 Rc4 { [%csl Gc4,Gc5,Gf5][%cal Gg6f5] } 3. Kf2 Kf5 4. Rh4 (4. Re5+ Kf4 { [%csl Gd4][%cal Gc4d4] } 5. Rd5 Ke4 (5... g5 6. Rxg5 Kxg5 7. Ke3 Kf5 8. Kd3 Rc1 9. Kd2 Ra1) 6. Re5+ Kxd4 { [%cal Gd4c5] }) 4... g5 { [%csl Gg5] }) 1... Kf5 2. Kf3 (2. Ke3 { [%cal Gb5b3] } 2... Rb3 3. Kd3 (3. Re5+ Kg4 4. Kd3) 3... Rxc3+ 4. Kxc3 Kxe4 { [%cal Bg7g1] }) 2... g5 { [%cal Gf3e3,Ge3d3] } 3. Re8 { White’s Rook prepares to place itself behind the enemy passed pawn as discussed in Part Six). } 3... Rb1 4. Rf8+ Ke6 5. Ke4 { White isn’t too concerned with black’s pawn. Instead, he continues to bring his own King up so it can support his two passers. } 5... Re1+ 6. Kd3 { [%csl Bc3,Bd4] } 6... Rd1+ { [%csl Gc3,Gd4] } (6... g4?! 7. Re8+ Kd5 8. Rxe1 $18) 7. Kc4 { [%csl Gc4,Gd8][%cal Gd4d5,Gd5d6] } 7... g4 { [%csl Gc4,Gd4] } 8. Kc5 { Optimizing the position of white’s King. He’s finally ready to start moving his own pawns forward. Please note: he will only do so after the King gets into a position to support them. } 8... g3 9. Rg8 { Placing the Rook behind black’s passed pawn and stopping it from dashing to g1. } 9... Rg1 10. c4 { At last! } 10... g2 11. d5+ Kd7 12. Rg7+ Ke8 { REMEMBER :
+You can avoid Rook checks by keeping you King in front of your pawns ! } { [%csl Gc5][%cal Gg1c1,Gc1c5] } 13. Kd6 { White heads for a winning Rook and pawn vs. Rook endgame. Even stronger is 13.d6 : Kf8 18.Re4 Kf7 15.Kc6 Rel 16.d7, 1-0. However, the play after 13.Kd6 is more instructive. } (13. d6!? Kf8 14. Rg4 Kf7 15. Kc6 Rc1 16. d7 $18 { the play after 13.Kd6 is more instructive. }) 13... Rc1 { [%csl Gg2][%cal Gg7g2] } (13... Kf8 14. Rg4 Rc1 15. Rxg2 Rxc4 16. Kd7 $18 { would transpose into our main line. }) 14. Rg8+ { This check forces black’s King away from e8 and thus gives white’s King access to the d7-square. } 14... Kf7 15. Rxg2 Rxc4 16. Kd7 { White is heading for a Lucena Position (explored in Part Four). Black tries to resist, but his position is too far gone. } 16... Ra4 (16... Rd4 17. d6 Kf8 18. Kc7 Rc4+ 19. Kd8 Rd4 20. d7 Rc4 { [%cal Gd8e8,Gd8e7] } 21. Rf2+ { [%cal Gf8g7] } 21... Kg7 22. Ke7 (22. Rf5 Rc2 (22... Kg6 23. Rf3 Kg7 { [%csl Gd3][%cal Gf3d3] } 24. Rf2 Kg6 (24... Kh7 25. Rd2 { [%csl Gd2,Gd8][%cal Gd8e7,Ge7f6,Gf6g5,Gg5g4,Gg4g3,Gg3f2,Gf2e1,Gd7d8] }) 25. Rf8 Kg7 26. Re8 Kf7 27. Re3 Kf8 28. Rf3+ Kg7) 23. Ke7 Re2+ 24. Kd6 Rd2+ 25. Rd5 (25. Kc6 Rc2+ 26. Kd5 Rd2+ { [%csl Gd4][%cal Gf4d4] })) 22... Re4+ 23. Kd6) 17. Rf2+ { Trapping black’s King away from the action (see Part Four). } 17... Kg7 18. d6 Ra7+ { Poor Black doesn’t even have Checking Distance (explained in Part Six). } 19. Kc6 Ra6+ 20. Kc7 Ra7+ 21. Kb6 Rd7 22. Kc6 { 1-0 } 22... Rd8 23. Kc7 Ra8 24. d7 $18 Ra7+ 25. Kd8 Ra1 26. Kc7 (26. Rf4 { [%csl Gf4] } 26... Rd1 27. Ke7 Re1+ 28. Kd6 Rd1+ 29. Ke6 Re1+ 30. Kd5 Rd1+ 31. Rd4 Rxd4+ 32. Kxd4 Kf7 { [%csl Rd8][%cal Rd7d8] }) (26. Rc2 Kf7 27. Kc7 Ra7+ 28. Kd6 Ra6+ (28... Ra8 29. Rc8 Ra6+ 30. Kc5) 29. Rc6 Rxc6+ 30. Kxc6 Ke7 31. Kc7 { [%cal Gc7d8] }) (26. Rd2 Ra8+ 27. Kc7 Ra7+ 28. Kb6 Ra8 29. d8=Q Rxd8 30. Rxd8 Kf7 31. Kc7 Ke7 32. Rd5 { [%cal Gd5h5,Gh5h8,Gh8d8,Gd8d5] } 32... Ke6 33. Kc6 { [%cal Gc6d5] } 33... Ke7 34. Rd6 { [%csl Gd6][%cal Ge6h6,Gh6h8,Gh8d8,Gd8d6] } 34... Ke8 35. Rd7 { [%cal Gd7h7,Gh7h8,Gh8d8,Gd8d7] } 35... Kf8 { [%cal Gf8e7] } 36. Kd6 Ke8 37. Re7+ { [%csl Gd8][%cal Ge8d8] } (37. Ke6 { [%cal Ge8f8] } 37... Kf8 38. Re7 Kg8 39. Rf7 Kh8 40. Kf6 Kg8 41. Kg6 Kh8 42. Rf8#)) (26. Rf5 { [%csl Gf5] } 26... Kg6 27. Rd5 { [%csl Gd7][%cal Gd5d7] } 27... Kf7 28. Kc7 Rc1+ 29. Kb6 Rb1+ 30. Kc5 Rc1+ 31. Kb4 Rb1+ 32. Kc3 Rc1+ 33. Kb2) 26... Rc1+ 27. Kd8 Rd1 { [%cal Gf2f4] } 28. Rf4 Kg6 29. Kc7 Rc1+ 30. Kd6 Rd1+ 31. Kc6 Rc1+ 32. Kd5 Rd1+ 33. Rd4 { [%csl Bd4] } 33... Rxd4+ 34. Kxd4 *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): When a Philidor Goes Bad"]
+[Site "https://lichess.org/study/7Sq816Cs/5sF0c5Rr"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): When a Philidor Goes Bad"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/LsZETBS0"]
+[FEN "6R1/4k2r/8/3KP3/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move and cause black pain
+
+In Part Four we explored one of the most important Rook endgames one can know : the Philidor Position. We saw that it offers the key to defending a pawn down Rook and pawn versus Rook endgame. However, what if a Philidor goes bad and one isn’t allowed to use the main “dominate the rank and stop the enemy King from advancing” idea?
+
+We used this same diagram in Part Four, though in that case we gave Black the move. This allowed him to end things right away by 1...Rh6 when White can’t make any progress. However, what if White has the move? }
+1. Rg6! { prevents the key defensive maneuver and forces Black to adopt a “plan B.” Of course, if you don’t know “plan B” off the top of your head, and if you don’t remember our lessons about the Philidor Position (Part Four), the Lucena Position (Part Four), Checking Distance (Part Six) and the Short and Long Side of the board (Part Six), then you are, to put it mildly, up the creek without a paddle. Let’s play a few moves so you can see how knowledge of the Rook endgame basics (as listed above), } (1. e6) 1... Kf7 { Black seems unimpressed. Isn’t his King safe? } { [%cal Gd5d6,Gd6e7] } 2. Ra6! { So black’s King wasn’t safe after all. Now the threat of Ra7+ forces a reaction. } { [%cal Ra6a7,Ba7h7] } 2... Rh1 { Best. We'll soon see why this is important.
+REMEMBER
+If you intend to check the enemy King, try to put as much distance between your Rook and his King as possible (i.e., Checking Distance). } 3. Ra7+ Ke8 { [%csl Bd6][%cal Bd5d6] } 4. Kd6! { The start of a multi-question “test”
+REMEMBER
+White is trying to create a Lucena Position (which would win).
+Black is trying to create a Philidor (which would draw).
+Our key position. This is where you must have a preexisting knowledge of the saving idea and/or a firm understanding of the basics that enable you to make sense of it, or you'll almost certainly go down in flames. Since 4...Rh6+? 5.e6 is clearly horrible, and 4...Rd1+? 5.Ke6 Kf8 (Gn Part Four, we saw that laying passively on the back rank via 5...Rd8 fails to 6.Rh7) 6.Ra8+ Kg7 7.Ke7 has White rushing towards the creation of a Lucena, Black is forced to pass a multi-question test to survive ! } (4. Ke6 Rh6+) 4... Re1! { Question one: correct! What does this do? It makes it hard for White to advance his pawn, as you'll see in a moment. } (4... Rh6+? 5. e6 { horrible for black }) (4... Rd1+? 5. Ke6 { [%csl Ra8][%cal Ga7a8] } 5... Kf8 (5... Rd8 { fails to } 6. Rh7) 6. Ra8+ Kg7 7. Ke7 Re1 8. e6 Rf1 9. Kd8 Rd1+ 10. Ke8 Re1 11. e7 Kg6 12. Kd7 Rd1+ 13. Kc6 Rc1+ 14. Kd5 Rd1+) 5. Ra8+ Kf7 { Thepoint of 4...Re1 is now clear: White can’t play 6.e6+ due to 6...Rxe6+. Since Black now threatens to make an immediate draw via 6...Rd1+, White must step back and move to the previous position. } { [%cal Ge5e6,Re1e6] } 6. Ra7+ Ke8 7. Ke6 { Part two of the “test” } { [%cal Ra7a8,Ge1e5] } 7... Kf8 { This is known as going to the Short Side (explored in Part Six). The idea is that Black is leaving far more distance on the left for future lateral checks with his Rook (without his King getting in the way).
+Remember: when you check a King with your Rook, you always like to have as much distance between your Rook and the enemy King as possible. } 8. Ra8+ Kg7 9. Kd6 { Part three of the “test” } 9... Kf7! { Again showing the strength of 4...Re1. Now the e-pawn is again stuck and ...Rd1+ is threatened, chasing the white King away from the action. Far worse was 9...Rd1+? 10.Ke7 when White is again getting perilously close to setting up a Lucena Position (the defender must avoid this at all costs!). } { [%cal Re1d1,Re5e6] } (9... Rd1+? 10. Ke7 { when White is again getting perilously close to setting up a Lucena Position (the defender must avoid this at all costs!). }) 10. Ra7+ { White repeats the position again and sets up a completely different kind of test for his opponent. } 10... Ke8 11. Ke6 Kf8 12. Ra8+ Kg7 { We’ve been here before, but now White tries a different idea. } 13. Re8 { Part four of the “test”
+How can Black defend? } { [%cal Re6d7,Re5e6] } 13... Ra1! { we can see long distance checking at work. Black threatens to set up a pure, easily drawn Philidor Position by 14...Ra6+ 15.Kf5 Kf7 and the game is as good as over. } { [%cal Ra1a6,Rg7f7] } (13... Re2? { “passing” doesn’t work } 14. Kd7 Kf7 { fails to } (14... Rd2+ 15. Ke7 $18 { has allowed White to make progress. }) 15. e6+ $18) 14. Rd8 { Part five of the “test”
+White is hoping for 14...Ra6+ 15.Rd6. But Black doesn’t have to be so accommodating. } 14... Re1! { Back to our key idea! White can’t make progress and, since Black has demonstrated his understanding of this endgame, the game can be agreed drawn. } { [%csl Re8] } 15. Rd7+ Kf8 16. Rd8+ Kg7 17. Re8 Re2 18. Re7+ *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Rook and Two vs. Rook and One (same side)"]
+[Site "https://lichess.org/study/7Sq816Cs/O5vZzi4S"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Rook and Two vs. Rook and One (same side)"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/Hgalm2uE"]
+[FEN "8/2r1kp2/1R6/4PK2/5P2/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ In the vast majority of endgames, the defender’s drawing chances are improved with every pawn trade. This is certainly the case of a Rook endgame where one side has an extra pawn, but all the pawns are situated on the same side of the board. The defensive ideas are based on :
+
+- Trade as many pawns as possible (unless striving for a particular pawn exchange severely weakens your pawn formation).
+
+- Keep the Rook as active as possible (preferably tying the
+defender’s King down to the defense of its pawns).
+
+- Keep trading down until you end up with a Philidor position, which we know from experience is a simple draw.
+
+In positions where the two vs. one pawn difference is on one side of the board, the game is usually drawn if the stronger side doesn’t have a passed pawn. Nevertheless, even in non-passed pawn situations, like e- and f- vs.
+f-pawn, the defense can still be difficult in over-the-board practice (just because something is a theoretical draw doesn’t mean it’s easy to achieve!). The simplest two vs. one situation to draw is King, Rook, and h- and g-pawns vs.
+King, Rook, and g-pawn. However, even here good players have been known to botch the defense and go down in flames.
+
+Unfortunately, in cases where one side does have a passed pawn, these endgames often prove far more complex than one might imagine. For example, if one side has a passed pawn, as in e- & f- vs. g-pawn, the stronger side has serious
+winning chances. There are several reasons for this :
+
+- The stronger side’s King will enjoy more cover than its black counterpart.
+
+- The stronger side can use his greater force to push the
+opponent back and, ideally, win the defender’s remaining
+pawn.
+
+- The stronger side can push his pawns to the 5th and/or 6th rank, exchange a pair of pawns, and end up with a favorable King, Rook and pawn vs. King and Rook situation where the weaker side hasn’t been allowed to create his ideal defensive setup.
+
+- The passed pawn will always be threatening to “go
+somewhere,” forcing the defender to deal with that on top of everything else.
+
+Personally, I’ve met very few players under 2400 who have mastered these different two vs. one on the same side of the board situations. And why should they? The defensive technique is hard to quantify, and I find that most of the
+positions need heaping doses of common sense, care, accurate calculation, and a good knowledge of more basic positions to draw. As a result, I'll leave it to the reader to study these complex situations if and when he feels the need to do so—personally, I strongly feel that such in-depth study of complex specifics is a waste of time for players in the Expert and even low Masterclass.
+
+USEFUL ADVICE :
+Don't let the gobbledygooks care you! Stick with the basics and with the new patterns I’m about to show you and life should prove easy.
+
+Having said that, we can still acquire a basic understanding of many two vs. one situations by making use of a simple defensive Flowchart :
+
+- Don’t allow a losing Rook and one vs. Rook position to
+occur. This usually means that the defending King gets
+trapped on the side and can no longer prevent a Lucena from materializing, or it can mean that the defending Rook is passively placed.
+
+- Trade a pawn and get a Philidor Position.
+
+- King and pawn endgames might occur. You'll need to make occasional use of your of knowledge of Trébuchet (Part Four). if you’re going to do well in cases like this.
+
+- You'll need to know the drawing technique forfailed Philidor positions (found in Part Seven).
+
+Let’s take the following position and let it show us how all these things might occur from a “simple” Rook and two vs. Rook and one endgame. }
+1. Kg5 { This frees the f4-pawn and allows it to advance. Once it gets to f5, it will put the big squeeze on black’s King. } { [%cal Rf4f5] } (1. e6 fxe6+ 2. Rxe6+ Kf7) 1... Rc5 { An important move that intends to chop off e5 if the f4-pawn advances! Trying to activate this Rook so it can check from a distance doesn’t work: 1...Rc1?? 2.Ra6?, failing to take advantage of black’s error. Instead, White can force a win by 2.Rb7+ } (1... Rc1?? 2. Rb7+ (2. Ra6? { failing to take advantage of black’s error. }) 2... Ke8 3. f5 Rh1 (3... Rc5 { also hopeless } 4. Kf6 Rc6+ 5. e6 fxe6 6. fxe6 $18 Rc8 7. Rh7 { passive black rook (part 4) }) 4. Rb8+ Ke7 5. f6+ Kd7 6. Rf8 Rh7 { only way to defend the f7-pawn } (6... Ke6 7. Re8+ Kd7 8. Re7+ $18) 7. Kg4 { creates a zugzwang } 7... Kc7 8. Re8 $18 { [%cal Ge8e7,Ge5e6] }) 2. Rb7+ Kf8! (2... Ke6?? 3. f5+! Kxe5 4. Re7+ Kd6 5. Rxf7 $18 { black’s King can no longer get in front of the pawn }) 3. f5 { [%csl Re5][%cal Rc5e5] } (3. Kh6 Rc6+ 4. Kh7 f6 $10 { lets Black trade a pawnin favorable circumstances (..e.,
+white’s King is pathetically off to the side) and draws easily. }) 3... Rxe5 4. Kf6 { [%csl Bb8,Rf7][%cal Bb7b8,Gb7f7] } 4... Re1 { We’re about to enter familiar territory } (4... Re8 5. Rxf7+) 5. Rxf7+ (5. Rb8+ Re8 6. Rxe8+ Kxe8 7. Kg7 (7. Ke5 Ke7 8. f6+ Kd7 9. Kd5 Kc7 $10) 7... Ke7 8. f6+?? Ke6 $19 { trébuchet }) 5... Kg8 6. Rg7+ Kh8 7. Rb7 Rf1! { This key idea (it ties the white King to the defense of its pawn and also prevents the pawn’s advance after 8.Rb8+ Kg7) in the “Philidor gone bad” situation was looked at earlier in Part Seven.
+Though I would expect the reader to know this position (since it was explored earlier in this section), I will give the remaining moves to push the defensive technique home. } 8. Ke6 { Threatening 9.f6. } { [%cal Rf5f6] } (8. Kg6 Rg1+ 9. Kf6 (9. Kf7?? Rg7+ $19) 9... Rf1! $10 { gets White nowhere. }) 8... Kg8 9. Kf6 (9. f6 Re1+ $10 { ends white’s hopes. }) 9... Rf2 10. Rb8+ Kh7 11. Rf8 { Threatening 12.Ke7 when 12...Kg7 13.f6+ and 12...Re2+ 13.Kf7 would both make White happy. } { [%cal Gf6e7] } 11... Ra2! { Creating lots of Checking Distance and threatening to create a dead drawn Lucena } { [%cal Ra2a6] } 12. Re8 { Intending to meet 12...Ra6+ with 13.Re6. } 12... Rf2! $10 { White can’t make any progress.
+We’ve seen that the stronger side’s chances (in a Rook and two vs. Rook and one) are based on pushing his pawns to the 5th rank, which creates a squeeze against the defending King and pressure against the weaker side’s final pawn. With that in mind, the defender can’t wait passively for his opponent to tighten the screws. The next position is a very basic example of this. } 13. Re7+ Kg8 14. Re8+ Kh7 15. Re1 Kg8 { [%cal Gf6e6] } 16. Ke6 Kf8 *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Rook and Two vs. Rook and One (same side) (2)"]
+[Site "https://lichess.org/study/7Sq816Cs/qrB2uaKk"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Rook and Two vs. Rook and One (same side) (2)"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/9bIs3C1z"]
+[FEN "8/1pk4r/6R1/1P6/1KP5/8/8/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Black to move and draw
+
+the defender can’t wait passively for his opponent to tighten the screws. this position is a very basic example of this. }
+1... b6 { White has no winning chances at all } (1... Rf7?? 2. c5 { Black begins to get that, “I'm being squeezed” feeling. }) 2. Rc6+ Kb7 $10 *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Rook and Two vs. Rook and One (same side) (3)"]
+[Site "https://lichess.org/study/7Sq816Cs/ggfseABK"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Rook and Two vs. Rook and One (same side) (3)"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/bHmYYXrV"]
+[FEN "8/8/3R1pk1/r7/4PKP1/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move, draw. Another hopelessly drawn position.
+
+The problem White faces is that even if he succeeds in pushing his g-pawn and exchanging it for black’s f-pawn, a drawn Philidor Position would result. Nevertheless, that’s the only plan White has. }
+1. Rd5 { Otherwise Black just moves his Rook back and forth along the 5th rank. } 1... Rxd5?? (1... Ra4 { pins the e-pawn and leaves White with no useful way to improve his position.
+You should know that trading Rooks would lead to an easily won King and pawn vs. King position for White thanks to the lessons in Parts Three and Four. } 2. g5 fxg5+ 3. Rxg5+ Kf6 { and Black will get a Philidor Position (Part Four) or, if things get out of hand, a Philidor Gone Bad (Part Seven), either of which are easy draws. } 4. Rb5 Ra6 5. e5+ Ke6) (1... Ra6) 2. exd5 { [%cal Rd5d7] } 2... Kf7 { [%csl Gf5][%cal Gf4f5] } 3. Kf5 Ke7 { [%cal Gf5f6] } 4. d6+! Kf7 (4... Kxd6 5. Kxf6 { [%cal Gg4g7] }) 5. d7 { [%cal Gf7e7] } 5... Ke7 6. d8=Q+ Kxd8 7. Kxf6 Ke8 { [%csl Gg6][%cal Gf6g7,Gg4g6] } 8. Kg7 $18 *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Rook and Three vs. Rook and Two"]
+[Site "https://lichess.org/study/7Sq816Cs/PrBeGgpM"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Rook and Three vs. Rook and Two"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/HPMVpSFu"]
+[FEN "8/3r1pkp/8/4PPP1/R5K1/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+Black’s worst nightmare
+
+This common endgame is also a draw if Black has prevented white’s pawns from eating up too much space (the space-gaining pawns would result in black’s King being pushed back and his pawns becoming vulnerable).
+
+Here, Black is doomed because white’s pawns are far too strong. Usually this kind of debacle is caused by passive defensive play. } { [%csl Gd4,Ga8][%cal Gd7d4,Ga4a8] }
+1. Kh5 { Preventing ...Kg6 when f5-f6 is played. } { [%csl Yg6][%cal Yh5g6,Rf5f6,Ra4a8] } 1... Rd8 { White threatened a back rank mate after f5-f6, so Black was compelled to prevent this with his Rook. } { [%cal Ga8g8] } 2. f6+ Kg8 { [%csl Gd8,Ga8][%cal Gd8d6,Ga4a8] } 3. Kh6 Rb8 { Black is helpless since any Rook move off the back rank allows mate by Ra8. } 4. Ra7 { Threatening 5.e6! fxe6 6.Rxh7 when Black should quietly resign. } { [%cal Re5e6,Ra7g7] } 4... Re8 { “T stopped it,” thinks Black. Alas, he’s wrong. } 5. e6! { 1-0 } { [%csl Ge6][%cal Gf7e6] } 5... Rxe6 (5... fxe6 6. Rg7+ (6. f7+ { [%cal Gf7e8,Gf7g8] }) 6... Kf8 7. Rxh7 $18 { [%cal Gg5g6,Gg6g7,Gg7g8] } 7... Rb8 8. Rh8+ { [%cal Gh8b8] }) (5... Rf8 6. Rxf7 Rxf7 7. exf7+ Kxf7 8. Kxh7) 6. Ra8+ $18 { UseFuL ADVICE :
+Don't play passively and let the superior side's pawns board and eat up every bit of space! } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Rook and Three vs. Rook and Two (2)"]
+[Site "https://lichess.org/study/7Sq816Cs/bnZeH4nA"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Rook and Three vs. Rook and Two (2)"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/cag93hiF"]
+[FEN "8/pkp5/2R5/1PKP4/2P5/8/8/1r6 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White wins thanks to the power of his pawns.
+
+White has achieved a dominant pawn position and can now
+force a win by mixing two plans:
+
+- Moving the King and Rook out of the way and then playing for c4-c5-c6.
+
+- mame Placing the Rook on the 7th rank, threatening to take advantage of the pinned c-pawn by d5-d6. }
+1. Re6 { It’s important to move to the e-file since in some lines when White plays Kc6, a check along the 6th rank can be met by the white Rook returning to e6 (where it’s defended by the d-pawn). } 1... Rc1 { Forced, } (1... Rb2? { [%csl Gh7][%cal Gd5d6] } 2. Re7 { [%cal Rd5d6] } 2... Kb8 3. Kc6 $18) 2. Re8! { This forces the black Rook to step up to c2 or c3 when there won’t be sufficient Checking Distance (explained in Part Six) to bother the white King when it moves off of the c5-square. } 2... Rc2 { [%csl Gb7][%cal Ge8a8] } (2... Rg1? 3. Re7 { [%cal Rd5d6] } 3... Kb8 4. Kc6 Rg6+ 5. Re6 Rg8 6. c5 { Once again, the pawns roll Black off the board } 6... Rd8 (6... Rh8?? 7. Kd7 $18) 7. Re7 Rc8 8. Rh7 $18 { and Black loses the c-pawn. }) (2... a6? { Trying to exchange pawns, butit’s too late for this to help! } 3. bxa6+ Kxa6 4. Rb8 $18 { trapping the enemy King away from the action and when the threat of Rb4 followed by Kc6 is decisive. } { [%cal Rb8b4,Rc5c6] }) 3. Re1! { Preparing to pull the white King away from c5. Now the black Rook doesn’t have access to the Ist rank, which means it won’t be able to gain serious Checking Distance. } 3... Rc3 (3... Rh2? 4. Re7 $18) 4. Kd4 Rc2 5. Kd3 (5. c5? Rd2+ $10) 5... Rh2 (5... Rb2? 6. Kc3 $18) 6. c5 { Success! White’s pawns have achieved their dream positions. } { [%cal Gd3c4,Gc4b4,Gb4a5,Ge1e8] } 6... Rh3+ (6... Rb2?! { doesn’t fare any better } 7. Re7 Rxb5 8. Kc4 Rb1 9. d6 Rc1+ 10. Kd5 Rd1+ 11. Ke6 Re1+ 12. Kf7 Rf1+ 13. Ke8 $18) 7. Kd4 Rh4+ 8. Re4 Rh7 9. Re8 Rh4+ 10. Kc3 Rh5 (10... Rh3+ 11. Kb4 Rh4+ 12. Ka5 $18) 11. Kb4! (11. Rd8 a6 { is less forcing. }) 11... a5+! (11... Rxd5?? 12. c6+ Kb6 13. Rb8#) 12. Kxa5 Rxd5 13. c6+ Ka7 { [%csl Gc8][%cal Ge8c8,Gc8c7] } 14. Re7! { Giving black’s King a bit of room } { [%cal Ga7b8] } (14. Rc8?? Rxb5+! 15. Kxb5 { stalemate } { [%cal Gb5a6,Gc8a8] }) 14... Kb8 { [%csl Ga6][%cal Ga5a6] } 15. Ka6 Rd8 { [%cal Gb5b6] } 16. b6! Rc8 (16... cxb6 17. c7+ { [%cal Gc7d8] }) 17. Rd7 (17. b7 Rd8 18. Kb5 Rd5+ { [%cal Ge7e8] }) 17... cxb6 { [%cal Gd7a7] } 18. Kxb6 { in easily (this position with Black having a passive Rook was examined in Part Four).
+Clearly, the defender can’t allow his opponent to march his pawns down the board in this fashion. However, by strategically placing the black pawns so that any white advance leads to soothing exchanges, the game can usually be saved without too much difficulty. } (18. Rb7+ Ka8 19. c7 Rxc7 20. Rxc7 Kb8 21. Kxb6 Ka8 22. Rc8#) 18... Ka8 19. Rb7 { [%csl Gb7] } (19. c7 Rg8 20. Rd8+ { [%csl Gd8][%cal Gc7d8] }) 19... Rxc6+ *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Rook and Three vs. Rook and Two (3)"]
+[Site "https://lichess.org/study/7Sq816Cs/A1otU5XN"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Rook and Three vs. Rook and Two (3)"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/E9jnqoVF"]
+[FEN "8/6k1/5pp1/1r6/4P1P1/3R1PK1/8/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ UsrEFuL ADVICE
+Stop the pain of the big squeeze by seeking out soothing pawn exchanges.
+
+Black to move
+
+White hopes to play f3-f4, gaining space and putting his pawns into aggressive motion. Black’s simplest response to this threat is : }
+1... g5! { Now any pawn advance leads to a trade and an easily drawn 2 vs. 1 position } (1... Ra5 2. f4 Kf7 { [%cal Gg3h4] } 3. Kh4 Ra4 4. e5 fxe5 5. fxe5 { [%cal Gh4g5,Gg5g6] } 5... Ra5 6. Re3 Ke6 7. Kg5 { [%cal Gg5g6] }) 2. Rd5 { Trying to coax Black into the exchange. } 2... Rb3 { Refusing to bite. Instead Black follows the usual formula:
+--"Keep the Rook active by using it to pin and tie down white’s King to its pawns"--. } 3. e5 fxe5 4. Rxe5 Kf6 5. Ra5 Kg6 6. Ra6+ Kg7 { and white’s position can’t be improved since any swap of the f-pawn for black’s g-pawn leads to a dead drawn Philidor Position. } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Rook and Four vs. Rook and Three"]
+[Site "https://lichess.org/study/7Sq816Cs/H8GIya9S"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Rook and Four vs. Rook and Three"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/YC0XACA1"]
+[FEN "8/5pkp/6p1/1R6/8/4P1P1/r4PKP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Having the move here is important!
+
+This is a typical basic starting position for Rook and Four vs. Rook and Three. One might think that having the move wouldn’t be that important, but this isn’t the case. Black to move would rush to play 1...h5!. This key move stops white’s pawns from expanding (no big squeeze!) since h3 followed by g4 would allow a well-received pawn trade.
+
+With this in mind, it’s clear that, if White had the move, he would play 1.g4!, stopping ...h5 and ...f5 (White would capture and leave Black with a shattered pawn formation) and preparing the squeeze by Kg3, h4 and perhaps h5. This
+doesn’t mean that White is winning after 1.¢4, but black’s defensive chore would be considerably more difficult. }
+1. g4! { stopping ...h5 and ...f5 (White would capture and leave Black with a shattered pawn formation) and preparing the squeeze by Kg3, h4 and perhaps h5. This doesn’t mean that White is winning after 1.¢4, but black’s defensive chore would be considerably more difficult. } (1. Rc5?! h5! $10) *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Rook and Four vs. Rook and Three (2)"]
+[Site "https://lichess.org/study/7Sq816Cs/c6lwYr8q"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Rook and Four vs. Rook and Three (2)"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/1FbfrL8u"]
+[FEN "8/5pk1/2R3p1/7p/8/4P1P1/r4PKP/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ DRAW
+
+RULE
+In this kind of 4 vs. 3 Rook endgame ...h7-h5, which stops White from playing in espace gaining/weakness fixing is a huge accomplishment!
+
+Black has managed to get in the extremely useful ...h7-h5 advance. He should now draw easily by following our basic formula:
+
+- Exchange pawns.
+
+- Use the Rook to tie white’s King down to the defense of its
+pawns.
+
+One possible continuation might be: }
+1. h3 Rb2 { The Rook is happy to stay on the f2-pawn, where it keeps the white King under control. } 2. g4 hxg4 { Andt rading a pair of pawns is definitely a part of black’s plans! } 3. hxg4 g5! { Telling White that any future advance of the f-pawn will lead to even more pawn exchanges. Play now enters areas we’ve already explored. Rook and Three vs. Rook and Two, Rook and Two vs. Rook and One, and even Philidor and “Philidor gone bad” situations. For example: } 4. Rc3 { Seeing that he has to allow another exchange of pawns after f2-f4, White hopes to recapture on f4 with his e-pawn since split e- and g- vs. f-pawn offers no chances at all. } (4. Kg3 Rb3 { continuing to annoy White with pins. }) 4... f6 5. Kg3 Kg6 6. f4 gxf4+ 7. exf4 { As stated earlier, accepting split pawns by 7.Kxf4 doesn’t give White any any hope of victory. } 7... Rb1 { It’s a good idea to keep the Rook as active as possible. This move creates a bit of Checking Distance, and sets up some checks on the 1st rank. } 8. Rc7 { Preparing the advanced of the f5-pawn. The immediate 8.f5+ Kg5 is clearly a bad idea, while 8.Kh4 gets nowhere fast after 8...Rh1+. } (8. f5+ Kg5 $10 { good for black }) (8. Kh4 Rh1+ $10 { white gets nowhere fast }) 8... Rg1+ 9. Kh3 Rh1+ 10. Kg2 Ra1 { Intending to incarcerate white’s King by 11...Ra3. } { [%cal Ra1a3] } 11. f5+ Kg5 12. Rg7+ Kf4 $10 { That was easy, but even if White manages to trick Black into a worse case scenario, knowledge of the trusty “Philidor gone bad” drawing formula should still save the day. } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Rook and Four vs. Rook and Three (3)"]
+[Site "https://lichess.org/study/7Sq816Cs/VdTvuLRc"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Rook and Four vs. Rook and Three (3)"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/PLhRqaxX"]
+[FEN "5k2/8/R4pK1/5P2/4r3/8/8/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Black to move and save himself
+
+If you imagine this coming from a four vs. three situation (chopped down to a three vs. two and finally two vs. one), it’s clear that White has made real progress. In fact, one can imagine Black panicking here and going down in multi-colored flames: look 1...Re8??
+
+Fortunately, if you studiously learned the lessons in the order given, you'll be aware of the “Philidor gone bad” formula and, without hesitation, toss your Rook behind white’s (soon to be) passed f-pawn. }
+1... Rf4! { This isn’t ideal since we’d prefer the Rook on f1 (Checking Distance). However, it turns out that this still allows Black to draw via his usual “Philidor gone bad” techniques. } (1... Re8?? 2. Kxf6 Kg8 3. Kg6 Rc8 4. f6 $18 { easy win thanks to the passive black Rook as seen in Part Four. }) 2. Kxf6 (2. Ra8+ Ke7 $10 { only helps Black. }) (2. Ra7 Rf1 $10 { ineffective, with a position explored earlier in Part Seven. I }) (2. Rxf6+ Kg8 3. Ra6 Rg4+ 4. Kf6 Rf4 { same position that occurs after 2.Kxf6. }) 2... Kg8! { Going to the Short Side of the board so, in somelines, black’s Rook can have Checking Distance ontheside. } 3. Ra8+ (3. Ra7 Rf1 { Nothing is changed }) (3. Ke6 Re4+ 4. Kf6 Rf4 { Nothing is changed }) (3. Kg6 Rg4+ 4. Kf6 Rf4 { also achieve nothing. }) 3... Kh7 4. Ke6 (4. Rf8 Ra4! { Here’s that Checking Distance I mentioned a moment ago } 5. Re8 Rf4! $10) 4... Kg7 { White can’t make progress. } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Rook and Four vs. Rook and Three (4)"]
+[Site "https://lichess.org/study/7Sq816Cs/m24euFod"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Rook and Four vs. Rook and Three (4)"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/MAvqhq6F"]
+[FEN "8/1R3pk1/4p1p1/7p/7P/6P1/r4P2/6K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Uncrackable
+
+We’ve seen that, in a Rook and four vs. Rook and three, exchanging pawns is something the defender loves to see. That leaves the stronger side with only one other idea: he needs to avoid trades and try and gain some space by pushing his center pawn up the board. This is by far the more dangerous plan and, even though it is still a draw, it’s worth avoiding by making use of the following defensive setup.
+
+Black threatens to make things difficult for White with 1...e5 when White can draw by 2.Rb6 (keeping black’s King at bay) but it’s complicated and far beyond what the student needs to know at this stage of his endgame training.
+
+However, knowing that such positions are dangerous is important, and this knowledge should frighten the defender so much that he goes out of his way to avoid the advance of the e-pawn. Thus the move 1.f4! and the resulting defensive posture has proven remarkably effective. }
+1. f4! { The f-pawn stops black’s e-pawn in its tracks while the white Rook ties black’s King to its pawn on f7. Since an attack on g3 via 1...Ra3 can be comfortably met by 2.Kf2, Black is forced to “go for the gusto” with: } 1... Kf6 (1... Ra3 2. Kg2 { useless for black. }) 2. Rc7 Kf5 { Otherwise White would continue to shuffle his Rook back and forth along the 7th rank. } 3. Rxf7+ Kg4 4. Rf6 Kxg3 5. Rxg6+ Kxf4 6. Rxe6 Kg3 7. Re3+ $10 { with a hopelessly drawn position. } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Bishop and Pawn(s) vs. Lone Bishop of the Same Color"]
+[Site "https://lichess.org/study/7Sq816Cs/G5wwE7AY"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Bishop and Pawn(s) vs. Lone Bishop of the Same"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/D2we4SKu"]
+[FEN "2K5/3P3k/8/b7/8/8/1B6/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Where the presence of opposite colored Bishops gives the defender hope of drawing, same-colored Bishops usually guarantee the side with the extra pawn(s) serious winning chances.
+
+here, White wins easily.
+
+When up a pawn (with no other pawns remaining), the stronger side has winning chances if the pawn is advanced and if the defending King isn’t able to get in front of it. In general, a situation will often be reached where the defending Bishop is preventing the pawn from advancing (an immediate draw will result if it can sacrifice itself for the last pawn). The stronger side can only win if his own Bishop can block the diagonal of the defending Bishop. Diagram offers a simplistic example of this. }
+1. Be5 Kg6 2. Bc7 { 1-0. Even if the weaker side’s Bishop is on the longer diagonal (d8-h4 instead of d8-a5, as in the following position) the game is still “in the bag.” } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Bishop and Pawn(s) vs. Lone Bishop of the Same Color (2)"]
+[Site "https://lichess.org/study/7Sq816Cs/2ylUnX8r"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Bishop and Pawn(s) vs. Lone Bishop of the Same"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/dcpBISD7"]
+[FEN "2K5/3P3k/8/8/7b/2B5/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ the black Bishop’s control of the h4-d8 diagonal makes things a bit harder for White, but black’s cause is still hopeless. } { [%cal Rc3a5,Ga5d8] }
+1. Ba5 Kg6 2. Bd8 { Ending black’s domination of this long diagonal to d8. } 2... Be1 (2... Bg3) 3. Be7 (3. Bc7) 3... Ba5 { [%csl Bd8][%cal Ge7d6,Rd6c7] } 4. Bd6 { 1-0 since Black can’t prevent 5.Bc7. } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Bishop and Pawn(s) vs. Lone Bishop of the Same Color (3)"]
+[Site "https://lichess.org/study/7Sq816Cs/MAm8J1N5"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Bishop and Pawn(s) vs. Lone Bishop of the Same"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/TnoKCENK"]
+[FEN "2K5/3P4/2k5/B7/7b/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Draw.
+To have any drawing chances, the defending King must be directly in front of its counterpart.
+
+RULE :
+In this kind of endgame, center pawns only win if the defending King isn't on top of the action
+
+Here white’s normal winning idea of chasing black’s Bishop to the a5-d8 diagonal and then maneuvering his own Bishop to c7 is no longer viable since black’s King controls the c7-square: 1.Bd8 Be1 2.Bg5 (2.Bb6 Bh4)2...Ba5 3.Bd2
+Bb6 4.Bf4 BaS fails to make progress for White. Note that Black didn’t face any problems here because:
+
+- The c7-square is covered by black’s Bishop and King.
+
+- White's King is frozen since it needs to defend the d-pawn.
+
+- Black will never run out of tempo moves since he can shuffle his Bishop to g5, f6, and/or e7 at will, while he also has access to three squares on the a5-d8 diagonal if his Bishop is chased there. }
+1. Bd8 Be1 { [%csl Ge7][%cal Gd8e7] } 2. Bg5 (2. Bb6 Bh4) 2... Ba5 { [%csl Gb6,Rc7] } 3. Bd2 (3. Bf4) 3... Bb6 4. Bf4 Ba5 $10 { fails to make progress for White. } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Bishop and Pawn(s) vs. Lone Bishop of the Same Color (4)"]
+[Site "https://lichess.org/study/7Sq816Cs/10mZRL3O"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Bishop and Pawn(s) vs. Lone Bishop of the Same"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/ZdZOtHuc"]
+[FEN "6K1/5P2/6k1/2b5/8/2B5/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White wins
+
+This “shuffle defense” isn’t possible if the pawn is a bishop-pawn—then the side diagonal is shortened and zugzwangs appear. } { [%csl Bf8][%cal Rc3g7,Gg7f8] }
+1. Bg7 Bb4 2. Bf8 { [%csl Rf8] } 2... Bd2 3. Bc5 (3. Be7 Bh6 { [%csl Gh6] } 4. Bf8 Bd2) 3... Bh6 { Our first goal has been reached, and black’s Bishop is now stuck on the uncomfortably short h6-f8 diagonal. Next stop, zugzwang! } 4. Bd4! { Suddenly Black has no good move! } { [%csl Bf8][%cal Rd4g7,Bf7f8] } 4... Kf5 (4... Kg5 5. Be3+ $18) 5. Bg7 $18 { [%csl Rf8][%cal Rf7f8] } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Bishop and Pawn(s) vs. Lone Bishop of the Same Color (5)"]
+[Site "https://lichess.org/study/7Sq816Cs/qxPuWoDh"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Bishop and Pawn(s) vs. Lone Bishop of the Same"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/KKrr3b2l"]
+[FEN "2KB4/1P6/2k5/8/8/8/7b/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ L. Centurini 1847
+White wins
+
+RULE :
+The idea of a shortened defensive diagonal means that one's winning chances improve when the pawn is a bishop-pawn and knight pawn.
+
+White wins by chasing the black Bishop off the h2-b8 diagonal and onto the pathetically short a7-b8 complex. Then a timely Bishop move/sacrifice along the g1-a7 diagonal forces the black Bishop off the queening square and allows the pawn to successfully promote. } { [%csl Rb8][%cal Gd8h4,Gh4f2,Gf2a7,Ga7b8,Rb8h2] }
+1. Bh4 Kb5! { More resistance ! } (1... Bf4 2. Bf2 Bh2 3. Ba7 Bg3 4. Bb8 Bf2 5. Bf4 Ba7 { Black is now undone due to the lack of diagonal length. } 6. Be3! $18 { The seemed easy, but Black can improve and put up some annoying resistance with 1...Kb5! }) 2. Bf2 Ka6 { Suddenly Black has prevented Ba7. Can White still win? } 3. Bc5! { only good move, Getting ready to swing back to c7. Very
+important since it stopped Black from moving his Bishop to d6, which in turn allows White to successfully swing his Bishop with tempo to the g1-a7 diagonal and avoid contact with black’s King.
+It prevents ...Bd6 and forces the black Bishop to move to g3, f4, or e5. When White ultimately challenges that Bishop via Bh4, Bg5, or Bf6, white’s Bishop will then be out of reach of the enemy King (now on c6) when it moves to f2, e3, or d4. } (3. Be3? Bd6 4. Bg5 Kb5 5. Bd8 Kc6 6. Be7 Bh2 { and 7.BcS isn’t possible }) 3... Be5 { Black will rush his King back to c6, but he can’t doit yet since 3...Kb5 is met by 4.Ba7. } { [%csl Gc7][%cal Gc5e7,Ge7d8,Gd8c7] } (3... Kb5 4. Ba7 $18 { easy }) 4. Be7 Kb5 { Else White wins by Bd8 followed by Bc7. } (4... Kb6) 5. Bd8 Kc6 { It seems like Black has stopped White again, but now a nice maneuver shows that the game is, in fact, over. } 6. Bf6! Bf4 7. Bd4 { when Black can no longer keep white’s Bishop off of a7. } { [%csl Ga7][%cal Gd4a7] } 7... Bg3 8. Ba7 Bf4 9. Bb8 Be3 10. Bg3 Ba7 { [%csl Ra7] } 11. Bf2 $18 { Centurini, in the middle of the 19th century, postulated that a zugzwang isn’t possible if two free squares along the crucial diagonal remain open to the defending Bishop. If the defending Bishop hasless than two, then the stronger side will usually win (there are a couple of exceptions, but since we’re after concept and not brute memorization, we’ll let these pass by—if you wish to make an in-depth study of this kind of Bishop endgame, you can find the exceptions
+in any detailed endgame tome). } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Bishop and Pawn(s) vs. Lone Bishop of the Same Color (6)"]
+[Site "https://lichess.org/study/7Sq816Cs/Fun02U0A"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Bishop and Pawn(s) vs. Lone Bishop of the Same"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/sI7n3HyX"]
+[FEN "8/8/1K6/P7/1k2B3/8/4b3/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Centurini’s Rule :
+A zugzwang isn't possible if two free squares along the crucial diagonal remain open to the defending Bishop. If the defending Bishop has less than two, then the stronger side will usually win.
+
+The following example illustrates this rule rather nicely, while also showing the student how these ideas can often allow you to successfully advance a pawn that’s as far back as the 5th rank.
+
+If White can safety push his pawn to a6, the game will be won. White’s first order of business is to chase the black Bishop off the f1-a6 diagonal (easily done by moving the Bishop to a6). This will force black’s Bishop to the a6-c8 diagonal, but he will find it impossible to remain there due to the diagonal’s short ness (only one free square will be available which, according to Centurini’s Rule, means that black’s defense will break down). } { [%csl Gb5][%cal Ra5a6,Ra6a7,Bb5c6] }
+1. Bb7 Bd3 2. Ba6 Be4 3. Bb5! { Phase one is accomplished. Now Black has to try and set up a block along the shorter, and thus less stable, a6-c8 diagonal. } 3... Bb7 4. Bd7! { we have Centurini’s rule: “If the defending Bishop has less than two free squares along the crucial diagonal, zugszwang will occur and the stronger side will win.” Indeed, this position is zugszwang since black’s Bishop only has one free square along the a6-c8 diagonal. Thus, any black King move will allow Kxb7, and any black Bishop move along the h1-a8 diagonal will allow the pawn to safely make
+its way up the board. } (4. Kxb7?? Kxa5 $10) 4... Bg2 5. a6 Bf3 6. a7 $18 { 1-0 } { [%cal Gd7c6,Ga7a8] } 6... Ba8 { [%csl Rc6] } 7. Bc6 *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Bishop and two split pawns vs. Bishop (same color)"]
+[Site "https://lichess.org/study/7Sq816Cs/K9AIsebi"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Bishop and two split pawns vs. Bishop (same co"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/KH7ndi2Z"]
+[FEN "8/3KBk2/8/3P2P1/8/8/3b4/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Two extra split pawns usually win since in most cases the stronger side can play to promote one pawn, secure in the knowledge that the defender can no longer draw by sacrificing his Bishop since the remaining pawn will eventually promote. }
+1. d6 Ba5 (1... Bb4 2. Bf6 $18 { Kc7 to follow. } { [%cal Gd7c7] }) 2. Bf6 { 1-0 since Black has no way to deal with 3.Kc8, 4.d7, and 5.d8=Q. } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Bishop and two split pawns vs. Bishop (same color) - rook pawn"]
+[Site "https://lichess.org/study/7Sq816Cs/4p5xxYjY"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Bishop and two split pawns vs. Bishop (same co"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/MJe8w0mE"]
+[FEN "8/4KBk1/8/4P2P/8/8/4b3/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Draw. Black draws by giving up his Bishop for the e-pawn, which leaves him with a basic Bishop and wrong colored h-pawn vs. King. }
+1. Bg6 (1. e6 Bc4 $10 { followed by 2...Bxe6, } { [%cal Gc4e6] }) 1... Bg4 { and White can’t make progress. } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Bishop and two connected pawns vs. Bishop (same color)"]
+[Site "https://lichess.org/study/7Sq816Cs/A1XagGh9"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Bishop and two connected pawns vs. Bishop (sam"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/R5fD4whg"]
+[FEN "8/5b2/8/4k3/8/3PP3/3K2B1/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White wins. Two extra protected passed pawns usually assure the stronger side of the full point. }
+1. d4+ { An important idea: pushing the d-pawn takes control of the dark squares (c5 and e5) while the Bishop keeps an eye on the light squares. This team control over the key squares forces the enemy King back.
+White must be careful to avoid letting the enemy King create a blockade. This would occur after 1.e4?? Kd4 when the game is drawn since White can’t march his King to f3 and f4 due to ...Kxd3, while 2.Bf1 (preparing for the King
+march to f4) runs head long into ...Bg6 followed by ...Bxe4-. } (1. e4?? Kd4 $10) 1... Kd6 2. e4 Bg6 3. Ke3 { It’s very important to support the pawns with the King! } 3... Bh7 4. e5+ (4. d5?? { losing control over the dark squares } 4... Ke5 $10 { create a blockade }) 4... Ke6 5. Kf4 Bc2 6. d5+ Kd7 7. Bh3+ Ke7 8. d6+ Kd8 9. e6 Ba4 10. Ke5 (10. e7+!? { nothing wrong. But I like the idea of making sure every piece participates in the execution. }) 10... Bb5 11. Kf6 Ba4 12. e7+ Ke8 13. Bg4 Bb5 14. d7+! (14. Bh5+ Kd7 15. e8=Q+ $18) 14... Bxd7 15. Bh5# { Pretty easy, as long as you don’t allow one of two things:
+- Don’t let the defender give up his Bishop for both pawns.
+- Don’t let the defender achieve a blockade by creating a hole (which the defender’s King would live on) on the opposite color of your Bishop. } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Blockade — Queen vs. Rook and Pawn"]
+[Site "https://lichess.org/study/7Sq816Cs/3Dx9FX6f"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Blockade — Queen vs. Rook and Pawn"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/9w4K3S1c"]
+[FEN "1Q6/3pk3/4r3/5K2/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Draw
+In general, any pawn on the 2nd rank other than a rook-pawn will give the defender a draw unless the stronger side’s King has managed to break through to the 6th rank. A knight-pawn almost always draws.
+
+Black has all the key bases covered:
+
+- His Rook is stopping white’s King from penetrating to the 6th and/or 7th ranks.
+
+- His Rook can mark time by going to two safe posts (c6 and
+e6). A rook-pawn only allows the defender one safe post.
+
+- White's Queen isn’t able to get behind the pawn and it will
+never be able to chase black’s King away from e7, e8, or c7, c8. }
+1. Qh8 Rc6 2. Qg7+ Kd8 $10 { White can’t improve his position.
+Such Queen vs. pawn endgames can be very complicated and rule dependent (and these rules change as the pawn advances), and are far beyond anything a non-professional needs to study. Suffice it to say that if you keep in mind our
+one example and its rules, you'll have something to grasp onto if you’re down material and this kind of defensive situation happens to arise. } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Blockade — Queen and Pawn vs. Rook and Two Pawns"]
+[Site "https://lichess.org/study/7Sq816Cs/5BHy7VZJ"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Blockade — Queen and Pawn vs. Rook and Two Paw"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/Ks1OccPh"]
+[FEN "8/8/8/5kp1/4R3/5P2/2q3P1/6K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Draw.
+
+The weaker side can often draw by creating the same kind of blockade as we saw in Queen vs. Rook and Pawn.
+
+White draws easily by shuffling his Rook between e4 and g4. Black might eventually try to sacrifice his Queen for the Rook (on e4 or g4) and a pawn, but the resulting King and pawn vs. King and pawn endgame is easily drawn.
+It’s important that the student is aware of this kind of blockade since it can occur from many positions that might, at first glance, appear hopeless. The following position shows a simple example of this. }
+1. Rg4 Qc1+ 2. Kh2 Qc7+ 3. Kh1 Qc1+ 4. Kh2 Qc7+ 5. Kh1 Qh7+ 6. Kg1 Qa7+ 7. Kh2 Kf6 8. Re4 Kf5 9. Rg4 $10 { Nothing happens. } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Blockade — Queen and Pawn vs. Rook and Two Pawns (2)"]
+[Site "https://lichess.org/study/7Sq816Cs/fHc0r3cJ"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Blockade — Queen and Pawn vs. Rook and Two Paw"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/xgU8LYa2"]
+[FEN "8/8/1k6/4p1p1/3p2R1/5P2/5BPK/2q5 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Black seems to be on his way to victory since his Queen and pawn would normally run roughshod over a Rook and Bishop. However, White can sacrifice his Bishop and create a successful blockade. }
+1. Bxd4+! (1. Re4 { was played } 1... Qc5 2. Bg3 d3 3. Rxe5? Qxe5 4. Bxe5 d2 $19) 1... exd4 2. Rxd4 { Since White threatens to safely plant his Rook on e4 or g4, Black must start checking in the hope of taking advantage of white’s loose Rook. } 2... Qc7+ 3. Kh1 (3. Kg1?? Qc5 $19 { [%cal Gc5d4] }) 3... Qh7+ 4. Kg1 Qb1+ 5. Kh2 { and Black isn’t getting anywhere. } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Summing Up"]
+[Site "https://lichess.org/study/7Sq816Cs/LmkOn3gp"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Summing Up"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/prjE7VNG"]
+[FEN "8/8/8/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ The Flowchart
+
+Complex positions can’t be solved unless you have a firm foundation of knowledge behind you. The Flowchart method, which is really nothing more than the recognition of previously absorbed patterns, is dependent on the student having thoroughly mastered the material in earlier sections.
+
+Rook Endgames
+
+1. A Rook and rook-pawn or knight-pawn on the 7th, with the stronger side’s Rook in front of its pawn and the defending Rook behind the pawn,is drawn even if an extra knight-pawn or rook pawn exist on the otherside of the board.
+
+2. A Rook and rook-pawn or knight-pawn on the 7th, with the strongerside’s Rookin front of its pawn and the defending Rook behind the pawn, is easily won if an extra bishop-pawn exists on the other side of the board.
+
+3. Positions featuring Rook and two passed pawns vs. Rook and one passed pawn are usually winning for the two pawns.
+
+4. In a Rook and pawn vs. Rook endgame, an inability to achieve a perfect Philidor defensive setup doesn’t necessarily mean doom for the defender if his King is in front of the pawn and his Rook is actively placed behind it.
+
+5. In a Rook and four vs. Rook and three, or Rook and three vs. Rook and two, or Rook and two vs. Rook and one with all the pawns on one side of the board, the defender’s goals are to:
+
+- Trade as many pawns as possible (unless striving for a
+particular pawn exchange severely weakens your pawn
+formation).
+
+- Keep the Rook as active as possible (preferably tying the
+defender’s King down to the defense of its pawns).
+
+- Keep trading down until you end up with a Philidor position, which we know from experience is a simple draw.
+
+Bishops of the Same Color Endgames :
+
+1. Where the presence of opposite colored Bishops gives the defender hope of drawing, same-colored Bishops usually guarantee the side with the extra pawn(s) serious winning chances.
+
+2. Bishop and pawn vs. Bishop: When up a pawn (with no other pawns remaining), the stronger side has winning chances if the pawn is advanced and if the defending King isn’t able to get in front of it.
+
+4. Centurini’s Rule (for Bishop and advanced pawn vs. Bishop): If the defending Bishop has less than two free squares along the crucial diagonal, zugszwang will occur and the strongerside will win.
+
+Queen Endgames
+
+Queen vs. Rook and pawn or Queen and pawn vs. Rook and two pawns: The defender’s main hope is the creation of a successful blockade that keeps the stronger side’s King from approaching the defender’s pawn(s). }
+ *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 1"]
+[Site "https://lichess.org/study/7Sq816Cs/7s8K3cE2"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 1"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/vJ7w7fiE"]
+[FEN "8/1k5r/8/1p6/1P6/1KP3R1/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+Does White have any realistic winning chances? } { [%cal Gc3c4] }
+1. c4 $10 { White has no chance whatsoever to score the full point. Even if White swaps his c-pawn for black’s b-pawn, the game would still be completely drawn. Why? Because a Philidor could be set up, which is an easy draw, while the fact that White would be left with a knight-pawn means that even a passive Rook position would be drawn. } 1... bxc4+ 2. Kxc4 Rh5 3. b5 Kb6 { [%csl Rb5] } 4. Rg6+ Kb7 { [%cal Rc4b4,Gb4a5] } 5. Kb4 Rf5 6. Ka5 Re5 7. Rg7+ Kc8 8. Kb6 Re6+ *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 2"]
+[Site "https://lichess.org/study/7Sq816Cs/kfX0Fr7d"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 2"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/0BE64hic"]
+[FEN "6k1/1R3pp1/8/7p/4P3/5P2/2r3PP/6K1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+Is black’s pawn on h5 a weakness? If so, would it be more comfortable on h6? Finally, should White win this position? }
+1. h4 { Having the pawn on hS is an important defensive idea for Black! It stops the white pawns from taking over too much kingside space, and happily seeks exchanges if White ever plays his g-pawn to g4. Though the defense of such positions is long and tedious, Black should be able to comfortably make a draw. } 1... g6 2. Kh2 Kg7 3. Kg3 Re2 { Black’s Rook is tying white’s King to the defense of g2. } 4. Rb6 Kf8 5. Rb1 Kg7 6. Rg1 { Freeing the King, but this doesn’t mean that White can make any real progress. } 6... Ra2 7. Kf4 Rb2 8. g3 Rb4 9. Rd1 Ra4 10. Ke3 Ra2 11. Rd4 Rg2 { It turns out that white’s King is still tied down toits g-pawn! } 12. Kf4 Rg1 13. e5 Re1 14. Re4 Rg1 15. Re3 Rg2 16. Re1 Rf2 17. g4 { White didn’t want to exchange pawns, but he wasn’t able to make any progress. Black’s pressure against the e- and g-pawns kept White off balance. } 17... hxg4 18. Kxg4 Rg2+ 19. Kh3 Rf2 20. Kg3 Ra2 21. Rd1 Re2 22. Rd5 Re1 23. Kf2 Rh1 { With white’s g-pawn gone, Black turns her attention to the pawn on h4! } 24. Rd4 Rh2+ 25. Kg3 Re2 26. Re4 Ra2 27. Re3 Ra1 28. Rd3 Re1 29. f4 Rg1+ 30. Kf3 Rh1 31. Kg4 f5+ 32. Kg3 (32. Kg5?? Rg1+ 33. Rg3 Rxg3#) 32... Rg1+ 33. Kf3 Rh1 34. Rd7+ (34. Kg3 Rg1+ 35. Kh2 Rg4 $10) 34... Kg8 35. Ke3 Rxh4 36. e6 Kf8 37. Kd4 g5 38. Ke5 gxf4 39. Rf7+ Ke8 40. Rxf5 Rh1 41. Rxf4 Ke7 42. Rf2 Re1+ 43. Kd5 Rxe6 $10 { Ponomariov-Judit Polgar, Sofia 2005 } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 3"]
+[Site "https://lichess.org/study/7Sq816Cs/E5UWf4TV"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 3"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/74lhxNZ9"]
+[FEN "R7/7k/P4p1p/6P1/5P1P/8/r7/4K3 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Black to move
+Assess the position. }
+1... hxg5 { Your past knowledge (Flowcharting a seemingly complex situation) should make it clear that White is winning if he avoids the many pitfalls that are lurking.
+The key elements here are:
+-White must not allow a Vancura Position.
+-White must not allow a two pawn up position where his
+a-pawn is on the 7th and his other pawnis a g-pawn.
+- White must be aware that the win is easy in a two pawn up
+position where the a-pawn is on the 7th and his other pawn is an f-pawn. } (1... fxg5 2. hxg5 { will transpose to our mainline. }) 2. hxg5 fxg5 3. f5! (3. fxg5?? Ra5! 4. Kd2 Rxg5 5. Kc3 Rg6 { White falling into a drawn Vancura Position } 6. Kd4 Kg7 7. Ke5 Rb6 (7... Rf6?? 8. Rg8+ Kxg8 9. Kxf6 $18) 8. Kd5 { White’s Rook is stuck to its pawn, and a7 allows ...Ra6, so White brings his King to the queenside. However, the Vancura holds firm. } 8... Rf6 9. Kc5 Kh7 10. Kb5 Rf5+ 11. Kc6 Rf6+ 12. Kb7 Rf7+ $10) 3... g4 (3... Kg7 4. a7! g4 5. f6+ Kh7 6. f7 $18) (3... Ra5 4. a7 { when the threat of f6 is decisive and 4...Rxf5 doesn’t help since 5.Rb8 will leave White with an extra Rook. }) 4. a7 { Freezing black’s King and Rook. } 4... g3 { Threatening to win by 5...g2. } { [%cal Rg3g2] } 5. Kf1! Kg7 { Nothing works, } (5... Rf2+ 6. Kg1 Rxf5 7. Rb8 { forces the win of black’s Rook (or creates a new Queen), }) (5... g2+ 6. Kg1 { leaves Black unable to deal with the threat of f6-f7-f8. }) 6. f6+! Kh7! (6... Kxf6 7. Rf8+ Kg7 8. a8=Q) (6... Kf7 7. Rh8 Rxa7 8. Rh7+ { [%cal Gh7a7] }) 7. Kg1! { Black must resign since he has no answer to the threat of f7 and f8=Q. } (7. f7 Rf2+ 8. Kg1 Rxf7 9. Rh8+ Kxh8 10. a8=Q+ { but why rush into a complex Queen vs. Rook position when the text move makes things easy? }) *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 4"]
+[Site "https://lichess.org/study/7Sq816Cs/mVWo81jo"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 4"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/TvdC9Ffb"]
+[FEN "4rrk1/p1pn2pp/2pp1p2/8/4PP2/1P4PP/P1P3B1/3R1RK1 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+Another seemingly ungraspable position is really just a prelude to yet another Flowchart puzzle. See if you can ascertain (or guess!) what basic concept will appear on the board. }
+1. e5! { Blasting open the h1-a8 diagonal.
+Believe it or not, a King and pawn endgame featuring Fox in the Chicken Coup will soon appear!
+Optically White seems a bit better: his Bishop has possibilities along the h1- a8 diagonal, he possesses more central space, black’s doubled c-pawns create a certain lack of flexibility, and black’s a-pawn is weak. Tactically though, things are even worse—the c6-pawn and the Knight are unprotected. White makes immediate use of these factors to either win a pawn or transition the game into an easily won King and pawn endgame. } 1... fxe5 (1... d5 2. c4! fxe5 3. cxd5 c5 4. d6! cxd6 5. Bd5+ Kh8 6. Bc6 Rd8 7. Rxd6 $16 { very unpleasant position for Black } 7... Nb8 8. Rxd8 Rxd8 9. Bb5 a6 10. Bc4 exf4 11. Rxf4 g6 12. Rf6 Kg7 13. Rb6 { and Black, whose pawns are weak and whose Knight is dominated, is completely lost. }) 2. Bxc6 { Not only threatening the Knight, but also pinning it to the e8-Rook } 2... Re7 3. Bxd7 { Why exchange this nice Bishop for black’s Knight? Because it forces the black Rook onto an unprotected square. } 3... Rxd7 4. fxe5 Rxf1+ 5. Kxf1 Rf7+? { This preventsthe loss of a pawn, but allows a resignable King and pawn endgame to arise. Instead, Black should have kept the Rooks on the board } (5... d5 6. c4 d4 7. Ke2 Kf7 8. Kd3 Ke6 9. Ke4 c5 10. Rf1 Rd8 { not allowing White to penetrate to f8 when Black can battle on (ideas like ...Rb8 followed by ...a5 and ...a4 are screaming to be tried). }) 6. Kg2 (6. Ke2?? Re7 { when Black is suddenly okay. }) 6... dxe5 7. Rd8+ { This final transition, taking the game into a King and pawn ending, is decisive since white’s queenside majority will ultimately leave him with a Fox in the Chicken Coup situation. } 7... Rf8 8. Rxf8+ Kxf8 9. Kf3 Ke7 10. Ke4 Kd6 11. b4! { A very important move which leaves white’s queenside pawns free to roam. } (11. c4? c5 12. a3 a5 $10 { with a situation where two black pawns are stopping three white pawns. }) 11... a6 12. a4 g6 13. c4 a5 (13... c6 14. b5 axb5 15. axb5 cxb5 16. cxb5 Kc5 17. Kxe5 Kxb5 18. Kf6 $18 { is a classic Fox in the Chicken Coup. }) (13... Ke6 14. b5 a5 15. c5 $18) 14. bxa5 Kc5 15. Kxe5 { 1-0 Tarrasch - Hollaender, Nuremberg 1892 } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 5"]
+[Site "https://lichess.org/study/7Sq816Cs/OgGl5jER"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 5"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/5753sqdV"]
+[FEN "8/4k3/8/1p2Pp2/p7/P1K1P3/1P6/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+This is a surprise quiz in that it dredges up an important lesson from Part Five (Which you should know! You didn’t think I was going to let you get away with a haphazard understanding of past material, did you?). Can White
+win, or is the game a draw? }
+1. Kd3! { White wins by making use of Opposition and Triangulation. } (1. Kd4?? Ke6 { gives Black the Opposition, loses the e5-pawn,and allows Black to enter a very difficult Queen endgame } 2. Kc5 Kxe5 3. Kxb5 Ke4 4. Kxa4 Kxe3 5. b4 f4 6. b5 f3 7. b6 f2 8. b7 f1=Q 9. b8=Q $10 { that White would really prefer to avoid. }) 1... Kd7! { Taking Distant Opposition } (1... Ke6? 2. Kd4 $18) 2. e4! f4 (2... fxe4+ 3. Kxe4 $18) 3. Ke2 { Threatening Kf3 followed by Kxf4. black’s reply is forced. } { [%cal Re2f3,Rf3f4] } 3... Ke6 4. Kf2! { 1-0 } (4. Kf3?? Kxe5 $19 { Note for lichess : is that a Vertical Trébuchet !? }) 4... Kxe5 5. Kf3 { White takes the Opposition, wins the f-pawn, and wins
+the game. If this was too difficult, go back to Part Five and review the material there!
+note for lichess : it's a vertical trebuchet ! } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 6"]
+[Site "https://lichess.org/study/7Sq816Cs/FwuY2vsI"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 6"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/Cspbz6GW"]
+[FEN "2kr4/7R/8/K1P5/8/8/8/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Black to move
+Is Black doomed? }
+1... Rd1 { Creating maximum Checking Distance!
+It’s too late to set up a Philidor Position, but he can still save himself by using our “Philidor gone bad” formula:
+- Activate the Rook
+- Place it behind the pawn
+- Run the King to the Short Side of the board.
+- Make sure you create Checking Distance for your Rook. } { [%cal Ga5b6] } (1... Rd7?? 2. Rxd7 Kxd7 3. Kb6 Kc8 4. Kc6 $18) 2. Kb6 Rc1!! (2... Rb1+? 3. Kc6 Kb8 4. Rh8+ Ka7 5. Kc7 Rg1 6. Rh7 Rg8 7. c6 (7. Kc6+ Kb8) 7... Rf8 8. Kd6+ Kb8 9. c7+ (9. Kd7 Rc8 10. Kd6 Rf8 (10... Rg8 11. Rb7+ Kc8 12. Ra7 Rg6+ 13. Ke7 { [%cal Gg6g7] } (13. Kc5 Kb8 14. Rb7+ Kc8 15. Kb6 Rg1))) 9... Kc8 10. Kc6 Rf6+ 11. Kc5 Ra6) 3. Kc6 (3. Rh8+ Kd7 { White can’t make any progress Kd7since black’s Rook and King make c6 impossible. }) 3... Kb8! { Goingto the Short Side of the board so the Rook can have Checking Distance on the kingside. } 4. Rh8+ Ka7 5. Rc8 (5. Kd6 Kb7! $10) 5... Rh1! { Creating optimum Checking Distance and threatening to slide back into a perfect Philidor with 6...Rh6+. } 6. Rd8 Rc1! $10 { White can’t make any progress. } (6... Rh6+ 7. Kc7 Rh7+ 8. Rd7) *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 7"]
+[Site "https://lichess.org/study/7Sq816Cs/Sau0ZvkG"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 7"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/8tJ3OeOz"]
+[FEN "1K6/2P5/1k6/5b2/8/5B2/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+Can White win? }
+1. Bb7 { White would not win an analogous position with a center pawn (with the Kings facing off), but here the shortened second diagonal (a6-c8) allows White
+to claim victory: } 1... Bg4 2. Bc8 Be2 3. Bf5 Ba6 4. Be4! $18 { and Black must resign since any King move allows Bb7, while a Bishop move either hangs the Bishop or allows White to make a Queen. } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 8"]
+[Site "https://lichess.org/study/7Sq816Cs/rV70VJ5h"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 8"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/wD0Xlmjv"]
+[FEN "rR6/pQ5p/6pk/4P1q1/8/5P1b/P4P2/4R2K w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+This is a Flowchart exercise. Try to turn this insane position into something we can understand from our basic endgame foundation. }
+1. f4! { The winning move. White hits the enemy Queen and allows his own Queen to stop black’s threatened ...Qg2 mate.
+It seems odd to mention endgame transitions and Flowcharts when we’re faced with a very sharp, complex middlegame position. Yet it’s quite proper to do so since White has the opportunity to end black’s attack and reach a winning Rook endgame by sacrificing some of his excess material. } 1... Qg2+ 2. Qxg2 Bxg2+ 3. Kxg2 Rxb8 { The first transition has been achieved: the complex middle game is gone and a pawn up Rook endgame has “miraculously” appeared in which white’s Rook is resting happily behind its passed pawn. } 4. Kf3 Kg7 5. Rd1 { It turns out that pushing the e-pawn would now be a mistake, so White activates his Rook in search of new weaknesses to conquer. } 5... Rb7 6. f5! { An excellent move that takes us to our second transition (in fine Flowchart fashion). White temporarily gives up his doubled f-pawn so that:
+- Tle creates a target on f5.
+- After winning it he reaches known territory: the resulting connected passed e- and f-pawns vs. lone passed h-pawn is an easy win. } 6... gxf5 7. Kf4 Kf8 (7... Kg6 8. Rg1+ $18) (7... Kf7 8. Rg1 $18 { [%cal Gg1g5,Gg5f5] }) 8. f3 { The f5-pawn can’t be held, so why rush things and allow 8.Kxf5 Re2, attacking both a2 and f2 at the same time? } 8... Rf7 9. e6 Rc7 (9... Rf6 10. Ke5 $18) 10. Kxf5 Ke7 11. Rd5! { This stops 5th rank Rook checks and kills the opponent’s counterplay since black’s Rook can’t leave its 2nd rank due to Rd7+. Now that everything is safe, White will calmly advance his f-pawn. } 11... h5 12. f4 h4 13. Ke5 h3 14. f5 h2 15. f6+ Ke8 16. Rb5! { Tarrasch- Alapin, Ostend 1905 } { [%cal Rb5b8] } 16... Rc8 17. f7+ Ke7 18. Rb7+ Kf8 19. Kf6 h1=Q 20. e7# { 1-0 White wins by checkmate. } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 9"]
+[Site "https://lichess.org/study/7Sq816Cs/2FgieBbx"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 9"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/yJJuXPtz"]
+[FEN "8/1R5p/p4p1k/8/r7/4PK2/6P1/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+As White, what defensive ideas come to mind? These ideas should be word and concept based and not dependent on streams of variations. }
+1. e4 { Don’t fail to make use of your basic knowledge! Most players just calculate in these situations, without getting a grip on various defensive possibilities first. However, you can’t find good moves if you don’t have a verbal goal in mind.
+Bravo if you thought of some of the following things:
+- It’s an easy draw if White can exchange all the kingside pawns.
+- If Black ends up with his pawn on a2 and Rook on a1 (white’s Rook behind the pawn on a7), it’s a draw if White can trade his two pawns on e3 and g2 for black’s f-pawn.
+- If Black ends up with his pawn on a2 and Rook on a1 (white’s Rook behind the pawn on a7), White loses if he trades his two pawns on e3 and g2 for black’s h-pawn.
+- If black’s pawn gets to a2, white’s King must be on h2 or g2, or be in front of one of its pawns so a Rook check isn’t possible.
+- Black’s kingside pawns are vulnerable. Attacking them will
+prove very annoying.
+It turns out that attacking black’s kingside pawns is very annoying indeed! } 1... Kg6 2. g4 Ra1 3. Kf4 { White intends to attack black’s pawns by Rb6 followed by e5 (taking advantage of the pin along the rank). Black has no good answer to this plan. } 3... a5 (3... Rf1+ 4. Kg3 a5 5. Rb6 a4 (5... Kf7 6. Rb7+ Ke6 7. Rxh7 a4 8. Ra7 $10) 6. Ra6 Ra1 7. e5 a3 8. Rxf6+ Kg7 9. Ra6 a2 10. Kg2 $10 { is a draw even if White doesn’t have his e- and g-pawns! }) 4. Rb6 a4 (4... Kf7 5. Rb7+ Kg6 6. Rb6 $10 { doesn’t get Black anywhere, so he has no choice but to slog on with his pawn. }) 5. e5 a3 6. Rxf6+ Kg7 7. Kg5! { The only good move. } (7. Ra6?? { loses because white’s King can’t get back to g2 or h2 in time, while moving to g5 now encounters a problem: } 7... a2 { [%cal Ra1f1,Ra2a1] } 8. Kg5 (8. Ra7+ Kg6 9. Ra6+ Kf7 10. Ra7+ Ke6 11. Kg5 h5! $10 { destroys the white King’s cover. }) 8... h6+! 9. Rxh6 (9. Kf5 Rf1+ $19 { [%cal Ga2a1] }) 9... Rb1 10. Ra6 a1=Q 11. Rxa1 Rxa1 $19) 7... a2 (7... h5 { leads to more interesting positions, though they also end in draws: } 8. Rf2 Re1 9. Kf5 h4 (9... hxg4 10. Ra2 Re3 11. Kf4 $10) 10. g5 h3 11. Ra2 Kf7 12. g6+ Kg7 13. e6 Re3 14. Kf4 $10 { intending to meet 14...Rc3 with 15.e7, }) 8. Rf2! (8. Ra6?? h6+ $19 { when white’s King loses its protective cover. }) 8... Re1 9. Rxa2 Rxe5+ $10 { Topalov - Kramnik, Sofia 2005 } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 10"]
+[Site "https://lichess.org/study/7Sq816Cs/SUMW4NNW"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 10"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/NF7pQ5st"]
+[FEN "3k4/q7/3p4/2bR4/8/3R4/1KP5/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+Black appears to be headed towards victory. Is this true? }
+1. Rxd6+! { White can draw ! } 1... Bxd6 2. Rxd6+ Kc7 3. Rd3 $10 { with a blockade } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 11"]
+[Site "https://lichess.org/study/7Sq816Cs/pWJbTvg4"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 11"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/SZXrAvEt"]
+[FEN "8/3k4/8/5PK1/8/7R/8/4r3 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Black to move
+Can Black save the game? }
+1... Ke7 { Black can draw, but his King needs to reach the Short Side of the board. } (1... Ke8? 2. Kf6 Kd7 (2... Kf8 3. Rh8#) 3. Rh7+ Ke8 4. Rh8+ Kd7 5. Rf8 Rh1 6. Kg7 Rg1+ 7. Kf7 Rf1 8. f6 $18 { Reshevsky - Najdorf, Lugano 1968 }) 2. Rh7+ Kf8 3. Kf6 Kg8 4. Ra7 Rf1! $10 *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 12"]
+[Site "https://lichess.org/study/7Sq816Cs/JI4Yf6sv"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 12"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/mrZzHUUb"]
+[FEN "8/5k2/4p3/2R2p2/6p1/4P1P1/1P2KP2/7r w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+This seems to be a complex position that has nothing to do with the basics we’ve studied thus far. Try and see how some of these basics might prove useful in this position. Remember, I’m looking for ideas, not moves. }
+1. Rc2! { This position seems complicated and hard to define in terms of the basic lessons we’ve learned in this book. However, there are some key ideas we can grasp onto. We’ve seen many instances of weak pawns being attacked, so White would like to make black’s pawn mass on the kingside as vulnerable as possible (you should always try to create new weaknesses in the enemy camp!). And, since
+White has a passed b-pawn, he should be aiming to advance it and force black’s King and Rook to the queenside so they can deal with it.
+The idea of using the outside passed pawn should dredge up two more concepts: placing the Rook behind its passed pawn and Fox in the Chicken Coup. You might find it odd to think of Fox in the Chicken Coup in the context of a Rook and pawn endgame, but it makes good sense and brings to mind two different scenarios:
+- White’s Rook gets behind the passed pawn, pushes it as far as possible, and if Black wins the pawn bytaking it with his Rook (leading to a Rook exchange and black’s King sitting somewhere onthe b-file), White wins the resulting King and pawn endgame because his King is on the kingside, ready to eat black’s pawns.
+- White sacrifices his b-pawn so that he can win a kingside
+pawn. The resulting Rook and kingside pawn vs. Rook
+endgame will be winning due to the AWOL black King.
+1.Re2!, by defending the only two attackable points in white’s camp (i.e., b2 and 2), white’s King is relieved of guard duty and is thus free to march up to d4 or c4. } 1... Ke7 (1... e5 { White would have moved his King to c4 and then pushed the
+b-pawn. } { [%cal Ge2d3,Gd3c4,Gb2b4] }) 2. e4 { This pawn advance, and the ultimate exchange of pawns that it leads to, will leave black’s kingside pawns far more vulnerable than they were in theinitial diagram. I’ll discuss this move once the position crystallizes. } 2... Ra1 (2... fxe4 3. Ke3 Re1+ 4. Re2 { picks up e4 (trading Rooks is an easy win for White)
+and leaves Black with two very weak pawns on e6 and g4. }) 3. Kd3 Kd6 4. exf5 exf5 { Black’s kingside pawns are now vulnerable to attack if the white King can reach f4 or e5 (clearly f5 is far easier for White to attack than e6 was). } 5. Kc4 { White would prefer to move his King to f4, but this isn’t so easy to achieve since Ke3 is met by ...Ra4. Due to this, White will calmly prepare to advance his b-pawn. Oncethat pawn gets moving, it will demand the attention of black’s Rook and King which, hopefully, will allow white’s King to attack black’s kingside pawns. } 5... Kc6 6. Kd4+ Kd6 7. b3 Re1 8. Kc4 Kc6 9. Kd3+ Kd5 10. b4 Rb1 { Logically placing his Rook behind white’s passed pawn. } 11. Kc3 Kc6 (11... Ke4 12. Rb2 Rxb2 13. Kxb2 Kf3 14. b5 $18) 12. Kd4+ Kd6 13. Kc4 Kc6 { Refusing to let white’s King penetrate into his position. It’s time for white’s Rook to play a more dynamic role in the proceedings. } 14. Re2! { This creates a real problem for Black! Re6+ is threatened, and stopping this by ...Kd6 allows KbS. That leaves 14...Rc1+, which has flaws of its own. } 14... Rc1+ 15. Kd4 { And now Black is facing the double threat of 16.Ke5 and 16.Rb2. } 15... Kd6 16. Rb2 Ra1 17. b5 Ra4+ 18. Ke3 Kc7 19. b6+ Kb7 20. Rb5! { Threatening tojettison the b-pawn by 21.Rxf5 Kxb6 22.Rf4 with an easy win for White. } { [%cal Rb5f5,Rf5f4] } 20... Re4+ (20... Kc6 21. b7! $18) (20... Ra3+ 21. Kf4 Rf3+ 22. Kg5 Rxf2 23. Rxf5 $18) 21. Kd3 Re8 22. Rxf5 Kxb6 23. Rg5 { White’s Fox in the Chicken Coup plan has been realized. The battle is raging on the kingside while black’s King is napping on the other wing. } 23... Rd8+ 24. Ke4 Re8+ 25. Kf5 Rf8+ 26. Ke6 Rxf2 27. Rxg4 { It’s all over. Black’s King needs to be in front of white’s passed pawn or at least close by. } 27... Re2+ 28. Kf5 Kc5 29. Re4 Rf2+ 30. Rf4 Rd2 31. g4 Rd5+ 32. Kg6 { 1-0 Smyslov- Korchnoi, Moscow vs. Leningrad 1967 } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 13"]
+[Site "https://lichess.org/study/7Sq816Cs/Rc24eRfQ"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 13"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/ua3rMikj"]
+[FEN "8/4R1p1/8/6r1/8/8/8/5K1k b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Black to move
+What kind of basic situation is Black trying to achieve? Can he win? }
+1... Rf5+ { Black’s dream is to create a Lucena Position. The first step towards this goal is to trap the white King away from the action. The advance of the pawn will follow. } 2. Ke2 g5 3. Ke3 Kg2 4. Ke4 Rf4+ 5. Ke3 Rf3+ 6. Ke2 g4 7. Re4 g3 8. Rb4 Rf8 9. Rh4 Re8+ 10. Kd3 Kf2 11. Rf4+ Kg1 12. Kd2 g2 13. Rf2 Rh8 14. Ke2 Kh1 $19 { Morozevich - Gelfand, Amber 2005 } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 14"]
+[Site "https://lichess.org/study/7Sq816Cs/y67paEtZ"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 14"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/mi0OjHcg"]
+[FEN "8/8/p4p2/p1P3p1/2P1kp2/2P4P/4K1P1/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Black to move
+Who stands better in this extremely strange position? }
+1... Ke5 { Black wins easily because his a-pawns are outside passed pawns. } 2. Kd3 Ke6 3. Kc2 Kd7 4. Kb3 Kc6 $19 { and Black won. He can either play ...f5, ...g4, and ... f3, or do a Fox in the Chicken Coup by choppingoffall
+the c-pawns and then dashing overthe kingside andeating g?. } { [%cal Rf4f3,Rg5g4,Rf6f5,Rc6g2] } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 15"]
+[Site "https://lichess.org/study/7Sq816Cs/DSJZaZSH"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 15"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/gckrj0M1"]
+[FEN "8/4K3/5PkP/6P1/8/1b6/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+Does 1.f7 win the game, or does the resulting King and pawn endgame hide stalemate tricks? }
+1. f7 { wins, and black’s one stalemating trick is easily dealt with: } 1... Bxf7 2. h7 Kxh7 3. Kxf7 Kh8 4. Kg6 $18 { Nakamura- Peersson, Copenhagen 2005 } (4. g6?? $10) *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 16"]
+[Site "https://lichess.org/study/7Sq816Cs/KdlgZiae"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 16"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/bt7I8PBQ"]
+[FEN "8/5pk1/R7/5p1p/7P/p5P1/r7/5K2 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Black to move
+Can black win ? }
+1... Ra1+ { The material in Part Seven should have made this one easy to solve: } 2. Kg2 a2 3. Kh2 Kf8 4. Ra7 Ke8 5. Kg2 Kd8 6. Kh2 Kc8 7. Kg2 Kb8 8. Ra4 Kb7 9. Ra3 Kb6 10. Ra8 f4 11. gxf4 f5 12. Ra3 Kc5 13. Ra8 Kc4 14. Ra3 Kd4 15. Ra8 Ke4 16. Ra4+ Ke3 $19 { 0-1 Short - Anand, Tilburg 1991 } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 17"]
+[Site "https://lichess.org/study/7Sq816Cs/gx8lPeD8"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 17"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/pf6HIN0M"]
+[FEN "6k1/p1R1R1p1/1p6/r5r1/8/P1P2K2/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+Can White draw? }
+1. Rxa7 { White draws by trading off all the queenside pawns and one pair of Rooks } 1... Rxa7 2. Rxa7 Rc5 3. a4 Rxc3+ 4. Kg2 Rb3 5. a5 Rb5 $10 { Emms- Willmoth, Great Britain 2000 } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 18"]
+[Site "https://lichess.org/study/7Sq816Cs/G0BZzWZn"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 18"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/tQ4KM60W"]
+[FEN "8/8/8/1R2Pkp1/7p/5PP1/1p5K/1r6 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Black to move
+White just moved his pawn to g3. Is he going to lose? }
+1... hxg3+ { White draws because he knows that it’s unwinnable even if he ends up two pawns down: } 2. Kg2 (2. Kxg3?? Rg1+ $19) 2... Ke6 3. Rb8 Kxe5 4. Rb7 Kd6 5. Rb8 g4 6. fxg4 Ke5 7. Rb4 Kf6 8. Rb5 Kg6 9. Rb8 Kg5 10. Rg8+ Kf4 11. Rf8+ Kxg4 12. Rg8+ Kf5 13. Rf8+ Ke6 14. Re8+ $10 { Benjamin - Karpov, Cap d’ Agde 2000 } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 19"]
+[Site "https://lichess.org/study/7Sq816Cs/AbN1d1ku"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 19"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/EaaqzHdo"]
+[FEN "6k1/p5p1/1pp2r2/8/7P/P6K/1P3R2/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+Should White keep the Rooks on or exchange by Rxf6? }
+1. Rxf6! { White feared the King and pawn endgame that would occur after 1.Rxf6, so he tried 1.Rd2 and went on to lose.
+However, taking on f6 by 1.Rxf6 would have given White an outside passed pawn, and this would have allowed him to save the game } (1. Rd2? a5 2. Kg4 Kh7 3. h5 b5 4. Kg5 Re6 5. Kf5 Re1 6. Rc2 Rh1 7. Kg4 Rb1 8. Kf4 a4 9. Kf5 c5 10. Ke4 Kh6 11. Kf5 b4 12. axb4 cxb4 13. Rg2 a3 14. bxa3 bxa3 15. Ra2 Rb3 16. Kg4 Rb4+ 17. Kf5 Rb5+ 18. Kf4 Ra5 19. Kg4 Ra4+ 20. Kf5 Kxh5 21. Rh2+ Rh4 22. Rg2 g6+ 23. Kf6 Rf4+ $19 { NN- Staunton, London 1842 }) 1... gxf6 2. Kg4 Kf7 3. h5 c5 4. Kf5 b5 5. h6 c4 (5... a5 6. h7 Kg7 7. h8=Q+ Kxh8 8. Kxf6 b4 9. axb4 cxb4 10. Ke5 a4 11. Kd4 $10) 6. h7 Kg7 7. h8=Q+ Kxh8 8. Kxf6 a5 9. Ke5 b4 10. axb4 axb4 11. Kd4 $10 *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 20"]
+[Site "https://lichess.org/study/7Sq816Cs/TQtx4Lkc"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 20"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/MaLYeBB0"]
+[FEN "8/8/5kp1/6Rp/7P/6K1/5r2/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Black to Move
+Black now played 55...Rf5. Was this wise? }
+1... Rf5! { Yes, this forced transposition into a King and pawn ending wins an otherwise drawn Rook endgame: } 2. Rxf5+ gxf5 (2... Kxf5?? 3. Kf3 Ke5 4. Ke3 Kf5 5. Kf3 g5 6. hxg5 Kxg5 $10 { Bruijn - Kloos, Amsterdam 1851 }) 3. Kf4 Ke6 4. Kg5 Ke5 5. Kxh5 f4 (5... Kf6! 6. Kh6 f4 7. Kh5 f3 $18 { even easier }) 6. Kg4 Ke4 7. h5 f3 8. Kg3 Ke3 9. h6 f2 10. h7 f1=Q 11. h8=Q Qg1+ 12. Kh4 Qh1+ $19 { [%cal Gh1h8] } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 21"]
+[Site "https://lichess.org/study/7Sq816Cs/JmfTgusC"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 21"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/kdwS4Huc"]
+[FEN "6R1/8/p7/1k3p2/4r2P/2p3P1/P4P2/5K2 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+Is 1.Rc8 a good move? }
+1. Rc8 { Placing a Rook behind a passed pawnis often important, and that rule holds true here since Black threatened to win with ...c2. By stopping the pawn with 1.Rc8, white’s material advantage will ultimately prevail. } 1... Ka4 (1... Rc4 2. Rxc4 Kxc4 3. Ke2 $18 { easy for white }) 2. h5 Re6 3. f3 a5 4. g4 fxg4 5. fxg4 Rh6 (5... Re4 6. h6 Rxg4 7. h7 Rh4 8. h8=Q Rxh8 9. Rxh8 Ka3 10. Ke2 $18) 6. Ke2 Ka3 7. Rxc3+ Kxa2 8. Rc5 a4 9. Rb5 a3 10. Kf3 Ka1 11. Ra5 (11. Kf4 a2 12. Kg5 Rxh5+ 13. Kxh5 $10 { stalemate }) 11... a2 12. Kg3 Kb2 13. Kh4 a1=Q 14. Rxa1 Kxa1 15. g5 Ra6 16. h6 Ra7 17. g6 Ra4+ 18. Kg5 Ra5+ 19. Kf4 Ra4+ 20. Ke5 Ra5+ 21. Kd4 Ra4+ 22. Kc5 { 1-0. Szen - Newham, London 1851.
+An impressive performance by the legendary Szen. Hardto believe they were playing such fine endgames way back in 1851! } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 22"]
+[Site "https://lichess.org/study/7Sq816Cs/rZuyjeaA"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 22"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/14uCtg3v"]
+[FEN "R7/P3kp2/6p1/6P1/5P2/5K2/8/r7 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+Can White win this position? }
+1. f5! { White wins in nice fashion } 1... gxf5 2. g6 { Clearing off the 7th rank so White can make use of the old Rh8-h7+ trick. } 2... Ra3+ 3. Kf4 Ra4+ 4. Kxf5 Ra5+ 5. Kg4 Ra4+ 6. Kg5 Ra5+ 7. Kh6 Ra6 8. Kh7 Ra1 (8... fxg6 9. Rg8 Rxa7 10. Rg7+ Kf6 11. Rxa7 g5 12. Ra5 g4 13. Kh6 g3 14. Ra3 g2 15. Rg3 $18) 9. g7 { 1-0 Campbell - Wormald, London 1859 } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 23"]
+[Site "https://lichess.org/study/7Sq816Cs/iuwZe797"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 23"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/bOdTwi5X"]
+[FEN "R7/P1pk4/7p/1P6/8/5K2/8/r7 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+Is White winning? }
+1. b6! { White employs a simpler version of the idea used in Test 22 to force a quick kill } 1... cxb6 2. Rh8 { 1-0 Shirov - Kramnik, Eurocup 1999 } { [%cal Ra7a8,Rh8h7] } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 24"]
+[Site "https://lichess.org/study/7Sq816Cs/OpyStJ99"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 24"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/AxZODRHa"]
+[FEN "8/p7/1p4R1/1P2K3/2P5/8/1r5k/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+Can Black save the game? }
+1. Kd5 { White wins because black’s King is too far away from the queenside action } 1... Rd2+ 2. Kc6 Rd4 3. Kb7 Rd7+ 4. Ka6 Kh3 5. Rg8 Rc7 6. Ra8 Kg4 7. Rxa7 Rxc4 8. Rf7 Kg5 9. Kxb6 Rc2 10. Kb7 Rc5 11. b6 Rc3 12. Kb8 { 1-0 Horwitz - Bird, London 1851 } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 25"]
+[Site "https://lichess.org/study/7Sq816Cs/6dbcnCSM"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 25"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/ANH3FYHc"]
+[FEN "8/p7/8/5K2/8/k7/P4P2/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+Does White have any realistic winning chances? }
+1. Ke4! { White wins by force because he promotes first and his King gets close to the enemy monarch } 1... Kxa2 2. f4 a5 3. f5 a4 4. f6 a3 5. f7 { 1-0. Tal - Bagirov, USSR 1967
+Black didn’t need to be shown } 5... Kb2 6. f8=Q a2 7. Qb4+ Ka1 8. Qd2 Kb1 9. Kd3 a1=Q 10. Qc2# { 1-0 White wins by checkmate. } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 26"]
+[Site "https://lichess.org/study/7Sq816Cs/NH1ZuPXc"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 26"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/nDF78j7y"]
+[FEN "8/3k4/8/5KP1/7r/8/R7/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move
+Can White win? }
+1. Re2! { White wins by cutting the black King off from the kingside } 1... Rh1 2. Kf6 Rf1+ 3. Kg7 Rg1 4. g6 Rg3 5. Kh7 Rh3+ 6. Kg8 Rg3 7. g7 Rg1 8. Re4 Rg2 9. Kh7 Rh2+ 10. Kg6 Rg2+ 11. Kh6 Rh2+ 12. Kg5 { 1-0 Cunningham - Loewenthal, London 1856 } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 27"]
+[Site "https://lichess.org/study/7Sq816Cs/gE9EKCc9"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 27"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/oNgmyUz4"]
+[FEN "3R4/8/8/4p3/1k2r3/8/1K6/8 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Black to move
+Does 1...Rc4 give Black any realistic winning chances? }
+1... Rc4 { No, the game was dead drawn no matter what Black had played } (1... Re2+ 2. Kc1 Kc3 3. Kd1 Re4 4. Ra8 Re3 5. Ra3+ Kd4 6. Ra4+ Kd3 7. Rb4 e4 8. Ra4 Rf3 9. Ke1 Ke3 10. Ra8 Rf7 11. Ra3+ Kf4 12. Kf2 Rc7 13. Ra2 Rh7 14. Kg2 $10 { 1/2-1/2 Petrov-Urusov, St Petersburg 1853 }) 2. Rb8+ Kc5 3. Rc8+ Kd4 4. Rxc4+ Kxc4 5. Kc2 e4 6. Kd2 Kd4 7. Ke2 e3 8. Ke1 $10 *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 28"]
+[Site "https://lichess.org/study/7Sq816Cs/GQTqe5ct"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 28"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/SVVrclfv"]
+[FEN "8/8/6K1/3k4/7P/8/8/2r5 b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Black to move
+Does White have any chance of saving this game? }
+1... Ke6 2. h5 Rg1+ 3. Kh7 Kf7 $19 { 0-1 Williams - Harrwitz, London 1852 } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 29"]
+[Site "https://lichess.org/study/7Sq816Cs/XzRWPloy"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 29"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/op3WTaoA"]
+[FEN "8/8/8/8/2r2P2/5K2/2pk4/7R b - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ Black to move
+Does promoting the pawn win? }
+1... c1=Q { Promoting the pawn (which wins white’s Rook)is decisive, since the black Kingis able to get back in time to stop white’s pawn } 2. Rxc1 Rxc1 3. Ke4 Re1+ 4. Kd4 Ke2 5. f5 Kf3 6. Kd5 Kf4 7. f6 Kg5 8. f7 Rf1 9. Ke6 Kg6 $19 { 0-1 Loewenthal - Morphy, London 1858 } *
+
+
+[Event "ENDGAMES FOR EXPERTS (2000-2199): Test 30"]
+[Site "https://lichess.org/study/7Sq816Cs/W4IffQc1"]
+[Date "2024.11.11"]
+[Result "*"]
+[Annotator "https://lichess.org/@/carbone144"]
+[Variant "From Position"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "Endgame  (1899- 2000 )"]
+[ChapterName "ENDGAMES FOR EXPERTS (2000-2199): Test 30"]
+[ChapterURL "https://lichess.org/study/LS4yALPI/ql2xwkRq"]
+[FEN "2k5/7p/8/4P1K1/6p1/7b/5P1P/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2024.11.11"]
+[UTCTime "06:58:54"]
+
+{ White to move.
+Can White draw ? }
+1. Kh4 { The defender is usually happy to trade off pawns, and in this case a draw can be achieved if he can exchange his three remaining pawns for black’s two. } (1. Kf6 { In the actual game, White lost quickly } 1... Kd8 2. Kf7 Bf1 3. e6 Bc4 4. Kg7 Ke7 5. Kxh7 Kxe6 6. Kg6 Ke5 7. Kg5 Be6 { 0-1 Karklins - Gufeld, American Open 1999 }) 1... Kd7 2. f3 h5 3. f4 (3. fxg4?? Bxg4 $19) 3... Ke6 4. Kxh5 (4. Kg5 { Also adequate } 4... Bg2 5. Kxh5 Kf5 6. e6 Bc6 7. Kh4 Kxf4 8. e7 Kf3 9. Kg5 Bd7 10. Kh4 $10 { positional draw: Black can’t improvehis position } 10... Kf4 $10 { leads to the stalemate in our mainline, } (10... Ke4 { allow White to win black’s final pawn. }) (10... Kg2 { allow White to win black’s final pawn. })) 4... Kf5 5. Kh4 Kxf4 6. e6 Bg2 7. e7 Bc6 8. h3 g3 9. e8=Q Bxe8 $10 { stalemate } *
+
+

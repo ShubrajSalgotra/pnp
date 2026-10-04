@@ -20,6 +20,8 @@ const ReportsPage = lazy(() => import('./pages/ReportsPage'));
 const PuzzlesPage = lazy(() => import('./pages/PuzzlesPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const PremiumPage = lazy(() => import('./pages/PremiumPage'));
+const PracticePage = lazy(() => import("./pages/PracticePage"));
+const StudyPage = lazy(() => import("./pages/StudyPage"));
 
 const RouteFallback: React.FC = () => (
   <div className="flex min-h-[50vh] items-center justify-center">
@@ -49,7 +51,7 @@ const AppShell: React.FC = () => {
   return (
     <div className="app-canvas min-h-screen">
       <Navbar />
-      <div className={isLandingPage ? undefined : 'pt-[4.75rem] sm:pt-20'}>
+      <div className={isLandingPage ? undefined : "pt-[4.75rem] sm:pt-20"}>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             {/* Public Routes */}
@@ -107,12 +109,28 @@ const AppShell: React.FC = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/practice"
+              element={
+                <ProtectedRoute>
+                  <PracticePage />
+                </ProtectedRoute>
+              }
+            />
 
             <Route
               path="/puzzles"
               element={
                 <ProtectedRoute>
                   <PuzzlesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/study"
+              element={
+                <ProtectedRoute>
+                  <StudyPage />
                 </ProtectedRoute>
               }
             />
@@ -144,7 +162,10 @@ const AppShell: React.FC = () => {
               }
             />
 
-            <Route path="/settings" element={<Navigate to="/profile" replace />} />
+            <Route
+              path="/settings"
+              element={<Navigate to="/profile" replace />}
+            />
 
             {/* Catch all route */}
             <Route path="*" element={<Navigate to="/" />} />
