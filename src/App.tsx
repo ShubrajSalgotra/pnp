@@ -22,6 +22,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const PremiumPage = lazy(() => import('./pages/PremiumPage'));
 const PracticePage = lazy(() => import("./pages/PracticePage"));
 const StudyPage = lazy(() => import("./pages/StudyPage"));
+const LeaderboardPage = lazy(() => import("./components/Leaderboard"));
 
 const RouteFallback: React.FC = () => (
   <div className="flex min-h-[50vh] items-center justify-center">
@@ -117,6 +118,14 @@ const AppShell: React.FC = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+  path="/leaderboard"
+  element={
+    <ProtectedRoute>
+      <LeaderboardPage />
+    </ProtectedRoute>
+  }
+/>
 
             <Route
               path="/puzzles"
