@@ -1,14 +1,30 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
-  type Dispatch,
-  type SetStateAction,
 } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { Chess, type Move } from "chess.js";
-
+import { Chess, type Move, type Square } from "chess.js";
 import { db } from "../services/firebase";
+import { ChessboardView } from "../components/chess/ChessboardView";
+import { ChessboardControls } from "../components/chess/ChessboardControls";
+import { PageHeader } from "../components/layout/PageHeader";
+import { Button } from "../components/ui/Button";
+import EmptyState from "../components/ui/EmptyState";
+import {
+  ArrowRight,
+  BookOpen,
+  Check,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  GraduationCap,
+  Lightbulb,
+  PartyPopper,
+  RotateCcw,
+} from "lucide-react";
 
 interface Study {
   id: string;
@@ -55,68 +71,43 @@ interface StudyLesson {
 
 type Feedback = "correct" | "wrong" | "complete" | null;
 
-const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
-
-const PIECES: Record<string, string> = {
-  wK: "♔",
-  wQ: "♕",
-  wR: "♖",
-  wB: "♗",
-  wN: "♘",
-  wP: "♙",
-
-  bK: "♚",
-  bQ: "♛",
-  bR: "♜",
-  bB: "♝",
-  bN: "♞",
-  bP: "♟",
-};
-
-function getPieceSymbol(piece: { color: "w" | "b"; type: string }) {
-  return PIECES[`${piece.color}${piece.type.toUpperCase()}`] ?? "";
-}
-
-function coordsToSquare(file: number, rank: number) {
-  if (file < 0 || file > 7 || rank < 0 || rank > 7) {
-    return null;
-  }
-
-  return `${FILES[file]}${rank + 1}`;
-}
-
 function getInitialFen(lesson: StudyLesson) {
   return (
     lesson.fen ?? "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
   );
 }
 
+function isExpectedMove(move: Move, expected: StudyMove) {
+  if (expected.uci) {
+    const from = expected.uci.slice(0, 2).toLowerCase();
+    const to = expected.uci.slice(2, 4).toLowerCase();
+    if (move.from.toLowerCase() === from && move.to.toLowerCase() === to) {
+      return true;
+    }
+  }
+  const cleanMoveSan = move.san.replace(/[+#x=]/g, '').trim();
+  const cleanExpectedSan = expected.san.replace(/[+#x=]/g, '').trim();
+  return move.san === expected.san || cleanMoveSan === cleanExpectedSan;
+}
+
 /* =========================================================
-   STUDY LIBRARY
+   STUDY PAGE ROOT
 ========================================================= */
 
 export default function StudyPage() {
   const [studies, setStudies] = useState<Study[]>([]);
-
   const [loading, setLoading] = useState(true);
-
   const [selectedRating, setSelectedRating] = useState("all");
-
   const [selectedStudy, setSelectedStudy] = useState<Study | null>(null);
-
   const [lessons, setLessons] = useState<StudyLesson[]>([]);
-
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
-
   const [loadingLessons, setLoadingLessons] = useState(false);
 
   useEffect(() => {
     async function loadStudies() {
       try {
         const studiesRef = collection(db, "studyMaterials");
-
         const snapshot = await getDocs(studiesRef);
-
         const data: Study[] = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -124,9 +115,7 @@ export default function StudyPage() {
 
         data.sort((a, b) => {
           const aRating = a.ratingMin ?? Infinity;
-
           const bRating = b.ratingMin ?? Infinity;
-
           return aRating - bRating;
         });
 
@@ -138,24 +127,22 @@ export default function StudyPage() {
       }
     }
 
-    loadStudies();
+    void loadStudies();
   }, []);
 
   const ratingFilters = useMemo(() => {
     const ranges = studies
       .filter((study) => study.ratingMin !== null && study.ratingMax !== null)
       .map((study) => `${study.ratingMin}-${study.ratingMax}`);
-
     return Array.from(new Set(ranges));
   }, [studies]);
 
-  const filteredStudies = studies.filter((study) => {
-    if (selectedRating === "all") {
-      return true;
-    }
-
-    return `${study.ratingMin}-${study.ratingMax}` === selectedRating;
-  });
+  const filteredStudies = useMemo(() => {
+    if (selectedRating === "all") return studies;
+    return studies.filter(
+      (study) => `${study.ratingMin}-${study.ratingMax}` === selectedRating
+    );
+  }, [selectedRating, studies]);
 
   async function openStudy(study: Study) {
     setSelectedStudy(study);
@@ -165,18 +152,14 @@ export default function StudyPage() {
 
     try {
       const lessonsRef = collection(db, "studyLessons");
-
       const q = query(lessonsRef, where("studyId", "==", study.id));
-
       const snapshot = await getDocs(q);
-
       const data: StudyLesson[] = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       })) as StudyLesson[];
 
       data.sort((a, b) => a.lessonOrder - b.lessonOrder);
-
       setLessons(data);
     } catch (error) {
       console.error("Failed to load study lessons:", error);
@@ -192,43 +175,40 @@ export default function StudyPage() {
   }
 
   /* =========================================================
-     STUDY PLAYER
+     STUDY PLAYER ACTIVE VIEW
   ========================================================= */
 
   if (selectedStudy) {
     if (loadingLessons) {
       return (
-        <div className="min-h-screen bg-slate-950 px-4 py-6 text-white">
-          <div className="flex min-h-[500px] items-center justify-center">
-            <div className="text-center">
-              <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-slate-700 border-t-emerald-400" />
-
-              <p className="text-sm text-slate-400">Loading study...</p>
-            </div>
-          </div>
+        <div className="flex min-h-[60vh] flex-col items-center justify-center space-y-4 text-center">
+          <div className="h-10 w-10 animate-spin rounded-full border-3 border-slate-200 border-t-primary-600 dark:border-slate-800 dark:border-t-emerald-400" />
+          <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+            Loading course lessons…
+          </p>
         </div>
       );
     }
 
     if (lessons.length === 0) {
       return (
-        <div className="min-h-screen bg-slate-950 px-4 py-6 text-white">
-          <div className="mx-auto max-w-4xl">
-            <button
+        <div className="mx-auto max-w-xl py-12">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-8 text-center shadow-xs dark:border-slate-800/80 dark:bg-slate-900/90">
+            <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
+            <h2 className="mt-4 font-display text-xl font-bold text-slate-900 dark:text-white">
+              No Lessons Available
+            </h2>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              This study does not contain any published lessons at this time.
+            </p>
+            <Button
               type="button"
+              variant="outline"
               onClick={closeStudy}
-              className="mb-8 text-sm text-slate-400 transition hover:text-white"
+              className="mt-6 cursor-pointer"
             >
               ← Back to Studies
-            </button>
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center">
-              <h2 className="text-xl font-semibold">No lessons found</h2>
-
-              <p className="mt-2 text-sm text-slate-400">
-                This study does not contain any lessons.
-              </p>
-            </div>
+            </Button>
           </div>
         </div>
       );
@@ -246,124 +226,133 @@ export default function StudyPage() {
   }
 
   /* =========================================================
-     STUDY LIBRARY UI
+     LIBRARY OVERVIEW
   ========================================================= */
 
   return (
-    <div className="min-h-screen bg-slate-950 px-4 py-6 text-white sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-8">
-          <p className="mb-2 text-sm font-medium text-emerald-400">STUDY</p>
+    <div className="space-y-8">
+      <PageHeader
+        kicker="CURRICULUM"
+        title="Chess Studies Library"
+        description="Master essential endgame positions, positional themes, and structured master plans with interactive move-by-move coaching."
+      />
 
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Chess Studies
-          </h1>
-
-          <p className="mt-2 max-w-2xl text-sm text-slate-400 sm:text-base">
-            Improve your chess through interactive endgame studies and practical
-            positions.
-          </p>
+      {/* Filter Tabs */}
+      {ratingFilters.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setSelectedRating("all")}
+            className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-colors cursor-pointer ${
+              selectedRating === "all"
+                ? "bg-primary-600 text-white shadow-xs"
+                : "bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800"
+            }`}
+          >
+            All Ratings
+          </button>
+          {ratingFilters.map((range) => {
+            const [min, max] = range.split("-");
+            return (
+              <button
+                key={range}
+                type="button"
+                onClick={() => setSelectedRating(range)}
+                className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-colors cursor-pointer ${
+                  selectedRating === range
+                    ? "bg-primary-600 text-white shadow-xs"
+                    : "bg-white text-slate-600 hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 border border-slate-200/80 dark:border-slate-800"
+                }`}
+              >
+                {min}–{max} Rating
+              </button>
+            );
+          })}
         </div>
+      )}
 
-        {ratingFilters.length > 0 && (
-          <div className="mb-8 flex flex-wrap gap-2">
-            <button
+      {loading ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              className="h-44 rounded-2xl border border-slate-200/80 bg-white p-6 dark:border-slate-800 dark:bg-slate-900 animate-pulse"
+            />
+          ))}
+        </div>
+      ) : filteredStudies.length === 0 ? (
+        <EmptyState
+          icon={BookOpen}
+          title="No Studies in This Rating"
+          description="Try selecting 'All Ratings' to explore our full curriculum of interactive chess studies."
+          action={
+            <Button
               type="button"
               onClick={() => setSelectedRating("all")}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                selectedRating === "all"
-                  ? "bg-emerald-500 text-white"
-                  : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
+              className="cursor-pointer"
             >
-              All
-            </button>
-
-            {ratingFilters.map((range) => {
-              const [min, max] = range.split("-");
-
-              return (
-                <button
-                  key={range}
-                  type="button"
-                  onClick={() => setSelectedRating(range)}
-                  className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-                    selectedRating === range
-                      ? "bg-emerald-500 text-white"
-                      : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white"
-                  }`}
-                >
-                  {min}–{max}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {loading && (
-          <div className="flex min-h-[300px] items-center justify-center">
-            <p className="text-sm text-slate-400">Loading studies...</p>
-          </div>
-        )}
-
-        {!loading && filteredStudies.length === 0 && (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center">
-            <p className="text-slate-400">No studies found.</p>
-          </div>
-        )}
-
-        {!loading && filteredStudies.length > 0 && (
-          <div className="grid gap-5 md:grid-cols-2">
-            {filteredStudies.map((study) => (
-              <button
-                key={study.id}
-                type="button"
-                onClick={() => openStudy(study)}
-                className="group rounded-2xl border border-slate-800 bg-slate-900 p-6 text-left transition hover:-translate-y-0.5 hover:border-slate-700 hover:bg-slate-800"
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="mb-2 text-xs font-medium uppercase tracking-wider text-emerald-400">
-                      Endgame Study
-                    </p>
-
-                    <h2 className="text-xl font-semibold text-white">
-                      {study.title}
-                    </h2>
+              Show All Studies
+            </Button>
+          }
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredStudies.map((study) => (
+            <div
+              key={study.id}
+              className="group flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900/90"
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-500/15 dark:text-emerald-400">
+                    <GraduationCap className="h-5 w-5" />
                   </div>
-
-                  <span className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-300">
-                    {study.ratingMin}–{study.ratingMax}
-                  </span>
+                  {study.ratingMin !== null && study.ratingMax !== null && (
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                      {study.ratingMin}–{study.ratingMax}
+                    </span>
+                  )}
                 </div>
 
-                <div className="mt-6 flex items-center justify-between border-t border-slate-800 pt-4">
-                  <span className="text-sm text-slate-400">
-                    {study.lessonCount} lessons
-                  </span>
+                <h3 className="mt-4 font-display text-lg font-bold text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-emerald-400 transition-colors">
+                  {study.title}
+                </h3>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Source: {study.source || "Pawnposes Academy"}
+                </p>
+              </div>
 
-                  <span className="text-sm font-semibold text-white transition group-hover:text-emerald-400">
-                    Start Study →
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+              <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  {study.lessonCount || 0} Lessons
+                </span>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => void openStudy(study)}
+                  className="cursor-pointer bg-primary-600 hover:bg-primary-700 text-white font-semibold"
+                >
+                  <span>Start Study</span>
+                  <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 /* =========================================================
-   STUDY PLAYER
+   STUDY PLAYER COMPONENT
 ========================================================= */
 
 interface StudyPlayerProps {
   study: Study;
   lessons: StudyLesson[];
   currentLessonIndex: number;
-  setCurrentLessonIndex: Dispatch<SetStateAction<number>>;
+  setCurrentLessonIndex: React.Dispatch<React.SetStateAction<number>>;
   onBack: () => void;
 }
 
@@ -375,1194 +364,538 @@ function StudyPlayer({
   onBack,
 }: StudyPlayerProps) {
   const lesson = lessons[currentLessonIndex];
+  const isReadingLesson = !lesson?.moves || lesson.moves.length === 0;
 
-  const isReadingLesson = !lesson || lesson.moves.length === 0;
-
-  if (!lesson) {
-    return null;
-  }
+  if (!lesson) return null;
 
   function goPrevious() {
-    if (currentLessonIndex === 0) {
-      return;
-    }
-
+    if (currentLessonIndex === 0) return;
     setCurrentLessonIndex((index) => index - 1);
   }
 
   function goNext() {
-    if (currentLessonIndex >= lessons.length - 1) {
-      return;
-    }
-
+    if (currentLessonIndex >= lessons.length - 1) return;
     setCurrentLessonIndex((index) => index + 1);
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 px-3 py-4 text-white sm:px-5 sm:py-6 lg:px-8">
-      <div className="mx-auto max-w-7xl">
-        {/* HEADER */}
-
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-          <button
+    <div className="space-y-6">
+      {/* Top Breadcrumb Navigation */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-4 dark:border-slate-800/80">
+        <div className="flex items-center gap-3">
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             onClick={onBack}
-            className="text-sm text-slate-400 transition hover:text-white"
+            className="cursor-pointer"
           >
-            ← Studies
-          </button>
-
-          <div className="text-center">
-            <p className="text-xs font-medium uppercase tracking-wider text-emerald-400">
-              {study.title}
-            </p>
-
-            <p className="mt-1 text-sm text-slate-400">
-              Lesson {currentLessonIndex + 1} / {lessons.length}
-            </p>
-          </div>
-
-          <div className="w-[70px]" />
-        </div>
-
-        {/* LESSON */}
-
-        {isReadingLesson ? (
-          <ReadingLesson
-            lesson={lesson}
-            currentLessonIndex={currentLessonIndex}
-            totalLessons={lessons.length}
-            onPrevious={goPrevious}
-            onNext={goNext}
-          />
-        ) : (
-          <PlayableLesson
-            lesson={lesson}
-            currentLessonIndex={currentLessonIndex}
-            totalLessons={lessons.length}
-            onPrevious={goPrevious}
-            onNext={goNext}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* =========================================================
-   READING / INTRO LESSON
-========================================================= */
-
-interface ReadingLessonProps {
-  lesson: StudyLesson;
-  currentLessonIndex: number;
-  totalLessons: number;
-  onPrevious: () => void;
-  onNext: () => void;
-}
-
-function ReadingLesson({
-  lesson,
-  currentLessonIndex,
-  totalLessons,
-  onPrevious,
-  onNext,
-}: ReadingLessonProps) {
-  return (
-    <div className="mx-auto max-w-5xl">
-      <div className="mb-6">
-        <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-emerald-400">
-          Study Introduction
-        </p>
-
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          {lesson.title}
-        </h1>
-
-        <p className="mt-2 text-sm text-slate-500">
-          {lesson.ratingMin}–{lesson.ratingMax}
-        </p>
-      </div>
-
-      <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-8">
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-lg text-emerald-400">
-            📖
-          </div>
-
+            ← Studies Library
+          </Button>
           <div>
-            <p className="text-sm font-semibold text-white">Introduction</p>
-
-            <p className="text-xs text-slate-500">
-              Read this chapter before continuing.
-            </p>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-primary-600 dark:text-emerald-400 block">
+              {study.title}
+            </span>
+            <span className="font-display font-bold text-slate-900 dark:text-white text-base">
+              Lesson {currentLessonIndex + 1} of {lessons.length}
+            </span>
           </div>
         </div>
 
-        <div className="border-t border-slate-800 pt-6">
-          <div className="whitespace-pre-line text-sm leading-7 text-slate-300 sm:text-base sm:leading-8">
-            {lesson.introComment ||
-              "This chapter introduces the ideas used throughout this study."}
-          </div>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={goPrevious}
+            disabled={currentLessonIndex === 0}
+            className="cursor-pointer disabled:opacity-40"
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Previous
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={goNext}
+            disabled={currentLessonIndex >= lessons.length - 1}
+            className="cursor-pointer disabled:opacity-40"
+          >
+            Next
+            <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
         </div>
       </div>
 
-      <LessonNavigation
-        currentLessonIndex={currentLessonIndex}
-        totalLessons={totalLessons}
-        onPrevious={onPrevious}
-        onNext={onNext}
-      />
+      {isReadingLesson ? (
+        <ReadingLessonView
+          lesson={lesson}
+          currentLessonIndex={currentLessonIndex}
+          totalLessons={lessons.length}
+          onNext={goNext}
+        />
+      ) : (
+        <PlayableLessonView
+          lesson={lesson}
+          currentLessonIndex={currentLessonIndex}
+          totalLessons={lessons.length}
+          onNext={goNext}
+          onPrevious={goPrevious}
+        />
+      )}
     </div>
   );
 }
 
 /* =========================================================
-   PLAYABLE LESSON
+   READING LESSON VIEW
 ========================================================= */
 
-interface PlayableLessonProps {
-  lesson: StudyLesson;
-  currentLessonIndex: number;
-  totalLessons: number;
-  onPrevious: () => void;
-  onNext: () => void;
-}
-
-function PlayableLesson({
+function ReadingLessonView({
   lesson,
   currentLessonIndex,
   totalLessons,
-  onPrevious,
   onNext,
-}: PlayableLessonProps) {
-  const [game, setGame] = useState<Chess | null>(null);
+}: {
+  lesson: StudyLesson;
+  currentLessonIndex: number;
+  totalLessons: number;
+  onNext: () => void;
+}) {
+  return (
+    <div className="mx-auto max-w-3xl py-4 space-y-6">
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-8 shadow-xs dark:border-slate-800/80 dark:bg-slate-900/90">
+        <div className="flex items-center gap-3 pb-6 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-50 text-primary-600 dark:bg-primary-500/15 dark:text-emerald-400">
+            <BookOpen className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="font-display text-2xl font-bold text-slate-900 dark:text-white">
+              {lesson.title}
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Chapter Introduction
+            </p>
+          </div>
+        </div>
 
+        <div className="mt-6 whitespace-pre-line text-sm leading-relaxed text-slate-700 dark:text-slate-300 sm:text-base">
+          {lesson.introComment ||
+            "This chapter introduces the key strategic principles and tactical patterns explored in this study."}
+        </div>
+
+        <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+          {currentLessonIndex < totalLessons - 1 && (
+            <Button
+              type="button"
+              onClick={onNext}
+              className="bg-primary-600 hover:bg-primary-700 text-white font-bold cursor-pointer"
+            >
+              <span>Begin Lesson 1</span>
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   PLAYABLE LESSON VIEW (USES SHARED CHESSBOARDVIEW)
+========================================================= */
+
+function PlayableLessonView({
+  lesson,
+  currentLessonIndex,
+  totalLessons,
+  onNext,
+  onPrevious,
+}: {
+  lesson: StudyLesson;
+  currentLessonIndex: number;
+  totalLessons: number;
+  onNext: () => void;
+  onPrevious: () => void;
+}) {
+  const [game, setGame] = useState<Chess>(() => new Chess(getInitialFen(lesson)));
+  const [boardOrientation, setBoardOrientation] = useState<"white" | "black">(
+    lesson.sideToMove === "black" ? "black" : "white"
+  );
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
-
-  const [feedback, setFeedback] = useState<Feedback>(null);
-
-  const [message, setMessage] = useState("");
-
+  const [lastMove, setLastMove] = useState<{ from: string; to: string; toTint?: string } | null>(null);
   const [expectedMoveIndex, setExpectedMoveIndex] = useState(0);
-
-  const [animatingMove, setAnimatingMove] = useState<{
-    from: string;
-    to: string;
-    piece: {
-      color: "w" | "b";
-      type: string;
-    };
-  } | null>(null);
-
+  const [feedback, setFeedback] = useState<Feedback>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState("");
   const [isOpponentMoving, setIsOpponentMoving] = useState(false);
 
-  /*
-   * The side the student plays.
-   */
-  const userColor = lesson.sideToMove ?? "white";
+  const opponentTimerRef = useRef<number | null>(null);
 
+  const userColor = lesson.sideToMove ?? "white";
   const userChessColor = userColor === "white" ? "w" : "b";
 
-  /* =======================================================
-     INITIALIZE
-  ======================================================= */
+  const playOpponentMove = useCallback(
+    (currentGame: Chess, moveIndex: number) => {
+      const oppMove = lesson.moves[moveIndex];
+      if (!oppMove) {
+        setIsOpponentMoving(false);
+        return;
+      }
+
+      setIsOpponentMoving(true);
+      setSelectedSquare(null);
+
+      if (opponentTimerRef.current) {
+        window.clearTimeout(opponentTimerRef.current);
+      }
+
+      opponentTimerRef.current = window.setTimeout(() => {
+        try {
+          const nextGame = new Chess(currentGame.fen());
+          const possibleMoves = nextGame.moves({ verbose: true }) as Move[];
+          const matchingMove = possibleMoves.find((m) => isExpectedMove(m, oppMove));
+
+          if (!matchingMove) {
+            console.warn("Could not find expected opponent move:", oppMove);
+            setIsOpponentMoving(false);
+            return;
+          }
+
+          nextGame.move({
+            from: matchingMove.from,
+            to: matchingMove.to,
+            promotion: matchingMove.promotion ?? undefined,
+          });
+
+          setGame(nextGame);
+          setLastMove({ from: matchingMove.from, to: matchingMove.to });
+          const afterOppIndex = moveIndex + 1;
+          setExpectedMoveIndex(afterOppIndex);
+
+          if (afterOppIndex >= lesson.moves.length) {
+            setFeedback("complete");
+            setFeedbackMessage("Excellent! Study lesson complete.");
+          } else {
+            // Opponent finished, clear message so student can play
+            setFeedback(null);
+            setFeedbackMessage("");
+          }
+        } catch (err) {
+          console.error("Opponent reply failed:", err);
+        } finally {
+          setIsOpponentMoving(false);
+        }
+      }, 450);
+    },
+    [lesson.moves]
+  );
 
   function initializeLesson() {
+    if (opponentTimerRef.current) {
+      window.clearTimeout(opponentTimerRef.current);
+    }
     try {
       const chess = new Chess(getInitialFen(lesson));
-
       setGame(chess);
+      setBoardOrientation(lesson.sideToMove === "black" ? "black" : "white");
       setSelectedSquare(null);
-      setFeedback(null);
-      setMessage("");
+      setLastMove(null);
       setExpectedMoveIndex(0);
-      setAnimatingMove(null);
+      setFeedback(null);
+      setFeedbackMessage("");
       setIsOpponentMoving(false);
-    } catch (error) {
-      console.error("Failed to initialize lesson:", error);
 
-      setGame(null);
-      setFeedback("wrong");
-      setMessage("This chess position cannot be loaded.");
+      // If chapter starts with opponent move, play it automatically
+      const firstMove = lesson.moves[0];
+      if (firstMove && firstMove.color !== userColor) {
+        playOpponentMove(chess, 0);
+      }
+    } catch (err) {
+      console.error("Failed to initialize lesson:", err);
     }
   }
 
   useEffect(() => {
     initializeLesson();
-
+    return () => {
+      if (opponentTimerRef.current) {
+        window.clearTimeout(opponentTimerRef.current);
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lesson.id]);
 
-  /* =======================================================
-     CURRENT EXPECTED MOVE
-  ======================================================= */
-
   const currentExpectedMove = lesson.moves[expectedMoveIndex] ?? null;
-
-  /* =======================================================
-     KEY IDEA
-
-     Priority:
-
-     1. Current move comment
-     2. Lesson intro comment
-     3. Generic idea
-
-     Never show the expected move.
-  ======================================================= */
 
   const currentIdea =
     currentExpectedMove?.comment ||
     lesson.introComment ||
-    "Look for the key idea in this position.";
-
-  /* =======================================================
-     LEGAL TARGETS
-  ======================================================= */
+    "Look for the key strategic or tactical idea in this position.";
 
   const legalTargets = useMemo(() => {
-    if (!game || !selectedSquare || isOpponentMoving) {
+    if (!game || !selectedSquare || isOpponentMoving) return [];
+    try {
+      return game
+        .moves({ square: selectedSquare as Square, verbose: true })
+        .map((m) => ({ to: m.to, isCapture: Boolean(m.captured) }));
+    } catch {
       return [];
     }
+  }, [game, isOpponentMoving, selectedSquare]);
 
-    return game
-      .moves({
-        square: selectedSquare as never,
-        verbose: true,
-      })
-      .map((move) => move.to);
-  }, [game, selectedSquare, isOpponentMoving]);
-
-  /* =======================================================
-     SOUND
-  ======================================================= */
-
- function playChessSound(
-  type:
-    | "move"
-    | "capture"
-    | "success"
-    | "wrong",
-) {
-  try {
-    type BrowserAudioWindow =
-      typeof window & {
-        webkitAudioContext?: typeof window.AudioContext;
-      };
-
-    const AudioContextClass =
-      window.AudioContext ||
-      (
-        window as BrowserAudioWindow
-      ).webkitAudioContext;
-
-    if (!AudioContextClass) {
-      return;
+  // Move validation logic
+  const handlePieceDrop = (from: string, to: string): boolean => {
+    if (!game || !currentExpectedMove || isOpponentMoving || feedback === "complete") {
+      return false;
     }
 
-    const audioContext =
-      new AudioContextClass();
-
-    const oscillator =
-      audioContext.createOscillator();
-
-    const gain =
-      audioContext.createGain();
-
-    oscillator.connect(gain);
-    gain.connect(
-      audioContext.destination,
-    );
-
-    const now =
-      audioContext.currentTime;
-
-    if (type === "move") {
-      oscillator.frequency.setValueAtTime(
-        520,
-        now,
-      );
-
-      oscillator.frequency.exponentialRampToValueAtTime(
-        390,
-        now + 0.08,
-      );
-
-      gain.gain.setValueAtTime(
-        0.08,
-        now,
-      );
-
-      gain.gain.exponentialRampToValueAtTime(
-        0.001,
-        now + 0.12,
-      );
-    }
-
-    if (type === "capture") {
-      oscillator.frequency.setValueAtTime(
-        380,
-        now,
-      );
-
-      oscillator.frequency.exponentialRampToValueAtTime(
-        220,
-        now + 0.1,
-      );
-
-      gain.gain.setValueAtTime(
-        0.1,
-        now,
-      );
-
-      gain.gain.exponentialRampToValueAtTime(
-        0.001,
-        now + 0.15,
-      );
-    }
-
-    if (type === "success") {
-      oscillator.frequency.setValueAtTime(
-        520,
-        now,
-      );
-
-      oscillator.frequency.setValueAtTime(
-        660,
-        now + 0.1,
-      );
-
-      oscillator.frequency.setValueAtTime(
-        820,
-        now + 0.2,
-      );
-
-      gain.gain.setValueAtTime(
-        0.08,
-        now,
-      );
-
-      gain.gain.exponentialRampToValueAtTime(
-        0.001,
-        now + 0.35,
-      );
-    }
-
-    if (type === "wrong") {
-      oscillator.frequency.setValueAtTime(
-        180,
-        now,
-      );
-
-      oscillator.frequency.exponentialRampToValueAtTime(
-        110,
-        now + 0.12,
-      );
-
-      gain.gain.setValueAtTime(
-        0.06,
-        now,
-      );
-
-      gain.gain.exponentialRampToValueAtTime(
-        0.001,
-        now + 0.15,
-      );
-    }
-
-    oscillator.start(now);
-
-    oscillator.stop(
-      now +
-        (type === "success"
-          ? 0.4
-          : 0.18),
-    );
-
-    window.setTimeout(() => {
-      audioContext
-        .close()
-        .catch(() => {});
-    }, 500);
-  } catch (error) {
-    console.warn(
-      "Chess sound unavailable:",
-      error,
-    );
-  }
-}
-
-  /* =======================================================
-     MOVE ANIMATION
-  ======================================================= */
-
-  function animateMove(
-    from: string,
-    to: string,
-    piece: {
-      color: "w" | "b";
-      type: string;
-    },
-    onComplete: () => void,
-  ) {
-    setAnimatingMove({
-      from,
-      to,
-      piece,
-    });
-
-    window.setTimeout(() => {
-      setAnimatingMove(null);
-      onComplete();
-    }, 260);
-  }
-
-  /* =======================================================
-     AUTOMATIC OPPONENT MOVE
-  ======================================================= */
-
-  useEffect(() => {
-    if (
-      !game ||
-      !currentExpectedMove ||
-      isOpponentMoving ||
-      feedback === "complete"
-    ) {
-      return;
-    }
-
-    /*
-     * Only automatically play the
-     * opponent's moves.
-     */
-
-    if (currentExpectedMove.color === userColor) {
-      return;
-    }
-
-    const opponentMove = currentExpectedMove;
-
-    setIsOpponentMoving(true);
-    setSelectedSquare(null);
-
-    const possibleMoves = game.moves({
-      verbose: true,
-    }) as Move[];
-
-    const matchingMove = possibleMoves.find((move) =>
-      isExpectedMove(move, opponentMove),
-    );
-
-    if (!matchingMove) {
-      console.error("Could not find expected opponent move:", opponentMove);
-
-      setIsOpponentMoving(false);
-      return;
-    }
-
-    const piece = game.get(matchingMove.from as never);
-
-    if (!piece) {
-      setIsOpponentMoving(false);
-      return;
-    }
+    if (currentExpectedMove.color !== userColor) return false;
+    if (game.turn() !== userChessColor) return false;
 
     const nextGame = new Chess(game.fen());
+    const possibleMoves = nextGame.moves({ square: from as Square, verbose: true }) as Move[];
+    const candidateMove = possibleMoves.find((m) => m.to === to);
+    if (!candidateMove) return false;
 
-    const capturedPiece = nextGame.get(matchingMove.to as never);
+    const correct = isExpectedMove(candidateMove, currentExpectedMove);
+    if (!correct) {
+      setFeedback("wrong");
+      setFeedbackMessage("Not the intended line. Try following the study's plan.");
+      setLastMove({ from, to, toTint: "rgba(239, 68, 68, 0.6)" });
+      setSelectedSquare(null);
 
-    const moveResult = nextGame.move({
-      from: matchingMove.from,
-      to: matchingMove.to,
-      promotion: matchingMove.promotion ?? undefined,
-    });
-
-    if (!moveResult) {
-      setIsOpponentMoving(false);
-      return;
+      window.setTimeout(() => {
+        setFeedback(null);
+        setFeedbackMessage("");
+      }, 1500);
+      return false;
     }
 
-    playChessSound(capturedPiece ? "capture" : "move");
+    // Correct student move
+    try {
+      nextGame.move({
+        from,
+        to,
+        promotion: candidateMove.promotion ?? undefined,
+      });
 
-    animateMove(matchingMove.from, matchingMove.to, piece, () => {
       setGame(nextGame);
+      setLastMove({ from, to });
+      setSelectedSquare(null);
 
-      setExpectedMoveIndex((index) => index + 1);
+      const nextIndex = expectedMoveIndex + 1;
+      setExpectedMoveIndex(nextIndex);
 
-      setIsOpponentMoving(false);
-    });
-  }, [game, currentExpectedMove, userColor, isOpponentMoving, feedback]);
+      if (nextIndex >= lesson.moves.length) {
+        setFeedback("complete");
+        setFeedbackMessage("Excellent! You completed all key moves in this study.");
+        return true;
+      }
 
-  /* =======================================================
-     HANDLE SQUARE CLICK
-  ======================================================= */
+      // Check if next move is opponent's move
+      if (lesson.moves[nextIndex]?.color !== userColor) {
+        setFeedback("correct");
+        setFeedbackMessage("Good move! Opponent is responding…");
+        playOpponentMove(nextGame, nextIndex);
+      } else {
+        setFeedback("correct");
+        setFeedbackMessage("Good move! Continuing line…");
+        window.setTimeout(() => {
+          setFeedback(null);
+          setFeedbackMessage("");
+        }, 800);
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  };
 
-  function handleSquareClick(square: string) {
-    if (
-      !game ||
-      !currentExpectedMove ||
-      isOpponentMoving ||
-      feedback === "complete"
-    ) {
+  const handleSquareClick = (square: string) => {
+    if (!game || !currentExpectedMove || isOpponentMoving || feedback === "complete") {
       return;
     }
+    if (currentExpectedMove.color !== userColor) return;
+    if (game.turn() !== userChessColor) return;
 
-    /*
-     * Student can only play
-     * their own move.
-     */
-
-    if (currentExpectedMove.color !== userColor) {
-      return;
-    }
-
-    if (game.turn() !== userChessColor) {
-      return;
-    }
-
-    const clickedPiece = game.get(square as never);
-
-    /* -------------------------------------------------------
-       SELECT PIECE
-    ------------------------------------------------------- */
+    const clickedPiece = game.get(square as Square);
 
     if (!selectedSquare) {
       if (clickedPiece && clickedPiece.color === game.turn()) {
         setSelectedSquare(square);
       }
-
       return;
     }
-
-    /* -------------------------------------------------------
-       SELECT ANOTHER OWN PIECE
-    ------------------------------------------------------- */
 
     if (clickedPiece && clickedPiece.color === game.turn()) {
       setSelectedSquare(square);
       return;
     }
 
-    /* -------------------------------------------------------
-       FIND MOVE
-    ------------------------------------------------------- */
-
-    const possibleMoves = game.moves({
-      square: selectedSquare as never,
-      verbose: true,
-    }) as Move[];
-
-    const selectedMove = possibleMoves.find((move) => move.to === square);
-
-    if (!selectedMove) {
-      setSelectedSquare(null);
-      return;
-    }
-
-    /* -------------------------------------------------------
-       CHECK CORRECTNESS
-    ------------------------------------------------------- */
-
-    const correct = isExpectedMove(selectedMove, currentExpectedMove);
-
-    /* -------------------------------------------------------
-       WRONG MOVE
-    ------------------------------------------------------- */
-
-    if (!correct) {
-      playChessSound("wrong");
-
-      setFeedback("wrong");
-
-      /*
-       * IMPORTANT:
-       * Never reveal the actual move.
-       */
-
-      setMessage("Not the correct move. Try applying the key idea.");
-
-      setSelectedSquare(null);
-
-      window.setTimeout(() => {
-        setFeedback(null);
-        setMessage("");
-      }, 1400);
-
-      return;
-    }
-
-    /* -------------------------------------------------------
-       CORRECT MOVE
-    ------------------------------------------------------- */
-
-    const piece = game.get(selectedSquare as never);
-
-    if (!piece) {
-      return;
-    }
-
-    const capturedPiece = game.get(square as never);
-
-    const nextGame = new Chess(game.fen());
-
-    const moveResult = nextGame.move({
-      from: selectedSquare,
-      to: square,
-      promotion: selectedMove.promotion ?? undefined,
-    });
-
-    if (!moveResult) {
-      return;
-    }
-
-    playChessSound(capturedPiece ? "capture" : "move");
-
-    const moveFrom = selectedSquare;
-
-    setSelectedSquare(null);
-
-    /*
-     * Animate student's move.
-     */
-
-    animateMove(moveFrom, square, piece, () => {
-      const nextIndex = expectedMoveIndex + 1;
-
-      setGame(nextGame);
-
-      setExpectedMoveIndex(nextIndex);
-
-      /* ---------------------------------------------------
-           LESSON COMPLETE
-        --------------------------------------------------- */
-
-      if (nextIndex >= lesson.moves.length) {
-        playChessSound("success");
-
-        setFeedback("complete");
-
-        setMessage("Excellent! Study complete.");
-
-        return;
-      }
-
-      /* ---------------------------------------------------
-           CORRECT FEEDBACK
-        --------------------------------------------------- */
-
-      setFeedback("correct");
-
-      setMessage("Good move.");
-
-      window.setTimeout(() => {
-        setFeedback(null);
-        setMessage("");
-      }, 850);
-    });
-  }
-
-  /* =======================================================
-     RESET
-  ======================================================= */
-
-  function resetLesson() {
-    initializeLesson();
-  }
-
-  /* =======================================================
-     POSITION ERROR
-  ======================================================= */
-
-  if (!game) {
-    return (
-      <div className="mx-auto max-w-5xl">
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-8 text-center">
-          <p className="font-medium text-red-300">
-            {message || "This chess position cannot be loaded."}
-          </p>
-
-          <button
-            type="button"
-            onClick={resetLesson}
-            className="mt-5 rounded-xl bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
-          >
-            Reset
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  /* =======================================================
-     UI
-  ======================================================= */
+    handlePieceDrop(selectedSquare, square);
+  };
 
   return (
-    <>
-      {/* LESSON TITLE */}
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:items-start">
+      {/* Left: Reusable ChessboardView inside clean card */}
+      <div className="lg:col-span-7 xl:col-span-8 space-y-3">
+        <div className="rounded-3xl border border-slate-200/90 bg-white p-4 sm:p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="relative">
+            <ChessboardView
+              fen={game.fen()}
+              boardOrientation={boardOrientation}
+              isInteractive={!isOpponentMoving && feedback !== "complete"}
+              onPieceDrop={handlePieceDrop}
+              onSquareClick={handleSquareClick}
+              lastMove={lastMove}
+              selectedSquare={selectedSquare}
+              legalTargets={legalTargets}
+              showExternalCoordinates={true}
+              theme="forest"
+            />
 
-      <div className="mb-5">
-        <p className="mb-2 text-xs font-medium uppercase tracking-[0.16em] text-emerald-400">
-          Interactive Study
-        </p>
+            {/* Feedback overlay banner */}
+            {feedback && (
+              <div
+                className={`absolute top-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-bold shadow-lg animate-in fade-in duration-200 ${
+                  feedback === "complete"
+                    ? "bg-emerald-600 text-white"
+                    : feedback === "correct"
+                    ? "bg-sky-600 text-white"
+                    : "bg-rose-600 text-white"
+                }`}
+              >
+                {feedback === "complete" ? (
+                  <PartyPopper className="h-4 w-4" />
+                ) : feedback === "correct" ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <RotateCcw className="h-4 w-4" />
+                )}
+                <span>{feedbackMessage}</span>
+              </div>
+            )}
+          </div>
 
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          {lesson.title}
-        </h1>
-
-        <p className="mt-2 text-sm text-slate-500">
-          {lesson.ratingMin}–{lesson.ratingMax}
-        </p>
+          <div className="mt-4">
+            <ChessboardControls
+              boardOrientation={boardOrientation}
+              onFlipOrientation={() =>
+                setBoardOrientation((prev) => (prev === "white" ? "black" : "white"))
+              }
+              onReset={initializeLesson}
+              sideToMove={game.turn()}
+            />
+          </div>
+        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-        {/* =================================================
-            BOARD
-        ================================================= */}
+      {/* Right: Study Lesson Side Panel */}
+      <div className="lg:col-span-5 xl:col-span-4 space-y-4">
+        {/* Lesson Info Card */}
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800/80 dark:bg-slate-900/90 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary-600 dark:text-emerald-400">
+                Lesson Chapter
+              </span>
+              <h2 className="font-display text-lg font-bold text-slate-900 dark:text-white mt-0.5">
+                {lesson.title}
+              </h2>
+            </div>
+            <span className="rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              {userColor === "white" ? "⚪ You: White" : "⚫ You: Black"}
+            </span>
+          </div>
 
-        <div className="relative mx-auto w-full max-w-[620px]">
-          {feedback && (
-            <div
-              className={`absolute left-1/2 top-3 z-40 -translate-x-1/2 rounded-full px-4 py-2 text-sm font-semibold shadow-lg transition-all ${
-                feedback === "wrong"
-                  ? "bg-red-500 text-white"
-                  : feedback === "complete"
-                    ? "bg-emerald-500 text-white"
-                    : "bg-green-500 text-white"
-              }`}
-            >
-              {feedback === "wrong"
-                ? "Try again"
-                : feedback === "complete"
-                  ? "✓ Complete"
-                  : "✓ Correct"}
+          {/* Key Concept / Coach Tip */}
+          <div className="rounded-xl bg-amber-50/70 p-3.5 border border-amber-200/80 dark:bg-amber-950/20 dark:border-amber-900/30">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-amber-800 dark:text-amber-300 mb-1">
+              <Lightbulb className="h-4 w-4" />
+              <span>Key Concept</span>
+            </div>
+            <p className="text-xs leading-relaxed text-amber-900 dark:text-amber-200">
+              {currentIdea}
+            </p>
+          </div>
+
+          {/* Opponent moving indicator */}
+          {isOpponentMoving && (
+            <div className="flex items-center justify-center gap-2 rounded-xl bg-slate-100 py-2 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
+              <span>Opponent reply…</span>
             </div>
           )}
 
-          <ChessBoard
-            game={game}
-            selectedSquare={selectedSquare}
-            legalTargets={legalTargets}
-            onSquareClick={handleSquareClick}
-            animatingMove={animatingMove}
-          />
-        </div>
-
-        {/* =================================================
-            RIGHT PANEL
-        ================================================= */}
-
-        <div className="flex flex-col">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
-            {/* KEY IDEA */}
-
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                Key Idea
-              </p>
-
-              {isOpponentMoving && (
-                <span className="text-xs font-medium text-emerald-400">
-                  Opponent moving...
-                </span>
+          {/* Completion state button */}
+          {feedback === "complete" && (
+            <div className="pt-2">
+              {currentLessonIndex < totalLessons - 1 ? (
+                <Button
+                  type="button"
+                  onClick={onNext}
+                  className="w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3 text-sm cursor-pointer shadow-md flex items-center justify-center gap-2"
+                >
+                  <span>Proceed to Next Lesson</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <div className="rounded-xl bg-emerald-50 p-3 text-center text-xs font-bold text-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300">
+                  🎉 You have completed all lessons in this study!
+                </div>
               )}
             </div>
+          )}
+        </div>
 
-            <p className="mt-3 text-sm leading-6 text-slate-300">
-              {currentIdea}
-            </p>
-
-            {/* PROGRESS */}
-
-            <div className="mt-5 border-t border-slate-800 pt-5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs uppercase tracking-wider text-slate-500">
-                  Progress
-                </span>
-
-                <span className="rounded-md bg-slate-800 px-2.5 py-1 text-xs font-medium text-slate-300">
-                  {Math.min(expectedMoveIndex, lesson.moves.length)} /{" "}
-                  {lesson.moves.length}
-                </span>
-              </div>
-
-              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-800">
-                <div
-                  className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                  style={{
-                    width: `${
-                      lesson.moves.length
-                        ? Math.min(
-                            100,
-                            (expectedMoveIndex / lesson.moves.length) * 100,
-                          )
-                        : 0
-                    }%`,
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* CURRENT ACTION */}
-
-            <div className="mt-5 rounded-xl bg-slate-950 p-4">
-              <p className="text-xs text-slate-500">
-                {isOpponentMoving
-                  ? "Opponent"
-                  : feedback === "complete"
-                    ? "Study"
-                    : currentExpectedMove?.color === userColor
-                      ? "Your turn"
-                      : "Opponent"}
-              </p>
-
-              <p className="mt-1 text-lg font-semibold text-white">
-                {feedback === "complete"
-                  ? "Study complete"
-                  : isOpponentMoving
-                    ? "Playing response..."
-                    : currentExpectedMove?.color === userColor
-                      ? "Find the move"
-                      : "Watch the position"}
-              </p>
-            </div>
-
-            {/* MESSAGE */}
-
-            {message && (
-              <div className="mt-4 rounded-xl border border-slate-800 bg-slate-950 p-4">
-                <p className="text-sm leading-6 text-slate-300">{message}</p>
-              </div>
-            )}
-
-            {/* MODE */}
-
-            <div className="mt-5 flex items-center justify-between border-t border-slate-800 pt-4">
-              <span className="text-xs text-slate-500">Study mode</span>
-
-              <span className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-200">
-                You play · Opponent responds
-              </span>
-            </div>
+        {/* Moves Sequence List */}
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs dark:border-slate-800/80 dark:bg-slate-900/90">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Study Move List
+            </span>
+            <span className="text-xs font-semibold text-slate-500">
+              Move {expectedMoveIndex} of {lesson.moves.length}
+            </span>
           </div>
 
-          {/* CONTROLS */}
+          <div className="mt-3 max-h-56 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
+            {lesson.moves.map((move, idx) => {
+              const isPast = idx < expectedMoveIndex;
+              const isCurrent = idx === expectedMoveIndex;
 
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={onPrevious}
-              disabled={currentLessonIndex === 0 || isOpponentMoving}
-              className="rounded-xl bg-slate-900 px-3 py-3 text-sm font-medium text-slate-300 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              ← Prev
-            </button>
-
-            <button
-              type="button"
-              onClick={resetLesson}
-              disabled={isOpponentMoving}
-              className="rounded-xl bg-slate-800 px-3 py-3 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-40"
-            >
-              Reset
-            </button>
-
-            <button
-              type="button"
-              onClick={onNext}
-              disabled={
-                currentLessonIndex >= totalLessons - 1 || isOpponentMoving
-              }
-              className="rounded-xl bg-emerald-500 px-3 py-3 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Next →
-            </button>
+              return (
+                <div
+                  key={idx}
+                  className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                    isCurrent
+                      ? "bg-primary-100/90 text-primary-900 font-bold dark:bg-primary-500/25 dark:text-emerald-300 ring-1 ring-primary-500/30"
+                      : isPast
+                      ? "text-slate-500 dark:text-slate-400 line-through opacity-75"
+                      : "text-slate-700 dark:text-slate-300"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 text-slate-400 font-mono text-[11px]">
+                      {idx + 1}.
+                    </span>
+                    <span className="font-semibold">{move.san}</span>
+                  </div>
+                  {isPast && (
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                  )}
+                  {isCurrent && (
+                    <span className="rounded bg-primary-600 text-white px-1.5 py-0.2 text-[10px] font-bold">
+                      Now
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
-    </>
-  );
-}
-
-/* =========================================================
-   LESSON NAVIGATION
-========================================================= */
-
-interface LessonNavigationProps {
-  currentLessonIndex: number;
-  totalLessons: number;
-  onPrevious: () => void;
-  onNext: () => void;
-}
-
-function LessonNavigation({
-  currentLessonIndex,
-  totalLessons,
-  onPrevious,
-  onNext,
-}: LessonNavigationProps) {
-  return (
-    <div className="mt-5 grid grid-cols-2 gap-3">
-      <button
-        type="button"
-        onClick={onPrevious}
-        disabled={currentLessonIndex === 0}
-        className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-medium text-slate-300 transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        ← Previous
-      </button>
-
-      <button
-        type="button"
-        onClick={onNext}
-        disabled={currentLessonIndex >= totalLessons - 1}
-        className="rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        Next →
-      </button>
     </div>
   );
-}
-
-/* =========================================================
-   CHESS BOARD
-========================================================= */
-
-interface ChessBoardProps {
-  game: Chess;
-  selectedSquare: string | null;
-  legalTargets: string[];
-  onSquareClick: (square: string) => void;
-
-  animatingMove: {
-    from: string;
-    to: string;
-    piece: {
-      color: "w" | "b";
-      type: string;
-    };
-  } | null;
-}
-
-function ChessBoard({
-  game,
-  selectedSquare,
-  legalTargets,
-  onSquareClick,
-  animatingMove,
-}: ChessBoardProps) {
-  const board = game.board();
-
-  /*
-   * Convert a chess square to
-   * percentage coordinates.
-   */
-
-  function squarePosition(square: string) {
-    const file = FILES.indexOf(square[0]);
-
-    const rank = Number(square[1]) - 1;
-
-    return {
-      x: file * 12.5,
-      y: (7 - rank) * 12.5,
-    };
-  }
-
-  const animationStart = animatingMove
-    ? squarePosition(animatingMove.from)
-    : null;
-
-  const animationEnd = animatingMove ? squarePosition(animatingMove.to) : null;
-
-  return (
-    <div className="mx-auto w-full overflow-hidden rounded-sm">
-      <div
-        className="relative grid aspect-square w-full grid-cols-8"
-        style={{
-          backgroundColor: "#eeeed2",
-        }}
-      >
-        {board.map((row, rowIndex) =>
-          row.map((piece, colIndex) => {
-            const rank = 7 - rowIndex;
-
-            const square = coordsToSquare(colIndex, rank)!;
-
-            const isLight = (rowIndex + colIndex) % 2 === 0;
-
-            const isSelected = selectedSquare === square;
-
-            const isLegalTarget = legalTargets.includes(square);
-
-            /*
-             * Hide original piece
-             * while it is animating.
-             */
-
-            const isAnimationSource = animatingMove?.from === square;
-
-            const pieceSymbol = piece ? getPieceSymbol(piece) : "";
-
-            return (
-              <button
-                key={square}
-                type="button"
-                onClick={() => onSquareClick(square)}
-                aria-label={`Chess square ${square}`}
-                className="relative flex aspect-square items-center justify-center border-0 p-0 outline-none"
-                style={{
-                  backgroundColor: isSelected
-                    ? "#f6f669"
-                    : isLight
-                      ? "#eeeed2"
-                      : "#769656",
-                }}
-              >
-                {/* PIECE */}
-
-                {piece && !isAnimationSource && (
-                  <span
-                    className="pointer-events-none relative z-10 select-none leading-none"
-                    style={{
-                      fontSize: "clamp(2rem, 8vw, 5rem)",
-
-                      color: piece.color === "w" ? "#ffffff" : "#111111",
-
-                      textShadow:
-                        piece.color === "w"
-                          ? "0 2px 1px rgba(0,0,0,0.75)"
-                          : "0 1px 1px rgba(255,255,255,0.18)",
-
-                      lineHeight: 1,
-                    }}
-                  >
-                    {pieceSymbol}
-                  </span>
-                )}
-
-                {/* LEGAL TARGET */}
-
-                {isLegalTarget && (
-                  <>
-                    {piece ? (
-                      <span className="pointer-events-none absolute inset-[7%] z-20 rounded-full border-[4px] border-black/30" />
-                    ) : (
-                      <span className="pointer-events-none absolute left-1/2 top-1/2 z-20 h-[25%] w-[25%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/25" />
-                    )}
-                  </>
-                )}
-
-                {/* SELECTION */}
-
-                {isSelected && (
-                  <span className="pointer-events-none absolute inset-0 z-[5] bg-yellow-300/35" />
-                )}
-
-                {/* RANK */}
-
-                {colIndex === 0 && (
-                  <span
-                    className="pointer-events-none absolute left-[4px] top-[3px] z-30 font-bold leading-none"
-                    style={{
-                      fontSize: "clamp(9px, 1.8vw, 13px)",
-
-                      color: isLight ? "#769656" : "#eeeed2",
-                    }}
-                  >
-                    {rank + 1}
-                  </span>
-                )}
-
-                {/* FILE */}
-
-                {rowIndex === 7 && (
-                  <span
-                    className="pointer-events-none absolute bottom-[3px] right-[4px] z-30 font-bold uppercase leading-none"
-                    style={{
-                      fontSize: "clamp(9px, 1.8vw, 13px)",
-
-                      color: isLight ? "#769656" : "#eeeed2",
-                    }}
-                  >
-                    {FILES[colIndex]}
-                  </span>
-                )}
-              </button>
-            );
-          }),
-        )}
-
-        {/* =====================================================
-            ANIMATED PIECE
-        ===================================================== */}
-
-        {animatingMove && animationStart && animationEnd && (
-          <div
-            className="pointer-events-none absolute left-0 top-0 z-50 flex items-center justify-center"
-            style={{
-              width: "12.5%",
-              height: "12.5%",
-
-              left: `${animationStart.x}%`,
-              top: `${animationStart.y}%`,
-
-              transform: `translate(
-                  ${animationEnd.x - animationStart.x}%,
-                  ${animationEnd.y - animationStart.y}%
-                )`,
-
-              transition: "transform 260ms cubic-bezier(0.22, 1, 0.36, 1)",
-            }}
-          >
-            <span
-              className="select-none leading-none"
-              style={{
-                fontSize: "clamp(2rem, 8vw, 5rem)",
-
-                color:
-                  animatingMove.piece.color === "w" ? "#ffffff" : "#111111",
-
-                textShadow:
-                  animatingMove.piece.color === "w"
-                    ? "0 2px 1px rgba(0,0,0,0.75)"
-                    : "0 1px 1px rgba(255,255,255,0.18)",
-
-                lineHeight: 1,
-              }}
-            >
-              {getPieceSymbol(animatingMove.piece)}
-            </span>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* =========================================================
-   MOVE VALIDATION
-========================================================= */
-
-function isExpectedMove(move: Move, expected: StudyMove) {
-  /*
-   * Prefer UCI.
-   */
-
-  if (expected.uci) {
-    const from = expected.uci.slice(0, 2);
-
-    const to = expected.uci.slice(2, 4);
-
-    if (move.from === from && move.to === to) {
-      return true;
-    }
-  }
-
-  /*
-   * SAN fallback.
-   */
-
-  return move.san === expected.san;
 }

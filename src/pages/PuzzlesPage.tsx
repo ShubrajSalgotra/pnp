@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Brain, Sparkles, Swords, Trophy } from 'lucide-react';
+import { Brain, Sparkles, Swords, Target, Trophy } from 'lucide-react';
 import PuzzleTrainer from '../components/PuzzleTrainer';
 import { Button } from '../components/ui/Button';
+import { PageHeader } from '../components/layout/PageHeader';
+import { StatCard } from '../components/ui/StatCard';
 import { useAuth } from '../contexts/AuthContext';
 import { GameAnalysis } from '../types/analysis';
 import { ChessGame } from '../types/game';
@@ -47,9 +49,11 @@ const PuzzlesPage: React.FC = () => {
   }, [currentUser?.id]);
 
   const latestGameAnalysis = useMemo(() => {
-    return gameAnalyses
-      .slice()
-      .sort((a, b) => b.analyzedAt.getTime() - a.analyzedAt.getTime())[0] || null;
+    return (
+      gameAnalyses
+        .slice()
+        .sort((a, b) => b.analyzedAt.getTime() - a.analyzedAt.getTime())[0] || null
+    );
   }, [gameAnalyses]);
 
   const trainerAnalysis = useMemo(() => {
@@ -64,112 +68,110 @@ const PuzzlesPage: React.FC = () => {
   };
 
   return (
-    <div className="section-shell space-y-8 py-8">
-      <section className="aurora-panel">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-700 dark:text-primary-300">Tactics lab</p>
-        <div className="mt-2">
-          <h1 className="font-display text-3xl font-semibold text-slate-900 sm:text-4xl dark:text-white">Puzzle Trainer</h1>
-          <p className="mt-3 max-w-2xl text-sm text-slate-700 sm:text-base dark:text-slate-300">
-            Train with focused, analysis-aware puzzle sets that feel like a modern coaching workspace.
-          </p>
-        </div>
-      </section>
+    <div className="space-y-8">
+      <PageHeader
+        kicker="TACTICS LAB"
+        title="Puzzle Trainer"
+        description="Solve tailored tactical puzzles mined from your games, master critical opening ideas, and hone endgame conversion."
+      />
 
-      <section className="aurora-subtle divide-y divide-primary-200/70 pt-2 dark:divide-slate-700/80">
+      {/* Feature Pills */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { icon: <Swords className="h-4 w-4" />, title: 'Fix weaknesses', text: 'Mine your last 20 games for long thinks and blunders, then replay those exact moments.' },
-          { icon: <Sparkles className="h-4 w-4" />, title: 'Session flow', text: 'Hints, resets, and next puzzles are one-click and fast.' },
-          { icon: <Trophy className="h-4 w-4" />, title: 'Progress streaks', text: 'Keep momentum with streak and solved tracking.' },
-          { icon: <Brain className="h-4 w-4" />, title: 'Openings & endgames', text: 'Starts at your puzzle rating, then climbs after streaks.' },
-        ].map((item) => (
-          <div key={item.title} className="grid gap-2 py-3 sm:grid-cols-[auto_1fr] sm:items-center">
-            <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100/80 text-primary-700 dark:bg-primary-500/15 dark:text-primary-300">{item.icon}</div>
-            <p className="text-sm text-slate-700 dark:text-slate-300">
-              <span className="mr-2 font-semibold text-slate-900 dark:text-white">{item.title}</span>
-              {item.text}
-            </p>
-          </div>
-        ))}
-      </section>
+          {
+            icon: Swords,
+            title: 'Fix Weaknesses',
+            subtitle: 'Replay your own blunders & long thinks',
+          },
+          {
+            icon: Sparkles,
+            title: 'Adaptive Flow',
+            subtitle: 'Progressive hints and quick resets',
+          },
+          {
+            icon: Trophy,
+            title: 'Streak Multipliers',
+            subtitle: 'Build momentum with daily solve streaks',
+          },
+          {
+            icon: Target,
+            title: 'Openings & Endings',
+            subtitle: 'Curated sets scaling with your level',
+          },
+        ].map((item) => {
+          const Icon = item.icon;
+          return (
+            <div
+              key={item.title}
+              className="flex items-center gap-3 rounded-2xl border border-slate-200/90 bg-white p-3.5 shadow-xs dark:border-slate-800/80 dark:bg-slate-900/90"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-500/15 dark:text-emerald-400">
+                <Icon className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-xs font-bold text-slate-900 dark:text-white">
+                  {item.title}
+                </p>
+                <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                  {item.subtitle}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       {!profileUsername && (
-        <section className="aurora-subtle flex items-start gap-3 pt-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary-600 text-white">
+        <div className="flex items-start gap-4 rounded-2xl border border-amber-200/80 bg-amber-50/70 p-5 dark:border-amber-900/40 dark:bg-amber-950/20">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-xs">
             <Brain className="h-5 w-5" />
           </div>
-          <div>
-            <h2 className="font-semibold text-slate-900 dark:text-white">Sync a chess account for weakness puzzles</h2>
-            <p className="text-sm text-slate-700 dark:text-slate-300">
-              Fix My Weaknesses needs your chess games. Open reports to connect an account, then come back to replay your own blunders and long thinks.
+          <div className="space-y-1">
+            <h2 className="text-sm font-bold text-amber-900 dark:text-amber-200">
+              Connect your chess account for personalized weakness mining
+            </h2>
+            <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+              Fix My Weaknesses analyzes your actual games to extract the exact moments you hesitated or made a mistake. Connect your account in reports to unlock personalized puzzles.
             </p>
-            <Button type="button" variant="outline" size="sm" className="mt-3 cursor-pointer" onClick={() => navigate('/reports')}>
-              Open reports
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-3 cursor-pointer text-xs font-bold"
+              onClick={() => navigate('/dashboard')}
+            >
+              Connect Chess Account
             </Button>
           </div>
-        </section>
+        </div>
       )}
 
-      {profileUsername && !latestGameAnalysis && !profileReport && (
-        <section className="aurora-subtle flex items-start gap-3 pt-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary-600 text-white">
-            <Brain className="h-5 w-5" />
-          </div>
-          <div>
-            <h2 className="font-semibold text-slate-900 dark:text-white">Ready for weakness training</h2>
-            <p className="text-sm text-slate-700 dark:text-slate-300">
-              Your account is connected. Fix My Weaknesses will scan your last 20 games when you start.
-            </p>
-          </div>
-        </section>
-      )}
-
+      {/* Accuracy / Performance Highlights if available */}
       {latestGameAnalysis && (
-        <section className="aurora-subtle grid grid-cols-1 gap-4 pt-6 sm:grid-cols-3 sm:divide-x sm:divide-primary-200/70 dark:sm:divide-slate-700/80">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary-700 dark:text-primary-300">Latest analysis</div>
-            <div className="mt-1 font-semibold text-slate-900 dark:text-white">
-              {latestGameAnalysis.openingEvaluation?.name || 'Analyzed game'}
-            </div>
-          </div>
-          <div className="sm:pl-4">
-            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary-700 dark:text-primary-300">White accuracy</div>
-            <div className="font-display text-2xl font-semibold text-slate-900 dark:text-white">
-              {formatAccuracy(latestGameAnalysis.whiteAccuracy)}
-            </div>
-          </div>
-          <div className="sm:pl-4">
-            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary-700 dark:text-primary-300">Black accuracy</div>
-            <div className="font-display text-2xl font-semibold text-slate-900 dark:text-white">
-              {formatAccuracy(latestGameAnalysis.blackAccuracy)}
-            </div>
-          </div>
-        </section>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StatCard
+            title="Latest Analyzed Opening"
+            value={latestGameAnalysis.openingEvaluation?.name || 'Analyzed game'}
+            subtitle="Extracted from your game review"
+            icon={<Brain className="h-5 w-5" />}
+          />
+          <StatCard
+            title="White Accuracy"
+            value={formatAccuracy(latestGameAnalysis.whiteAccuracy)}
+            subtitle="Engine accuracy percentage"
+            icon={<Target className="h-5 w-5" />}
+          />
+          <StatCard
+            title="Black Accuracy"
+            value={formatAccuracy(latestGameAnalysis.blackAccuracy)}
+            subtitle="Engine accuracy percentage"
+            icon={<Trophy className="h-5 w-5" />}
+          />
+        </div>
       )}
 
-      {!latestGameAnalysis && profileReport && (
-        <section className="aurora-subtle grid grid-cols-1 gap-4 pt-6 sm:grid-cols-3 sm:divide-x sm:divide-primary-200/70 dark:sm:divide-slate-700/80">
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary-700 dark:text-primary-300">Profile analysis</div>
-            <div className="mt-1 font-semibold text-slate-900 dark:text-white">
-              {profileReport.executiveSummary.favoriteOpenings?.[0] || 'Synced profile'}
-            </div>
-          </div>
-          <div className="sm:pl-4">
-            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary-700 dark:text-primary-300">Average accuracy</div>
-            <div className="font-display text-2xl font-semibold text-slate-900 dark:text-white">
-              {formatAccuracy(profileReport.executiveSummary.averageAccuracy)}
-            </div>
-          </div>
-          <div className="sm:pl-4">
-            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary-700 dark:text-primary-300">Win rate</div>
-            <div className="font-display text-2xl font-semibold text-slate-900 dark:text-white">
-              {formatAccuracy(profileReport.executiveSummary.winRate)}
-            </div>
-          </div>
-        </section>
-      )}
-
-      <div className="aurora-subtle pt-6">
+      {/* Main Puzzle Trainer Component */}
+      <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs dark:border-slate-800/80 dark:bg-slate-900/90">
         <PuzzleTrainer
           analysis={trainerAnalysis}
           platform={profilePlatform}
@@ -198,22 +200,22 @@ const createAnalysisFromProfileReport = (report: ChessReport): GameAnalysis => {
       white: {
         blunders: report.recurringWeaknesses?.[0]?.frequency || 0,
         mistakes: report.recurringWeaknesses?.[1]?.frequency || 0,
-        inaccuracies: report.recurringWeaknesses?.[2]?.frequency || 0
+        inaccuracies: report.recurringWeaknesses?.[2]?.frequency || 0,
       },
       black: {
         blunders: 0,
         mistakes: 0,
-        inaccuracies: 0
-      }
+        inaccuracies: 0,
+      },
     },
     openingEvaluation: {
       name: report.executiveSummary.favoriteOpenings?.[0] || 'Profile analysis',
       eco: '',
-      evaluation: 0
+      evaluation: 0,
     },
     criticalMoments: [],
     analyzedAt: new Date(report.generatedAt),
     engineUsed: 'stockfish',
-    depth: 0
+    depth: 0,
   };
 };

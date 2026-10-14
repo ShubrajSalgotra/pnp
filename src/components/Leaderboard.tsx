@@ -1,557 +1,264 @@
 import React, { useEffect, useState } from "react";
-
 import { auth } from "../services/firebase";
-
 import {
   getLeaderboard,
   getUserLeaderboardRank,
 } from "../services/practiceService";
-
 import type { LeaderboardEntry } from "../types/practice";
+import { PageHeader } from "./layout/PageHeader";
+import EmptyState from "./ui/EmptyState";
+import {
+  Award,
+  Crown,
+  Medal,
+  Trophy,
+} from "lucide-react";
 
-/* =========================================================
-   TYPES
-========================================================= */
-
-type LeaderboardPeriod =
-  | "weekly"
-  | "monthly"
-  | "allTime";
-
-/* =========================================================
-   COMPONENT
-========================================================= */
+type LeaderboardPeriod = "weekly" | "monthly" | "allTime";
 
 const Leaderboard: React.FC = () => {
-  const [period, setPeriod] =
-    useState<LeaderboardPeriod>("weekly");
-
-  const [entries, setEntries] =
-    useState<LeaderboardEntry[]>([]);
-
-  const [userRank, setUserRank] =
-    useState<number | null>(null);
-
-  const [isLoading, setIsLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState<string | null>(null);
-
-  /* =======================================================
-     LOAD LEADERBOARD
-  ======================================================== */
+  const [period, setPeriod] = useState<LeaderboardPeriod>("weekly");
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [userRank, setUserRank] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadLeaderboard =
-      async () => {
-        const user =
-          auth.currentUser;
+    const loadLeaderboard = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        setError("Please sign in to view the leaderboard.");
+        setIsLoading(false);
+        return;
+      }
 
-        if (!user) {
-          setError(
-            "Please sign in to view the leaderboard.",
-          );
+      setIsLoading(true);
+      setError(null);
 
-          setIsLoading(false);
+      try {
+        const [leaderboard, rank] = await Promise.all([
+          getLeaderboard(period, 50),
+          getUserLeaderboardRank(period, user.uid),
+        ]);
 
-          return;
-        }
-
-        setIsLoading(true);
-        setError(null);
-
-        try {
-          const [
-            leaderboard,
-            rank,
-          ] = await Promise.all([
-            getLeaderboard(
-              period,
-              50,
-            ),
-            getUserLeaderboardRank(
-              period,
-              user.uid,
-            ),
-          ]);
-
-          setEntries(
-            leaderboard,
-          );
-
-          setUserRank(rank);
-        } catch (error) {
-          console.error(
-            "Could not load leaderboard:",
-            error,
-          );
-
-          setError(
-            "Could not load the leaderboard. Please try again.",
-          );
-        } finally {
-          setIsLoading(false);
-        }
-      };
+        setEntries(leaderboard);
+        setUserRank(rank);
+      } catch (err) {
+        console.error("Could not load leaderboard:", err);
+        setError("Could not load the leaderboard. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
     void loadLeaderboard();
   }, [period]);
 
-  /* =======================================================
-     CURRENT USER
-  ======================================================== */
+  const currentUserId = auth.currentUser?.uid;
+  const currentUserEntry = entries.find((entry) => entry.userId === currentUserId);
 
-  const currentUserId =
-    auth.currentUser?.uid;
-
-  const currentUserEntry =
-    entries.find(
-      (entry) =>
-        entry.userId ===
-        currentUserId,
-    );
-
-  /* =======================================================
-     PODIUM
-  ======================================================== */
-
-  const first =
-    entries[0];
-
-  const second =
-    entries[1];
-
-  const third =
-    entries[2];
-
-  /* =======================================================
-     RENDER
-  ======================================================== */
+  const first = entries[0];
+  const second = entries[1];
+  const third = entries[2];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-
-      {/* =====================================================
-          HEADER
-      ====================================================== */}
-
-      <header className="border-b border-slate-900 bg-slate-950">
-
-        <div className="mx-auto max-w-[1200px] px-4 py-8 sm:px-6">
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-
+    <div className="space-y-8">
+      <PageHeader
+        kicker="COMPETITION"
+        title="Student Leaderboard"
+        description="Compete with fellow chess students, maintain daily training consistency, and climb the ranking divisions."
+        actions={
+          <div className="flex items-center gap-3 rounded-2xl border border-slate-200/90 bg-white px-5 py-3 shadow-xs dark:border-slate-800/80 dark:bg-slate-900/90">
             <div>
-
-              <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-400">
-                Pawnsposes
-              </p>
-
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-                Leaderboard
-              </h1>
-
-              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500">
-                Compete with other students, stay consistent,
-                and climb your league.
-              </p>
-
-            </div>
-
-            {/* Your position */}
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 px-5 py-4">
-
-              <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-600">
-                Your position
-              </p>
-
-              <div className="mt-1 flex items-baseline gap-2">
-
-                <span className="text-2xl font-bold text-white">
-                  {userRank
-                    ? `#${userRank}`
-                    : "—"}
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Your Rank
+              </span>
+              <div className="flex items-baseline gap-2 mt-0.5">
+                <span className="font-display text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
+                  {userRank ? `#${userRank}` : "—"}
                 </span>
-
-                <span className="text-xs text-slate-500">
-                  {currentUserEntry
-                    ? `${currentUserEntry.points} points`
-                    : "Keep training"}
+                <span className="text-xs font-semibold text-primary-600 dark:text-emerald-400">
+                  {currentUserEntry ? `${currentUserEntry.points} pts` : "Keep training"}
                 </span>
-
               </div>
-
             </div>
-
           </div>
+        }
+      />
 
+      {/* Time Period Filter Tabs */}
+      <div className="flex items-center gap-2">
+        {(
+          [
+            ["weekly", "Weekly Arena"],
+            ["monthly", "Monthly League"],
+            ["allTime", "All-Time Legends"],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setPeriod(value)}
+            className={`rounded-xl px-4 py-2 text-xs font-bold transition-colors cursor-pointer ${
+              period === value
+                ? "bg-primary-600 text-white shadow-xs"
+                : "border border-slate-200/80 bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {error && (
+        <div className="rounded-2xl border border-rose-200/80 bg-rose-50/80 p-4 text-xs font-semibold text-rose-700 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-300">
+          {error}
         </div>
+      )}
 
-      </header>
-
-      {/* =====================================================
-          MAIN
-      ====================================================== */}
-
-      <main className="mx-auto max-w-[1200px] px-4 py-6 sm:px-6">
-
-        {/* ===================================================
-            PERIOD TABS
-        ==================================================== */}
-
-        <div className="mb-6 flex w-full gap-2 rounded-2xl border border-slate-800 bg-slate-900 p-1.5 sm:w-fit">
-
-          {(
-            [
-              ["weekly", "Weekly"],
-              ["monthly", "Monthly"],
-              ["allTime", "All Time"],
-            ] as const
-          ).map(
-            ([
-              value,
-              label,
-            ]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() =>
-                  setPeriod(
-                    value,
-                  )
-                }
-                className={[
-                  "rounded-xl px-4 py-2.5 text-xs font-semibold transition",
-                  period ===
-                  value
-                    ? "bg-emerald-400 text-slate-950"
-                    : "text-slate-500 hover:bg-slate-800 hover:text-white",
-                ].join(" ")}
-              >
-                {label}
-              </button>
-            ),
-          )}
-
+      {isLoading ? (
+        <div className="flex min-h-[40vh] flex-col items-center justify-center space-y-3">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-primary-600 dark:border-slate-700 dark:border-t-emerald-400" />
+          <p className="text-xs font-semibold text-slate-500">
+            Calculating current league standings…
+          </p>
         </div>
+      ) : entries.length === 0 ? (
+        <EmptyState
+          icon={Trophy}
+          title="No Rankings in this Period"
+          description="Solve practice puzzles and tactical challenges to earn points and claim your spot on the leaderboard!"
+        />
+      ) : (
+        <div className="space-y-8">
+          {/* Top 3 Podium (when at least 1 entry exists) */}
+          <section className="grid grid-cols-1 items-end gap-4 sm:grid-cols-3">
+            {/* Runner-up: Rank 2 */}
+            <PodiumCard
+              entry={second}
+              rank={2}
+              currentUserId={currentUserId}
+            />
 
-        {/* ===================================================
-            ERROR
-        ==================================================== */}
+            {/* Champion: Rank 1 */}
+            <PodiumCard
+              entry={first}
+              rank={1}
+              currentUserId={currentUserId}
+              featured
+            />
 
-        {error && (
-          <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/5 p-4 text-sm text-red-300">
-            {error}
-          </div>
-        )}
+            {/* Third place: Rank 3 */}
+            <PodiumCard
+              entry={third}
+              rank={3}
+              currentUserId={currentUserId}
+            />
+          </section>
 
-        {/* ===================================================
-            LOADING
-        ==================================================== */}
-
-        {isLoading ? (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-10 text-center">
-
-            <div className="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-slate-700 border-t-emerald-400" />
-
-            <p className="mt-4 text-xs text-slate-500">
-              Loading leaderboard…
-            </p>
-
-          </div>
-        ) : entries.length === 0 ? (
-
-          /* =================================================
-             EMPTY STATE
-          ================================================== */
-
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 px-6 py-16 text-center">
-
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-800 text-2xl">
-              ♟
-            </div>
-
-            <h2 className="mt-5 text-lg font-semibold">
-              No rankings yet
-            </h2>
-
-            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500">
-              Complete practice challenges to earn points
-              and appear on the leaderboard.
-            </p>
-
-          </div>
-
-        ) : (
-
-          <>
-
-            {/* =================================================
-                TOP 3
-            ================================================== */}
-
-            <section className="mb-6">
-
-              <div className="grid items-end gap-3 sm:grid-cols-3">
-
-                {/* SECOND */}
-
-                <PodiumCard
-                  entry={second}
-                  rank={2}
-                  currentUserId={
-                    currentUserId
-                  }
-                />
-
-                {/* FIRST */}
-
-                <PodiumCard
-                  entry={first}
-                  rank={1}
-                  currentUserId={
-                    currentUserId
-                  }
-                  featured
-                />
-
-                {/* THIRD */}
-
-                <PodiumCard
-                  entry={third}
-                  rank={3}
-                  currentUserId={
-                    currentUserId
-                  }
-                />
-
-              </div>
-
-            </section>
-
-            {/* =================================================
-                LIST
-            ================================================== */}
-
-            <section className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
-
-              <div className="border-b border-slate-800 px-4 py-4 sm:px-5">
-
-                <div className="flex items-center justify-between">
-
-                  <div>
-
-                    <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-slate-600">
-                      Rankings
-                    </p>
-
-                    <h2 className="mt-1 text-sm font-semibold">
-                      Top students
-                    </h2>
-
-                  </div>
-
-                  <span className="text-[10px] text-slate-600">
-                    {entries.length} students
-                  </span>
-
-                </div>
-
-              </div>
-
+          {/* Full Rankings Table/List */}
+          <section className="overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs dark:border-slate-800/80 dark:bg-slate-900/90">
+            <div className="border-b border-slate-100 px-6 py-4 dark:border-slate-800 flex items-center justify-between">
               <div>
-
-                {entries.map(
-                  (
-                    entry,
-                    index,
-                  ) => {
-                    const rank =
-                      index + 1;
-
-                    const isCurrentUser =
-                      entry.userId ===
-                      currentUserId;
-
-                    return (
-                      <div
-                        key={
-                          entry.userId
-                        }
-                        className={[
-                          "flex items-center gap-3 border-b border-slate-800 px-4 py-4 last:border-b-0 sm:px-5",
-                          isCurrentUser
-                            ? "bg-emerald-400/5"
-                            : "hover:bg-slate-800/40",
-                        ].join(" ")}
-                      >
-
-                        {/* Rank */}
-
-                        <div className="w-9 shrink-0 text-center">
-
-                          <span
-                            className={[
-                              "text-sm font-bold",
-                              rank <=
-                              3
-                                ? "text-emerald-400"
-                                : "text-slate-500",
-                            ].join(" ")}
-                          >
-                            {rank}
-                          </span>
-
-                        </div>
-
-                        {/* Avatar */}
-
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-800 text-xs font-bold text-slate-300">
-                          {getInitials(
-                            entry.displayName,
-                          )}
-                        </div>
-
-                        {/* Name */}
-
-                        <div className="min-w-0 flex-1">
-
-                          <div className="flex items-center gap-2">
-
-                            <p className="truncate text-sm font-semibold text-white">
-                              {
-                                entry.displayName
-                              }
-                            </p>
-
-                            {isCurrentUser && (
-                              <span className="rounded-full bg-emerald-400/10 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-emerald-400">
-                                You
-                              </span>
-                            )}
-
-                          </div>
-
-                          <p className="mt-0.5 text-[10px] text-slate-600">
-                            {
-                              entry.league
-                            }
-                          </p>
-
-                        </div>
-
-                        {/* Points */}
-
-                        <div className="text-right">
-
-                          <p className="text-sm font-bold text-white">
-                            {
-                              entry.points
-                            }
-                          </p>
-
-                          <p className="text-[9px] uppercase tracking-wider text-slate-600">
-                            points
-                          </p>
-
-                        </div>
-
-                      </div>
-                    );
-                  },
-                )}
-
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Standings
+                </span>
+                <h3 className="font-display text-base font-bold text-slate-900 dark:text-white mt-0.5">
+                  Full Rankings List
+                </h3>
               </div>
+              <span className="text-xs font-semibold text-slate-500">
+                {entries.length} Students
+              </span>
+            </div>
 
-            </section>
+            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+              {entries.map((entry, index) => {
+                const rank = index + 1;
+                const isCurrentUser = entry.userId === currentUserId;
 
-            {/* =================================================
-                YOUR CARD
-            ================================================== */}
-
-            {currentUserEntry && (
-              <section className="mt-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 sm:p-5">
-
-                <div className="flex items-center justify-between gap-4">
-
-                  <div className="flex min-w-0 items-center gap-3">
-
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-400 font-bold text-slate-950">
-                      {getInitials(
-                        currentUserEntry.displayName,
+                return (
+                  <div
+                    key={entry.userId}
+                    className={`flex items-center gap-4 px-6 py-3.5 transition-colors ${
+                      isCurrentUser
+                        ? "bg-primary-50/80 dark:bg-primary-950/20 font-semibold"
+                        : "hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
+                    }`}
+                  >
+                    {/* Rank Badge */}
+                    <div className="w-8 shrink-0 text-center font-display font-bold">
+                      {rank === 1 ? (
+                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 text-xs">
+                          1
+                        </span>
+                      ) : rank === 2 ? (
+                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 text-xs">
+                          2
+                        </span>
+                      ) : rank === 3 ? (
+                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-900/15 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 text-xs">
+                          3
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-500">#{rank}</span>
                       )}
                     </div>
 
-                    <div className="min-w-0">
-
-                      <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-emerald-400">
-                        Your current standing
-                      </p>
-
-                      <p className="mt-1 truncate text-sm font-semibold">
-                        {
-                          currentUserEntry.displayName
-                        }
-                      </p>
-
+                    {/* Initials Avatar */}
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-700">
+                      {getInitials(entry.displayName)}
                     </div>
 
+                    {/* Student Name & Division */}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-bold text-slate-900 dark:text-white">
+                          {entry.displayName}
+                        </span>
+                        {isCurrentUser && (
+                          <span className="rounded-full bg-primary-600 px-2 py-0.2 text-[9px] font-bold uppercase tracking-wider text-white">
+                            You
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {entry.league || "Open Division"}
+                      </p>
+                    </div>
+
+                    {/* Points */}
+                    <div className="text-right">
+                      <p className="font-display text-sm font-bold text-slate-900 dark:text-white tabular-nums">
+                        {entry.points.toLocaleString()}
+                      </p>
+                      <p className="text-[10px] uppercase font-bold text-slate-400">
+                        pts
+                      </p>
+                    </div>
                   </div>
-
-                  <div className="text-right">
-
-                    <p className="text-xl font-bold text-emerald-400">
-                      {userRank
-                        ? `#${userRank}`
-                        : "—"}
-                    </p>
-
-                    <p className="text-[9px] text-slate-600">
-                      {
-                        currentUserEntry.points
-                      }{" "}
-                      points
-                    </p>
-
-                  </div>
-
-                </div>
-
-              </section>
-            )}
-
-          </>
-        )}
-
-      </main>
-
+                );
+              })}
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 };
 
 /* =========================================================
-   PODIUM CARD
+   PODIUM CARD (TOP 3)
 ========================================================= */
 
 interface PodiumCardProps {
-  entry?:
-    | LeaderboardEntry
-    | undefined;
-
+  entry?: LeaderboardEntry;
   rank: number;
-
-  currentUserId:
-    | string
-    | undefined;
-
+  currentUserId?: string;
   featured?: boolean;
 }
 
-const PodiumCard: React.FC<
-  PodiumCardProps
-> = ({
+const PodiumCard: React.FC<PodiumCardProps> = ({
   entry,
   rank,
   currentUserId,
@@ -560,102 +267,77 @@ const PodiumCard: React.FC<
   if (!entry) {
     return (
       <div
-        className={[
-          "hidden rounded-2xl border border-dashed border-slate-800 bg-slate-950/40 p-6 text-center sm:block",
-          featured
-            ? "min-h-[190px]"
-            : "min-h-[160px]",
-        ].join(" ")}
+        className={`hidden rounded-2xl border border-dashed border-slate-200/80 bg-slate-50/50 p-6 text-center dark:border-slate-800/80 dark:bg-slate-900/30 sm:block ${
+          featured ? "min-h-[220px]" : "min-h-[190px]"
+        }`}
       />
     );
   }
 
-  const isCurrentUser =
-    entry.userId ===
-    currentUserId;
+  const isCurrentUser = entry.userId === currentUserId;
+
+  const rankBadge =
+    rank === 1 ? (
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 shadow-sm dark:bg-amber-500/20 dark:text-amber-300">
+        <Crown className="h-6 w-6" />
+      </div>
+    ) : rank === 2 ? (
+      <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-200 text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-300">
+        <Medal className="h-5 w-5" />
+      </div>
+    ) : (
+      <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-900/15 text-amber-800 shadow-sm dark:bg-amber-900/30 dark:text-amber-400">
+        <Award className="h-5 w-5" />
+      </div>
+    );
+
+  const title = rank === 1 ? "1st · Champion" : rank === 2 ? "2nd · Runner-up" : "3rd · Bronze";
 
   return (
     <div
-      className={[
-        "rounded-2xl border p-5 text-center transition",
+      className={`relative overflow-hidden rounded-2xl border p-6 text-center transition-all duration-200 ${
         featured
-          ? "border-emerald-500/30 bg-slate-900 sm:-translate-y-3"
-          : "border-slate-800 bg-slate-900",
+          ? "border-primary-500/30 bg-white shadow-md sm:-translate-y-3 dark:border-primary-400/30 dark:bg-slate-900"
+          : "border-slate-200/90 bg-white shadow-xs dark:border-slate-800/80 dark:bg-slate-900/90"
+      } ${
         isCurrentUser
-          ? "ring-1 ring-emerald-400/40"
-          : "",
-      ].join(" ")}
+          ? "ring-2 ring-primary-500 dark:ring-emerald-400"
+          : ""
+      }`}
     >
+      {rankBadge}
 
-      <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-slate-800 text-sm font-bold text-slate-300">
-        {rank === 1
-          ? "♛"
-          : rank === 2
-            ? "♜"
-            : "♝"}
-      </div>
-
-      <p className="mt-3 text-[9px] font-semibold uppercase tracking-[0.18em] text-slate-600">
-        {rank === 1
-          ? "Champion"
-          : rank === 2
-            ? "Runner-up"
-            : "Third place"}
+      <p className="mt-3 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        {title}
       </p>
 
-      <p className="mt-1 truncate text-sm font-semibold text-white">
+      <p className="mt-1 truncate font-display text-base font-bold text-slate-900 dark:text-white">
         {entry.displayName}
       </p>
 
       {isCurrentUser && (
-        <span className="mt-2 inline-block rounded-full bg-emerald-400/10 px-2 py-1 text-[8px] font-bold uppercase tracking-wider text-emerald-400">
+        <span className="mt-1.5 inline-block rounded-full bg-primary-100 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-primary-800 dark:bg-primary-500/20 dark:text-emerald-300">
           You
         </span>
       )}
 
-      <p className="mt-3 text-2xl font-bold text-emerald-400">
-        {entry.points}
-      </p>
-
-      <p className="text-[9px] uppercase tracking-wider text-slate-600">
-        points
-      </p>
-
+      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+        <p className="font-display text-2xl font-bold text-primary-700 dark:text-emerald-400 tabular-nums">
+          {entry.points.toLocaleString()}
+        </p>
+        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          points
+        </span>
+      </div>
     </div>
   );
 };
 
-/* =========================================================
-   HELPERS
-========================================================= */
-
-const getInitials = (
-  name: string,
-) => {
-  const parts =
-    name
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
-
-  if (
-    parts.length === 0
-  ) {
-    return "?";
-  }
-
-  if (
-    parts.length === 1
-  ) {
-    return parts[0]
-      .slice(0, 2)
-      .toUpperCase();
-  }
-
-  return (
-    parts[0][0] +
-    parts[parts.length - 1][0]
-  ).toUpperCase();
+const getInitials = (name: string) => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
 export default Leaderboard;

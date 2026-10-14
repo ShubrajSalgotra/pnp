@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Plus } from 'lucide-react';
+import { ArrowRight, Bot, Plus, Search, Swords, UserCheck } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { PageHeader } from '../components/layout/PageHeader';
+import { SectionHeader } from '../components/ui/SectionHeader';
+import { StatCard } from '../components/ui/StatCard';
+import EmptyState from '../components/ui/EmptyState';
 import { ChessReport, GameReportRequest, ReportGenerationProgress } from '../types/report';
 import { PlayerAnalysisProfile } from '../types/profileAnalysis';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,9 +12,12 @@ import { reportService } from '../services/reportService';
 import { userDataService } from '../services/userDataService';
 import { profileAnalysisService } from '../services/profileAnalysisService';
 import OpponentDashboardPopup from '../components/OpponentDashboardPopup';
+import { persistPracticeOpponent } from '../utils/practiceOpponent';
+import { useNavigate } from 'react-router-dom';
 
 const GameAnalysisPage: React.FC = () => {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [savedReports, setSavedReports] = useState<ChessReport[]>([]);
   const [activeReport, setActiveReport] = useState<ChessReport | null>(null);
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
@@ -107,82 +114,142 @@ const GameAnalysisPage: React.FC = () => {
     setIsDashboardOpen(true);
   };
 
+  const handlePracticeAgainstOpponent = (e: React.MouseEvent, report: ChessReport) => {
+    e.stopPropagation();
+    persistPracticeOpponent(report);
+    navigate('/analyze/practice');
+  };
+
   return (
-    <div className="section-shell space-y-10 py-8">
-      <section className="aurora-panel">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700 dark:text-primary-300">
-          Opponent intelligence
-        </p>
-        <div className="mt-2 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h1 className="font-display text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
-              Analyze Opponents
-            </h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600 sm:text-base dark:text-slate-400">
-              Scout how to beat them, where you have the edge, and which openings to target.
-            </p>
-          </div>
-          <Button type="button" onClick={openNewReportPopup} className="cursor-pointer">
-            <Plus className="mr-2 h-4 w-4" />
-            Scout opponent
+    <div className="space-y-8">
+      <PageHeader
+        kicker="SCOUTING & PREPARATION"
+        title="Analyze Opponents"
+        description="Scout opponent opening repertoires, predictable blunders, and play practice games against their simulated style."
+        actions={
+          <Button
+            type="button"
+            onClick={openNewReportPopup}
+            className="cursor-pointer bg-primary-600 hover:bg-primary-700 text-white font-semibold flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Scout New Opponent</span>
           </Button>
-        </div>
+        }
+      />
+
+      {/* Scouting Metric Highlights */}
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatCard
+          title="Saved Opponent Dossiers"
+          value={savedReports.length}
+          subtitle="Ready for tournament preparation"
+          icon={<Swords className="h-5 w-5" />}
+          iconBg="bg-primary-50 text-primary-600 dark:bg-primary-500/15 dark:text-emerald-400"
+        />
+        <StatCard
+          title="Your Linked Profile"
+          value={yourProfile?.username ? `@${yourProfile.username}` : 'Not connected'}
+          subtitle={yourProfile?.platform ? `${yourProfile.platform} account linked` : 'Connect in Dashboard'}
+          icon={<UserCheck className="h-5 w-5" />}
+          iconBg="bg-sky-50 text-sky-600 dark:bg-sky-500/15 dark:text-sky-400"
+        />
+        <StatCard
+          title="Analysis Engine"
+          value="Stockfish + AI"
+          subtitle="Deep game mining & opening classification"
+          icon={<Bot className="h-5 w-5" />}
+          iconBg="bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400"
+        />
       </section>
 
-      <section className="aurora-subtle border-t border-primary-200/70 pt-8 dark:border-slate-700/80">
-        <h2 className="font-display text-xl font-semibold text-slate-900 dark:text-white">Saved dossiers</h2>
+      {/* Saved Opponents Section */}
+      <section className="space-y-4">
+        <SectionHeader
+          title="Saved Scouting Dossiers"
+          description="Click any dossier to view full breakdown, opening recommendations, and custom preparation lines."
+        />
 
-        <div className="mt-6 divide-y divide-primary-100 dark:divide-slate-800">
-          {savedReports.map((report) => (
-            <button
-              key={report.id}
-              type="button"
-              onClick={() => openExistingReport(report)}
-              className="group grid w-full cursor-pointer gap-2 px-1 py-4 text-left transition-colors duration-200 hover:bg-white/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 dark:hover:bg-slate-900/40 sm:grid-cols-[1.4fr_1fr_1fr_auto] sm:items-center sm:gap-4"
-            >
-              <div>
-                <p className="font-semibold text-slate-900 dark:text-white">{report.username}</p>
-                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                  {report.platform} · {report.gameCount} games
-                </p>
-              </div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">
-                Win rate{' '}
-                <span className="font-semibold text-slate-900 dark:text-white">
-                  {report.executiveSummary.winRate}%
-                </span>
-              </div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">
-                {report.scoutIntel ? (
-                  <>
-                    Predictability{' '}
-                    <span className="font-semibold text-slate-900 dark:text-white">
-                      {report.scoutIntel.predictabilityScore}
+        {savedReports.length === 0 ? (
+          <EmptyState
+            icon={Search}
+            title="No Opponent Dossiers Yet"
+            description="Enter a Chess.com or Lichess username to pull their game archive, detect opening weaknesses, and generate a customized game plan."
+            action={
+              <Button
+                type="button"
+                onClick={openNewReportPopup}
+                className="cursor-pointer bg-primary-600 hover:bg-primary-700 text-white"
+              >
+                <Plus className="h-4 w-4 mr-1.5" />
+                Scout Your First Opponent
+              </Button>
+            }
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {savedReports.map((report) => (
+              <div
+                key={report.id}
+                onClick={() => openExistingReport(report)}
+                className="group flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900/90 cursor-pointer"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-primary-600 dark:text-emerald-400">
+                        {report.platform} · {report.gameCount} games
+                      </span>
+                      <h3 className="mt-0.5 font-display text-lg font-bold text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-emerald-400 transition-colors">
+                        {report.username}
+                      </h3>
+                    </div>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                      {report.executiveSummary.winRate}% WR
                     </span>
-                  </>
-                ) : (
-                  <>
-                    Accuracy{' '}
-                    <span className="font-semibold text-slate-900 dark:text-white">
-                      {report.executiveSummary.averageAccuracy}%
-                    </span>
-                  </>
-                )}
+                  </div>
+
+                  {report.scoutIntel && (
+                    <div className="mt-3 flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">
+                        Predictability:
+                      </span>
+                      <span className="rounded bg-primary-100/80 px-1.5 py-0.2 font-bold text-primary-800 dark:bg-primary-500/20 dark:text-emerald-300">
+                        {report.scoutIntel.predictabilityScore}
+                      </span>
+                    </div>
+                  )}
+
+                  {report.executiveSummary?.favoriteOpenings &&
+                    report.executiveSummary.favoriteOpenings.length > 0 && (
+                      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400 truncate">
+                        Main line: {report.executiveSummary.favoriteOpenings[0]}
+                      </p>
+                    )}
+                </div>
+
+                <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={(e) => handlePracticeAgainstOpponent(e, report)}
+                    className="text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center gap-1 cursor-pointer"
+                  >
+                    <Bot className="h-3.5 w-3.5" />
+                    <span>Practice Bot</span>
+                  </button>
+
+                  <div className="inline-flex items-center gap-1 text-xs font-bold text-primary-700 dark:text-emerald-400 group-hover:translate-x-0.5 transition-transform">
+                    <span>Open Dossier</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </div>
+                </div>
               </div>
-              <div className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-700 transition-colors duration-200 group-hover:text-primary-900 dark:text-primary-300">
-                Open
-                <ArrowRight className="h-4 w-4" />
-              </div>
-            </button>
-          ))}
-          {savedReports.length === 0 && (
-            <p className="py-8 text-sm text-slate-600 dark:text-slate-400">
-              No dossiers yet. Scout an opponent to get started.
-            </p>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
+      {/* Opponent Scout Modal */}
       <OpponentDashboardPopup
         isOpen={isDashboardOpen}
         onClose={() => setIsDashboardOpen(false)}

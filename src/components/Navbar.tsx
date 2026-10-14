@@ -44,7 +44,7 @@ const Navbar: React.FC = () => {
   { name: "Practice", href: "/practice" },
   { name: "Puzzles", href: "/puzzles" },
   { name: "Leaderboard", href: "/leaderboard" },
-  { name: "Study", href: "/study" },
+  // { name: "Study", href: "/study" },
 ];
 
   const coachNavigation = [

@@ -1,1732 +1,600 @@
-import React, {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-
-import { Chess } from "chess.js";
-
-import { auth } from "../services/firebase";
-
-import {
-  getPracticeStats,
-  recordPracticeResult,
-} from "../services/practiceService";
-
-import type {
-  PracticePuzzle,
-  PracticeStats,
-} from "../types/practice";
-
-/* =========================================================
-   TYPES
-========================================================= */
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Chess, type Move, type Square } from 'chess.js';
+import { auth } from '../services/firebase';
+import { getPracticeStats, recordPracticeResult } from '../services/practiceService';
+import type { PracticePuzzle } from '../types/practice';
+import { ChessboardView, type ChessArrow } from './chess/ChessboardView';
+import { useChessSounds } from '../hooks/useChessSounds';
+import { ArrowLeft, Lightbulb, ScanSearch } from 'lucide-react';
 
 interface PracticePuzzleTrainerProps {
   puzzle: PracticePuzzle;
-
   puzzleNumber: number;
-
   totalPuzzles: number;
-
   hasNextPuzzle: boolean;
-
   onBack: () => void;
-
   onNext: () => void;
 }
 
-type Square = string;
+// Minimalist Mascot Icon matching screenshots (dark rounded square with two white capsule eyes)
+const RobotMascot: React.FC<{ isCelebrating?: boolean }> = ({ isCelebrating }) => (
+  <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 border border-white/15 shadow-sm">
+    <div className="flex items-center justify-center gap-1.5">
+      <span
+        className={`w-1.5 rounded-full bg-white transition-all duration-300 ${
+          isCelebrating ? 'h-1.5' : 'h-3.5'
+        }`}
+      />
+      <span
+        className={`w-1.5 rounded-full bg-white transition-all duration-300 ${
+          isCelebrating ? 'h-1.5' : 'h-3.5'
+        }`}
+      />
+    </div>
+  </div>
+);
 
-type Status =
-  | "playing"
-  | "wrong"
-  | "complete";
-
-type FeedbackType =
-  | "correct"
-  | "wrong"
-  | "complete"
-  | null;
-
-type HintLevel = 0 | 1 | 2 | 3;
-
-/* =========================================================
-   CONSTANTS
-========================================================= */
-
-const FILES = [
-  "a",
-  "b",
-  "c",
-  "d",
-  "e",
-  "f",
-  "g",
-  "h",
-];
-
-const WHITE_RANKS = [
-  "8",
-  "7",
-  "6",
-  "5",
-  "4",
-  "3",
-  "2",
-  "1",
-];
-
-const BLACK_RANKS = [
-  "1",
-  "2",
-  "3",
-  "4",
-  "5",
-  "6",
-  "7",
-  "8",
-];
-
-const PIECES: Record<
-  string,
-  string
-> = {
-  wK: "♔",
-  wQ: "♕",
-  wR: "♖",
-  wB: "♗",
-  wN: "♘",
-  wP: "♙",
-
-  bK: "♚",
-  bQ: "♛",
-  bR: "♜",
-  bB: "♝",
-  bN: "♞",
-  bP: "♟",
-};
-
-/* =========================================================
-   COMPONENT
-========================================================= */
-
-const PracticePuzzleTrainer: React.FC<
-  PracticePuzzleTrainerProps
-> = ({
+const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
   puzzle,
-  puzzleNumber,
-  totalPuzzles,
-  hasNextPuzzle,
+  puzzleNumber: _puzzleNumber,
+  hasNextPuzzle: _hasNextPuzzle,
   onBack,
   onNext,
 }) => {
-  /* =======================================================
-     GAME
-  ======================================================== */
+  const { playMove: playSoundMove, playCapture, playCheck, playIllegal } = useChessSounds();
 
-  const [game, setGame] =
-    useState(
-      () => new Chess(puzzle.fen),
-    );
+  const [game, setGame] = useState(() => new Chess(puzzle.fen));
+  const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>(
+    puzzle.toMove === 'black' ? 'black' : 'white'
+  );
+  const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
+  const [legalMoves, setLegalMoves] = useState<string[]>([]);
+  const [lastMove, setLastMove] = useState<{ from: string; to: string; toTint?: string } | null>(
+    null
+  );
+  const [solutionIndex, setSolutionIndex] = useState(0);
+  const [wrongAttempts, setWrongAttempts] = useState(0);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [hintStage, setHintStage] = useState<0 | 1 | 2>(0); // 0 = none, 1 = text hint, 2 = show move arrow
+  const [coachMessage, setCoachMessage] = useState<string>('');
+  const [isOpponentThinking, setIsOpponentThinking] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [isMuted] = useState(false);
 
-  const [selectedSquare, setSelectedSquare] =
-    useState<Square | null>(
-      null,
-    );
+  const XP_PER_LEVEL = 75;
 
-  const [legalMoves, setLegalMoves] =
-    useState<Square[]>([]);
-
-  const [lastMove, setLastMove] =
-    useState<{
-      from: Square;
-      to: Square;
-    } | null>(null);
-
-  const [solutionIndex, setSolutionIndex] =
-    useState(0);
-
-  const [wrongAttempts, setWrongAttempts] =
-    useState(0);
-
-  const [hintsUsed, setHintsUsed] =
-    useState(0);
-
-  const [hintLevel, setHintLevel] =
-    useState<HintLevel>(0);
-
-  const [status, setStatus] =
-    useState<Status>("playing");
-
-  const [feedbackType, setFeedbackType] =
-    useState<FeedbackType>(null);
-
-  const [feedbackMessage, setFeedbackMessage] =
-    useState("");
-
-  const [isOpponentThinking, setIsOpponentThinking] =
-    useState(false);
-
-  /* =======================================================
-     STATS
-  ======================================================== */
-
-  const [practiceStats, setPracticeStats] =
-    useState<PracticeStats>({
-      attempted: 0,
-      solved: 0,
-      accuracy: 0,
-      points: 0,
-      currentStreak: 0,
-      bestStreak: 0,
-      dailyGoal: 5,
-      dailyCompleted: 0,
-      lastSolvedDate: null,
-    });
-
-  const [weeklyRank, setWeeklyRank] =
-    useState<number | null>(null);
-
-  const [pointsEarned, setPointsEarned] =
-    useState<number | null>(null);
-
-  const [isSavingResult, setIsSavingResult] =
-    useState(false);
-
-  /*
-   * Prevent duplicate writes.
-   */
-  const resultSavedRef =
-    useRef(false);
-
-  /*
-   * Timers.
-   */
-  const feedbackTimerRef =
-    useRef<number | null>(null);
-
-  const opponentTimerRef =
-    useRef<number | null>(null);
-
-  /* =======================================================
-     LOAD STATS
-  ======================================================== */
-
-  useEffect(() => {
-    const user = auth.currentUser;
-
-    if (!user) {
-      return;
+  const [totalPoints, setTotalPoints] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('pnp_practice_xp');
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed >= 0) return parsed;
+      }
+    } catch {
+      // ignore
     }
+    return 25; // Default 25 XP matching the screenshot
+  });
 
-    let mounted = true;
-
-    const loadStats =
-      async () => {
-        try {
-          const stats =
-            await getPracticeStats(
-              user.uid,
-            );
-
-          if (mounted) {
-            setPracticeStats(
-              stats,
-            );
-          }
-        } catch (error) {
-          console.error(
-            "Could not load Practice stats:",
-            error,
-          );
-        }
-      };
-
-    void loadStats();
-
-    return () => {
-      mounted = false;
+  const { level, currentLevelXp, targetLevelXp, progressPercent } = useMemo(() => {
+    const lvl = Math.floor(totalPoints / XP_PER_LEVEL) + 1;
+    const current = totalPoints % XP_PER_LEVEL;
+    const target = XP_PER_LEVEL;
+    const pct = Math.min(100, Math.max(6, Math.round((current / target) * 100)));
+    return {
+      level: lvl,
+      currentLevelXp: current,
+      targetLevelXp: target,
+      progressPercent: pct,
     };
+  }, [totalPoints]);
+
+  const opponentTimerRef = useRef<number | null>(null);
+  const resultSavedRef = useRef(false);
+
+  // Initial coach message
+  const defaultCoachPrompt = useMemo(() => {
+    return (
+      puzzle.hint1 ||
+      (puzzle.toMove === 'white'
+        ? 'Find the best move for White.'
+        : 'Find the best move for Black.')
+    );
+  }, [puzzle.hint1, puzzle.toMove]);
+
+  // Load user streak and points from Firestore
+  useEffect(() => {
+    async function loadStats() {
+      const user = auth.currentUser;
+      if (!user) return;
+      try {
+        const stats = await getPracticeStats(user.uid);
+        if (typeof stats.points === 'number' && stats.points > 0) {
+          setTotalPoints(stats.points);
+          try {
+            localStorage.setItem('pnp_practice_xp', stats.points.toString());
+          } catch {
+            // ignore
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load practice stats:', err);
+      }
+    }
+    void loadStats();
   }, []);
 
-  /* =======================================================
-     RESET PUZZLE
-  ======================================================== */
-
+  // Sync state whenever puzzle changes
   useEffect(() => {
-    const newGame =
-      new Chess(puzzle.fen);
-
-    setGame(newGame);
-
+    const chess = new Chess(puzzle.fen);
+    setGame(chess);
+    setBoardOrientation(puzzle.toMove === 'black' ? 'black' : 'white');
     setSelectedSquare(null);
-
     setLegalMoves([]);
-
     setLastMove(null);
-
     setSolutionIndex(0);
-
     setWrongAttempts(0);
-
     setHintsUsed(0);
-
-    setHintLevel(0);
-
-    setStatus("playing");
-
-    setFeedbackType(null);
-
-    setFeedbackMessage("");
-
+    setHintStage(0);
+    setCoachMessage(
+      puzzle.hint1 ||
+        (puzzle.toMove === 'white'
+          ? 'Not every puzzle ends in checkmate. Can you win a piece here?'
+          : 'Find the best move for Black.')
+    );
     setIsOpponentThinking(false);
-
-    setPointsEarned(null);
-
-    setIsSavingResult(false);
-
+    setIsCompleted(false);
     resultSavedRef.current = false;
 
-    if (
-      feedbackTimerRef.current
-    ) {
-      window.clearTimeout(
-        feedbackTimerRef.current,
-      );
-    }
-
-    if (
-      opponentTimerRef.current
-    ) {
-      window.clearTimeout(
-        opponentTimerRef.current,
-      );
+    if (opponentTimerRef.current) {
+      window.clearTimeout(opponentTimerRef.current);
     }
   }, [puzzle]);
 
-  /* =======================================================
-     CLEANUP
-  ======================================================== */
-
+  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
-      if (
-        feedbackTimerRef.current
-      ) {
-        window.clearTimeout(
-          feedbackTimerRef.current,
-        );
-      }
-
-      if (
-        opponentTimerRef.current
-      ) {
-        window.clearTimeout(
-          opponentTimerRef.current,
-        );
+      if (opponentTimerRef.current) {
+        window.clearTimeout(opponentTimerRef.current);
       }
     };
   }, []);
 
-  /* =======================================================
-     BOARD
-  ======================================================== */
+  // Save results to Firestore
+  const saveCompletedPuzzle = useCallback(
+    async (attempts: number, hints: number) => {
+      if (resultSavedRef.current) return;
+      const user = auth.currentUser;
+      if (!user) return;
 
-  const isBlackOrientation =
-    puzzle.toMove === "black";
-
-  const boardRanks =
-    isBlackOrientation
-      ? BLACK_RANKS
-      : WHITE_RANKS;
-
-  const boardFiles =
-    isBlackOrientation
-      ? [...FILES].reverse()
-      : FILES;
-
-  const boardSquares =
-    useMemo(() => {
-      return boardRanks.flatMap(
-        (rank) =>
-          boardFiles.map(
-            (file) =>
-              `${file}${rank}`,
-          ),
-      );
-    }, [
-      boardRanks,
-      boardFiles,
-    ]);
-
-  /* =======================================================
-     PIECE
-  ======================================================== */
-
-  const getPiece = (
-    square: Square,
-  ) => {
-    const piece =
-      game.get(
-        square as never,
-      );
-
-    if (!piece) {
-      return null;
-    }
-
-    return {
-      symbol:
-        PIECES[
-          `${piece.color}${piece.type.toUpperCase()}`
-        ],
-
-      color: piece.color,
-
-      type: piece.type,
-    };
-  };
-
-  /* =======================================================
-     STUDENT COLOR
-  ======================================================== */
-
-  const studentColor =
-    puzzle.toMove === "white"
-      ? "w"
-      : "b";
-
-  const isStudentPiece = (
-    square: Square,
-  ) => {
-    const piece =
-      game.get(
-        square as never,
-      );
-
-    return (
-      Boolean(piece) &&
-      piece?.color ===
-        studentColor
-    );
-  };
-
-  /* =======================================================
-     SELECTION
-  ======================================================== */
-
-  const selectPiece = (
-    square: Square,
-  ) => {
-    if (
-      status === "complete" ||
-      isOpponentThinking
-    ) {
-      return;
-    }
-
-    if (
-      !isStudentPiece(square)
-    ) {
-      return;
-    }
-
-    const moves =
-      game.moves({
-        square:
-          square as never,
-        verbose: true,
-      });
-
-    setSelectedSquare(
-      square,
-    );
-
-    setLegalMoves(
-      moves.map(
-        (move) =>
-          move.to,
-      ),
-    );
-  };
-
-  const clearSelection =
-    () => {
-      setSelectedSquare(
-        null,
-      );
-
-      setLegalMoves([]);
-    };
-
-  /* =======================================================
-     FEEDBACK
-  ======================================================== */
-
-  const showFeedback = (
-    type: FeedbackType,
-    message: string,
-    duration = 1000,
-  ) => {
-    setFeedbackType(type);
-
-    setFeedbackMessage(
-      message,
-    );
-
-    if (
-      feedbackTimerRef.current
-    ) {
-      window.clearTimeout(
-        feedbackTimerRef.current,
-      );
-    }
-
-    if (duration > 0) {
-      feedbackTimerRef.current =
-        window.setTimeout(
-          () => {
-            setFeedbackType(
-              null,
-            );
-
-            setFeedbackMessage(
-              "",
-            );
-          },
-          duration,
-        );
-    }
-  };
-
-  /* =======================================================
-     SAVE RESULT
-  ======================================================== */
-
-  const saveCompletedPuzzle =
-    async () => {
-      if (
-        resultSavedRef.current
-      ) {
-        return;
-      }
-
-      const user =
-        auth.currentUser;
-
-      if (!user) {
-        console.warn(
-          "Cannot save Practice result: user not authenticated.",
-        );
-
-        return;
-      }
-
-      resultSavedRef.current =
-        true;
-
-      setIsSavingResult(true);
-
+      resultSavedRef.current = true;
       try {
-        const result =
-          await recordPracticeResult(
-            user.uid,
-            puzzle,
-            wrongAttempts,
-            hintsUsed,
-          );
+        const result = await recordPracticeResult(user.uid, puzzle, attempts, hints);
+        if (result.stats?.points) {
+          setTotalPoints(result.stats.points);
+        }
+      } catch (err) {
+        console.error('Error saving practice result:', err);
+        resultSavedRef.current = false;
+      }
+    },
+    [puzzle]
+  );
 
-        setPracticeStats(
-          result.stats,
-        );
+  // Play opponent response move
+  const playOpponentReply = useCallback(
+    (currentGame: Chess, nextIndex: number) => {
+      const replyUci = puzzle.requiredSolutionUci[nextIndex];
+      if (!replyUci) {
+        setIsOpponentThinking(false);
+        return;
+      }
 
-        setPointsEarned(
-          result.pointsEarned,
-        );
+      const from = replyUci.slice(0, 2);
+      const to = replyUci.slice(2, 4);
+      const promotion = replyUci[4] || 'q';
 
-        setWeeklyRank(
-          result.weeklyRank,
-        );
-      } catch (error) {
-        /*
-         * Allow retry if Firestore
-         * failed.
-         */
-        resultSavedRef.current =
-          false;
+      const nextGame = new Chess(currentGame.fen());
+      try {
+        const move = nextGame.move({ from, to, promotion });
+        if (move) {
+          if (!isMuted) {
+            if (move.captured) playCapture();
+            else if (nextGame.inCheck()) playCheck();
+            else playSoundMove();
+          }
 
-        console.error(
-          "Could not save Practice result:",
-          error,
-        );
+          setGame(nextGame);
+          setLastMove({ from, to });
+          const updatedIndex = nextIndex + 1;
+          setSolutionIndex(updatedIndex);
+
+          // Check if solution complete after opponent move
+          if (updatedIndex >= puzzle.requiredSolutionUci.length) {
+            setIsCompleted(true);
+            setCoachMessage('Nice, keep that pattern in mind.');
+            setTotalPoints((prev) => {
+              const nextVal = prev + 5;
+              try {
+                localStorage.setItem('pnp_practice_xp', nextVal.toString());
+              } catch {
+                // ignore
+              }
+              return nextVal;
+            });
+            void saveCompletedPuzzle(wrongAttempts, hintsUsed);
+          } else {
+            // Opponent finished move: Clear thinking status, prompt user to continue
+            setCoachMessage('Your turn to continue the attack!');
+          }
+        }
+      } catch (err) {
+        console.error('Opponent move execution failed:', err);
       } finally {
-        setIsSavingResult(
-          false,
-        );
+        setIsOpponentThinking(false);
       }
-    };
+    },
+    [
+      hintsUsed,
+      isMuted,
+      playCapture,
+      playCheck,
+      playSoundMove,
+      puzzle.requiredSolutionUci,
+      saveCompletedPuzzle,
+      wrongAttempts,
+    ]
+  );
 
-  /* =======================================================
-     OPPONENT MOVE
-  ======================================================== */
+  // Move validation logic
+  const handleMoveAttempt = useCallback(
+    (from: string, to: string): boolean => {
+      if (isCompleted || isOpponentThinking) return false;
 
-  const playOpponentMove =
-    (
-      currentGame: Chess,
-      currentIndex: number,
-    ) => {
-      const opponentUci =
-        puzzle
-          .requiredSolutionUci[
-            currentIndex
-          ];
+      const expectedUci = puzzle.requiredSolutionUci[solutionIndex];
+      if (!expectedUci) return false;
 
-      if (!opponentUci) {
-        setIsOpponentThinking(
-          false,
-        );
+      const expectedFrom = expectedUci.slice(0, 2);
+      const expectedTo = expectedUci.slice(2, 4);
 
-        return;
-      }
-
-      const from =
-        opponentUci.slice(0, 2);
-
-      const to =
-        opponentUci.slice(2, 4);
-
-      const nextGame =
-        new Chess(
-          currentGame.fen(),
-        );
-
+      // Check if candidate matches legal rules and solution
+      const nextGame = new Chess(game.fen());
+      let playedMove: Move | null = null;
       try {
-        nextGame.move({
-          from: from as never,
-          to: to as never,
-          promotion: "q",
+        playedMove = nextGame.move({
+          from,
+          to,
+          promotion: expectedUci[4] || 'q',
         });
-      } catch (error) {
-        console.error(
-          "Opponent move failed:",
-          error,
-        );
+      } catch {
+        return false;
+      }
 
-        setIsOpponentThinking(
-          false,
-        );
+      if (!playedMove) return false;
 
-        return;
+      const isCorrect = from === expectedFrom && to === expectedTo;
+
+      if (!isCorrect) {
+        // Wrong move
+        setWrongAttempts((prev) => prev + 1);
+        if (!isMuted) playIllegal();
+
+        setCoachMessage('Not quite. Try another move.');
+
+        setLastMove({
+          from,
+          to,
+          toTint: 'rgba(239, 68, 68, 0.65)',
+        });
+
+        setSelectedSquare(null);
+        setLegalMoves([]);
+
+        window.setTimeout(() => {
+          setCoachMessage(defaultCoachPrompt);
+        }, 1500);
+
+        return false;
+      }
+
+      // Correct move
+      if (!isMuted) {
+        if (playedMove.captured) playCapture();
+        else if (nextGame.inCheck()) playCheck();
+        else playSoundMove();
       }
 
       setGame(nextGame);
+      setLastMove({ from, to });
+      setSelectedSquare(null);
+      setLegalMoves([]);
 
-      setLastMove({
-        from,
-        to,
-      });
+      const nextIndex = solutionIndex + 1;
+      setSolutionIndex(nextIndex);
 
-      const nextIndex =
-        currentIndex + 1;
-
-      setSolutionIndex(
-        nextIndex,
-      );
-
-      setIsOpponentThinking(
-        false,
-      );
-
-      /*
-       * Solution ended after
-       * opponent's move.
-       */
-      if (
-        nextIndex >=
-        puzzle
-          .requiredSolutionUci
-          .length
-      ) {
-        setStatus(
-          "complete",
-        );
-
-        showFeedback(
-          "complete",
-          "Excellent. You found the idea.",
-          0,
-        );
-
-        void saveCompletedPuzzle();
+      if (nextIndex >= puzzle.requiredSolutionUci.length) {
+        // Puzzle fully completed!
+        setIsCompleted(true);
+        setCoachMessage('Nice, keep that pattern in mind.');
+        setTotalPoints((prev) => {
+          const nextVal = prev + 5;
+          try {
+            localStorage.setItem('pnp_practice_xp', nextVal.toString());
+          } catch {
+            // ignore
+          }
+          return nextVal;
+        });
+        void saveCompletedPuzzle(wrongAttempts, hintsUsed);
+        return true;
       }
-    };
 
-  /* =======================================================
-     PLAY MOVE
-  ======================================================== */
+      // Correct move, now opponent replies
+      setCoachMessage('Opponent is responding…');
+      setIsOpponentThinking(true);
 
-  const playMove = (
-    from: Square,
-    to: Square,
-  ) => {
-    if (
-      status === "complete" ||
-      isOpponentThinking
-    ) {
-      return;
+      if (opponentTimerRef.current) {
+        window.clearTimeout(opponentTimerRef.current);
+      }
+      opponentTimerRef.current = window.setTimeout(() => {
+        playOpponentReply(nextGame, nextIndex);
+      }, 420);
+
+      return true;
+    },
+    [
+      defaultCoachPrompt,
+      game,
+      hintsUsed,
+      isCompleted,
+      isMuted,
+      isOpponentThinking,
+      playCapture,
+      playCheck,
+      playIllegal,
+      playOpponentReply,
+      playSoundMove,
+      puzzle.requiredSolutionUci,
+      saveCompletedPuzzle,
+      solutionIndex,
+      wrongAttempts,
+    ]
+  );
+
+  // Square click selection
+  const handleSquareClick = useCallback(
+    (square: string) => {
+      if (isCompleted || isOpponentThinking) return;
+
+      const currentPiece = game.get(square as Square);
+      const studentColor = puzzle.toMove === 'white' ? 'w' : 'b';
+
+      if (!selectedSquare) {
+        if (currentPiece && currentPiece.color === studentColor) {
+          setSelectedSquare(square);
+          const moves = game.moves({ square: square as Square, verbose: true });
+          setLegalMoves(moves.map((m) => m.to));
+        }
+        return;
+      }
+
+      // If clicking own piece again, switch selection
+      if (currentPiece && currentPiece.color === studentColor) {
+        if (square === selectedSquare) {
+          setSelectedSquare(null);
+          setLegalMoves([]);
+        } else {
+          setSelectedSquare(square);
+          const moves = game.moves({ square: square as Square, verbose: true });
+          setLegalMoves(moves.map((m) => m.to));
+        }
+        return;
+      }
+
+      // Try playing move from selectedSquare to square
+      if (legalMoves.includes(square)) {
+        handleMoveAttempt(selectedSquare, square);
+      } else {
+        setSelectedSquare(null);
+        setLegalMoves([]);
+      }
+    },
+    [game, handleMoveAttempt, isCompleted, isOpponentThinking, legalMoves, puzzle.toMove, selectedSquare]
+  );
+
+  // Expected move coordinates for hints/arrows
+  const currentExpectedUci = puzzle.requiredSolutionUci[solutionIndex];
+  const hintFromSquare = currentExpectedUci ? currentExpectedUci.slice(0, 2) : null;
+  const hintToSquare = currentExpectedUci ? currentExpectedUci.slice(2, 4) : null;
+
+  // Hint button click behavior:
+  // Click 1: Display text hint at the top
+  // Click 2: "Show" displays arrow on the board and "There it is. Play the move!" at the top
+  const handleHintClick = () => {
+    if (isCompleted || isOpponentThinking) return;
+
+    if (hintStage === 0) {
+      setHintsUsed((prev) => prev + 1);
+      setHintStage(1);
+      setCoachMessage(
+        puzzle.hint2 ||
+          `Look closely at the square ${hintFromSquare?.toUpperCase() || ''}. Can you spot the idea?`
+      );
+    } else {
+      setHintStage(2);
+      setCoachMessage('There it is. Play the move!');
     }
+  };
 
-    const expected =
-      puzzle
-        .requiredSolutionUci[
-        solutionIndex
-      ];
-
-    const attemptedUci =
-      `${from}${to}`;
-
-    /*
-     * WRONG MOVE
-     */
-    if (
-      attemptedUci !== expected
-    ) {
-      setWrongAttempts(
-        (value) => value + 1,
-      );
-
-      setStatus("wrong");
-
-      showFeedback(
-        "wrong",
-        "Not quite. Look for a stronger idea.",
-        850,
-      );
-
-      clearSelection();
-
-      window.setTimeout(
-        () => {
-          setStatus(
-            "playing",
-          );
-        },
-        850,
-      );
-
-      return;
+  const handleReset = () => {
+    setGame(new Chess(puzzle.fen));
+    setSelectedSquare(null);
+    setLegalMoves([]);
+    setLastMove(null);
+    setSolutionIndex(0);
+    setHintStage(0);
+    setCoachMessage(defaultCoachPrompt);
+    setIsOpponentThinking(false);
+    setIsCompleted(false);
+    if (opponentTimerRef.current) {
+      window.clearTimeout(opponentTimerRef.current);
     }
+  };
 
-    /*
-     * CORRECT MOVE
-     */
-    const nextGame =
-      new Chess(
-        game.fen(),
-      );
-
-    try {
-      nextGame.move({
-        from: from as never,
-        to: to as never,
-        promotion: "q",
-      });
-    } catch (error) {
-      console.error(
-        "Student move failed:",
-        error,
-      );
-
-      return;
+  // Custom arrows on board: When hintStage === 2 (Show), render vibrant green arrow
+  const customArrows = useMemo((): ChessArrow[] => {
+    if (hintStage === 2 && hintFromSquare && hintToSquare) {
+      return [{ startSquare: hintFromSquare, endSquare: hintToSquare, color: '#34d399' }];
     }
+    return [];
+  }, [hintFromSquare, hintStage, hintToSquare]);
 
-    setGame(nextGame);
+  // Custom square styles for hints
+  const hintSquareStyles = useMemo(() => {
+    const styles: Record<string, React.CSSProperties> = {};
+    if (hintStage >= 1 && hintFromSquare) {
+      styles[hintFromSquare] = {
+        backgroundColor: 'rgba(56, 189, 248, 0.45)',
+        boxShadow: 'inset 0 0 10px rgba(14, 165, 233, 0.85)',
+      };
+    }
+    if (hintStage === 2 && hintToSquare) {
+      styles[hintToSquare] = {
+        backgroundColor: 'rgba(52, 211, 153, 0.45)',
+        boxShadow: 'inset 0 0 10px rgba(16, 185, 129, 0.85)',
+      };
+    }
+    return styles;
+  }, [hintFromSquare, hintStage, hintToSquare]);
 
-    setLastMove({
-      from,
+  const legalTargets = useMemo(() => {
+    return legalMoves.map((to) => ({
       to,
-    });
-
-    clearSelection();
-
-    const nextIndex =
-      solutionIndex + 1;
-
-    setSolutionIndex(
-      nextIndex,
-    );
-
-    /*
-     * COMPLETE
-     */
-    if (
-      nextIndex >=
-      puzzle
-        .requiredSolutionUci
-        .length
-    ) {
-      setStatus(
-        "complete",
-      );
-
-      showFeedback(
-        "complete",
-        "Excellent. You found the idea.",
-        0,
-      );
-
-      void saveCompletedPuzzle();
-
-      return;
-    }
-
-    /*
-     * Correct but solution
-     * continues.
-     */
-    showFeedback(
-      "correct",
-      "Correct",
-      700,
-    );
-
-    setIsOpponentThinking(
-      true,
-    );
-
-    if (
-      opponentTimerRef.current
-    ) {
-      window.clearTimeout(
-        opponentTimerRef.current,
-      );
-    }
-
-    opponentTimerRef.current =
-      window.setTimeout(
-        () => {
-          playOpponentMove(
-            nextGame,
-            nextIndex,
-          );
-        },
-        420,
-      );
-  };
-
-  /* =======================================================
-     BOARD CLICK
-  ======================================================== */
-
-  const handleSquareClick =
-    (
-      square: Square,
-    ) => {
-      if (
-        status === "complete" ||
-        status === "wrong" ||
-        isOpponentThinking
-      ) {
-        return;
-      }
-
-      /*
-       * Nothing selected.
-       */
-      if (
-        !selectedSquare
-      ) {
-        selectPiece(square);
-
-        return;
-      }
-
-      /*
-       * Select another own piece.
-       */
-      if (
-        isStudentPiece(square)
-      ) {
-        selectPiece(square);
-
-        return;
-      }
-
-      /*
-       * Legal destination.
-       */
-      if (
-        legalMoves.includes(
-          square,
-        )
-      ) {
-        playMove(
-          selectedSquare,
-          square,
-        );
-
-        return;
-      }
-
-      clearSelection();
-    };
-
-  /* =======================================================
-     HINT SYSTEM
-  ======================================================== */
-
-  const handleHint = () => {
-    if (
-      status === "complete" ||
-      isOpponentThinking
-    ) {
-      return;
-    }
-
-    if (
-      hintLevel >= 3
-    ) {
-      return;
-    }
-
-    const nextLevel =
-      Math.min(
-        hintLevel + 1,
-        3,
-      ) as HintLevel;
-
-    setHintLevel(
-      nextLevel,
-    );
-
-    setHintsUsed(
-      (value) => value + 1,
-    );
-  };
-
-  /* =======================================================
-     NEXT PUZZLE
-  ======================================================== */
-
-  const handleNext = () => {
-    /*
-     * Student must solve the
-     * current puzzle first.
-     */
-    if (
-      status !== "complete"
-    ) {
-      return;
-    }
-
-    /*
-     * Wait until the result
-     * has finished saving.
-     */
-    if (
-      isSavingResult
-    ) {
-      return;
-    }
-
-    /*
-     * No next puzzle available.
-     */
-    if (
-      !hasNextPuzzle
-    ) {
-      return;
-    }
-
-    onNext();
-  };
-
-  /* =======================================================
-     PROGRESS
-  ======================================================== */
-
-  const solutionLength =
-    puzzle
-      .requiredSolutionUci
-      .length;
-
-  const progress =
-    solutionLength > 0
-      ? Math.min(
-          100,
-          Math.round(
-            (solutionIndex /
-              solutionLength) *
-              100,
-          ),
-        )
-      : 0;
-
-  /* =======================================================
-     DIFFICULTY
-  ======================================================== */
-
-  const difficulty =
-    puzzle.estRating < 1200
-      ? "Focused"
-      : puzzle.estRating < 1500
-        ? "Challenging"
-        : "Stretch";
-
-  /* =======================================================
-     RENDER
-  ======================================================== */
+      isCapture: Boolean(game.get(to as Square)),
+    }));
+  }, [game, legalMoves]);
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-slate-950 text-white">
+    <div className="mx-auto w-full max-w-5xl py-2 sm:py-4">
+      {/* Back button link */}
+      <div className="mb-4 flex items-center">
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 transition shadow-xs cursor-pointer"
+          title="Back to menu"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+      </div>
 
-      {/* =====================================================
-          HEADER
-      ====================================================== */}
+      {/* Top Coach Banner matching reference images */}
+      <div className="mb-5 flex items-center gap-3.5">
+        <RobotMascot isCelebrating={isCompleted} />
+        <p className="text-sm sm:text-base font-medium text-white/95 leading-snug">
+          {coachMessage}
+        </p>
+      </div>
 
-      <header className="border-b border-slate-900 bg-slate-950/95">
-
-        <div className="mx-auto flex h-[60px] max-w-[1450px] items-center justify-between px-3 sm:px-5">
-
-          <div className="flex min-w-0 items-center gap-3">
-
-            <button
-              type="button"
-              onClick={onBack}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 text-slate-400 transition hover:border-slate-700 hover:text-white"
-              aria-label="Back"
-            >
-              ←
-            </button>
-
-            <div className="min-w-0">
-
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-400">
-                Practice
-              </p>
-
-              <h1 className="truncate text-sm font-semibold text-white">
-                Find the best move
-              </h1>
-
-            </div>
-
-          </div>
-
-          <div className="text-right">
-
-            <p className="text-[9px] uppercase tracking-wider text-slate-600">
-              Challenge
-            </p>
-
-            <p className="text-sm font-semibold text-slate-300">
-              #{puzzleNumber}
-            </p>
-
-          </div>
-
-        </div>
-
-      </header>
-
-      {/* =====================================================
-          MAIN
-      ====================================================== */}
-
-      <main className="mx-auto max-w-[1450px] px-3 py-3 sm:px-5">
-
-        {/* Progress */}
-
-        <div className="mb-3 flex items-center gap-3">
-
-          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-900">
-
-            <div
-              className="h-full rounded-full bg-emerald-400 transition-all duration-500"
-              style={{
-                width: `${progress}%`,
-              }}
+      {/* Main Grid: Prominent Board on Left, Minimalist Card on Right */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start">
+        {/* Left: The Chessboard */}
+        <div className="lg:col-span-8 xl:col-span-8">
+          <div className="relative">
+            <ChessboardView
+              fen={game.fen()}
+              boardOrientation={boardOrientation}
+              isInteractive={!isCompleted && !isOpponentThinking}
+              onPieceDrop={handleMoveAttempt}
+              onSquareClick={handleSquareClick}
+              lastMove={lastMove}
+              selectedSquare={selectedSquare}
+              legalTargets={legalTargets}
+              customArrows={customArrows}
+              customSquareStyles={hintSquareStyles}
+              showNotation={true}
+              showExternalCoordinates={false}
+              theme="purple"
             />
-
           </div>
-
-          <span className="w-9 text-right text-[10px] text-slate-500">
-            {progress}%
-          </span>
-
         </div>
 
-        {/* ===================================================
-            CONTENT
-        ==================================================== */}
+        {/* Right: Minimalist Controls & XP Card matching reference images */}
+        <div className="lg:col-span-4 xl:col-span-4 space-y-4 pt-1">
+          {/* Top Actions: Hint button or Completed Next button */}
+          {!isCompleted ? (
+            <div>
+              <button
+                type="button"
+                onClick={handleHintClick}
+                disabled={isOpponentThinking}
+                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                <Lightbulb className="h-4 w-4 text-amber-400" />
+                <span>{hintStage === 0 ? 'Hint' : hintStage === 1 ? 'Show Move' : 'Hint'}</span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 animate-in fade-in duration-300">
+              {/* Reset/Inspect Icon Button */}
+              <button
+                type="button"
+                onClick={handleReset}
+                title="Review / Reset position"
+                className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white hover:bg-white/15 transition cursor-pointer shadow-md"
+              >
+                <ScanSearch className="h-5 w-5" />
+              </button>
 
-        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_330px] xl:grid-cols-[minmax(0,1fr)_350px]">
+              {/* Purple Pill Next Puzzle CTA */}
+              <button
+                type="button"
+                onClick={onNext}
+                className="flex-1 rounded-2xl bg-[#6366f1] hover:bg-[#5255e4] text-white font-bold py-3.5 px-6 shadow-lg shadow-indigo-950/40 cursor-pointer transition text-center text-sm"
+              >
+                Next puzzle
+              </button>
+            </div>
+          )}
 
-          {/* =================================================
-              BOARD
-          ================================================== */}
-
-          <section className="flex min-w-0 justify-center">
-
-            <div className="relative w-full max-w-[min(680px,calc(100vh-135px))]">
-
-              {/* Feedback */}
-
-              {feedbackType && (
-                <div
-                  className={[
-                    "absolute left-1/2 top-2 z-40 -translate-x-1/2 whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold shadow-xl",
-                    feedbackType ===
-                    "wrong"
-                      ? "bg-red-500 text-white"
-                      : "bg-emerald-400 text-slate-950",
-                  ].join(" ")}
-                >
-                  {feedbackMessage}
-                </div>
-              )}
-
-              {/* Board */}
-
-              <div className="rounded-2xl border border-slate-800 bg-slate-900 p-1 shadow-[0_20px_70px_rgba(0,0,0,0.35)] sm:p-1.5">
-
-                <div className="grid aspect-square grid-cols-8 overflow-hidden rounded-xl">
-
-                  {boardSquares.map(
-                    (
-                      square,
-                      index,
-                    ) => {
-                      const fileIndex =
-                        index % 8;
-
-                      const rankIndex =
-                        Math.floor(
-                          index / 8,
-                        );
-
-                      const isDark =
-                        (fileIndex +
-                          rankIndex) %
-                          2 ===
-                        1;
-
-                      const piece =
-                        getPiece(
-                          square,
-                        );
-
-                      const selected =
-                        selectedSquare ===
-                        square;
-
-                      const legal =
-                        legalMoves.includes(
-                          square,
-                        );
-
-                      const last =
-                        lastMove?.from ===
-                          square ||
-                        lastMove?.to ===
-                          square;
-
-                      const capture =
-                        legal &&
-                        Boolean(
-                          piece,
-                        );
-
-                      const showFile =
-                        rankIndex ===
-                        7;
-
-                      const showRank =
-                        fileIndex ===
-                        0;
-
-                      return (
-                        <button
-                          key={square}
-                          type="button"
-                          onClick={() =>
-                            handleSquareClick(
-                              square,
-                            )
-                          }
-                          className={[
-                            "relative flex aspect-square items-center justify-center overflow-hidden",
-                            isDark
-                              ? "bg-[#78945f]"
-                              : "bg-[#eee8d0]",
-                            selected
-                              ? "ring-4 ring-inset ring-emerald-300"
-                              : "",
-                            last
-                              ? "after:absolute after:inset-0 after:bg-amber-300/20"
-                              : "",
-                          ].join(" ")}
-                          aria-label={`Square ${square}`}
-                        >
-
-                          {/* File */}
-
-                          {showFile && (
-                            <span
-                              className={[
-                                "absolute bottom-1 left-1 z-30 text-[9px] font-bold opacity-60",
-                                isDark
-                                  ? "text-white"
-                                  : "text-[#526142]",
-                              ].join(" ")}
-                            >
-                              {square[0]}
-                            </span>
-                          )}
-
-                          {/* Rank */}
-
-                          {showRank && (
-                            <span
-                              className={[
-                                "absolute right-1 top-1 z-30 text-[9px] font-bold opacity-60",
-                                isDark
-                                  ? "text-white"
-                                  : "text-[#526142]",
-                              ].join(" ")}
-                            >
-                              {square[1]}
-                            </span>
-                          )}
-
-                          {/* Piece */}
-
-                          {piece && (
-                            <span
-                              className={[
-                                "relative z-10 select-none font-serif text-[clamp(2rem,6vw,4.4rem)] leading-none",
-                                piece.color ===
-                                "w"
-                                  ? "text-[#fffdf5] drop-shadow-[0_3px_2px_rgba(0,0,0,0.5)]"
-                                  : "text-[#20231f] drop-shadow-[0_3px_2px_rgba(255,255,255,0.25)]",
-                                selected
-                                  ? "scale-105"
-                                  : "",
-                              ].join(" ")}
-                            >
-                              {piece.symbol}
-                            </span>
-                          )}
-
-                          {/* Legal move */}
-
-                          {legal &&
-                            !capture && (
-                              <span className="pointer-events-none absolute z-20 h-[18%] w-[18%] rounded-full bg-emerald-500/80" />
-                            )}
-
-                          {/* Capture */}
-
-                          {capture && (
-                            <span className="pointer-events-none absolute inset-[5%] z-20 rounded-full border-[3px] border-emerald-300/80 sm:border-4" />
-                          )}
-
-                        </button>
-                      );
-                    },
-                  )}
-
-                </div>
-
-              </div>
-
-              <div className="mt-2 flex justify-between px-1 text-[10px] text-slate-600">
-
-                <span>
-                  Playing as{" "}
-                  <span className="font-semibold text-slate-400">
-                    {puzzle.toMove ===
-                    "white"
-                      ? "White"
-                      : "Black"}
+          {/* XP Card matching reference images */}
+          <div className="rounded-2xl border border-white/10 bg-[#1e2025] p-4 text-white shadow-md space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/90">
+                <span>XP</span>
+                {isCompleted && (
+                  <span className="text-emerald-400 font-extrabold text-xs animate-in zoom-in-75 duration-300">
+                    +5
                   </span>
-                </span>
-
-                <span>
-                  {difficulty}
-                </span>
-
+                )}
               </div>
 
+              {/* Level Flag Badge */}
+              <div className="relative flex items-center justify-center">
+                <span className="rounded bg-black/50 px-2 py-0.5 text-xs font-bold text-white border border-white/15 shadow-inner">
+                  {level}
+                </span>
+              </div>
             </div>
 
-          </section>
-
-          {/* =================================================
-              RIGHT PANEL
-          ================================================== */}
-
-          <aside className="space-y-3">
-
-            {/* Challenge */}
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-5">
-
-              <div className="flex items-start justify-between gap-3">
-
-                <div>
-
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-slate-500">
-                    Your challenge
-                  </p>
-
-                  <h2 className="mt-1.5 text-lg font-semibold">
-                    Find the best move
-                  </h2>
-
-                </div>
-
-                <div className="rounded-xl bg-slate-950 px-3 py-2 text-right">
-
-                  <p className="text-[9px] uppercase tracking-wider text-slate-600">
-                    Rating
-                  </p>
-
-                  <p className="text-sm font-bold text-slate-200">
-                    {puzzle.estRating}
-                  </p>
-
-                </div>
-
-              </div>
-
-              <p className="mt-3 text-xs leading-5 text-slate-400">
-                Take your time. Look for checks,
-                captures and forcing ideas.
-              </p>
-
-              {/* Move stats */}
-
-              <div className="mt-3 grid grid-cols-2 gap-2">
-
-                <div className="rounded-xl bg-slate-950 p-3">
-
-                  <p className="text-[9px] uppercase tracking-wider text-slate-600">
-                    Moves
-                  </p>
-
-                  <p className="mt-1 text-sm font-semibold">
-                    {solutionIndex} /{" "}
-                    {solutionLength}
-                  </p>
-
-                </div>
-
-                <div className="rounded-xl bg-slate-950 p-3">
-
-                  <p className="text-[9px] uppercase tracking-wider text-slate-600">
-                    Attempts
-                  </p>
-
-                  <p className="mt-1 text-sm font-semibold">
-                    {wrongAttempts}
-                  </p>
-
-                </div>
-
-              </div>
-
-              {/* Opponent */}
-
-              {isOpponentThinking && (
-                <div className="mt-3 rounded-xl bg-slate-950 px-3 py-2.5 text-center text-xs text-slate-500">
-                  Opponent is responding…
-                </div>
-              )}
-
-              {/* =================================================
-                  HINTS
-              ================================================== */}
-
-              <div className="mt-3">
-
-                {hintLevel ===
-                  0 && (
-                  <button
-                    type="button"
-                    onClick={
-                      handleHint
-                    }
-                    disabled={
-                      status ===
-                        "complete" ||
-                      isOpponentThinking
-                    }
-                    className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-xs font-semibold text-slate-200 transition hover:bg-slate-700 disabled:opacity-50"
-                  >
-                    Need a hint?
-                  </button>
-                )}
-
-                {/* Hint 1 */}
-
-                {hintLevel >=
-                  1 && (
-                  <div className="rounded-xl border border-slate-700 bg-slate-950 p-3">
-
-                    <p className="text-[9px] font-semibold uppercase tracking-wider text-emerald-400">
-                      Hint 1
-                    </p>
-
-                    <p className="mt-1.5 text-xs leading-5 text-slate-300">
-                      {puzzle.hint1 ||
-                        "Look for checks, captures and forcing moves first."}
-                    </p>
-
-                    {hintLevel <
-                      2 && (
-                      <button
-                        type="button"
-                        onClick={
-                          handleHint
-                        }
-                        className="mt-3 text-[10px] font-semibold text-emerald-400"
-                      >
-                        Show stronger hint →
-                      </button>
-                    )}
-
-                  </div>
-                )}
-
-                {/* Hint 2 */}
-
-                {hintLevel >=
-                  2 && (
-                  <div className="mt-2 rounded-xl border border-slate-700 bg-slate-950 p-3">
-
-                    <p className="text-[9px] font-semibold uppercase tracking-wider text-amber-400">
-                      Hint 2
-                    </p>
-
-                    <p className="mt-1.5 text-xs leading-5 text-slate-300">
-                      {puzzle.hint2 ||
-                        "Calculate the opponent's strongest reply before committing."}
-                    </p>
-
-                    {hintLevel <
-                      3 && (
-                      <button
-                        type="button"
-                        onClick={
-                          handleHint
-                        }
-                        className="mt-3 text-[10px] font-semibold text-amber-400"
-                      >
-                        Reveal key idea →
-                      </button>
-                    )}
-
-                  </div>
-                )}
-
-                {/* Key Idea */}
-
-                {hintLevel >=
-                  3 && (
-                  <div className="mt-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
-
-                    <p className="text-[9px] font-semibold uppercase tracking-wider text-emerald-400">
-                      Key idea
-                    </p>
-
-                    <p className="mt-1.5 text-xs leading-5 text-slate-300">
-                      {puzzle.keyIdea ||
-                        "Find the move that best exploits the tactical idea in the position."}
-                    </p>
-
-                  </div>
-                )}
-
-              </div>
-
-              {/* =================================================
-                  COMPLETION
-              ================================================== */}
-
-              {status ===
-                "complete" && (
-                <div className="mt-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3">
-
-                  <div className="flex items-center gap-3">
-
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-400 font-bold text-slate-950">
-                      ✓
-                    </div>
-
-                    <div>
-
-                      <p className="text-xs font-semibold">
-                        Nicely done.
-                      </p>
-
-                      <p className="mt-0.5 text-[10px] text-slate-400">
-                        {isSavingResult
-                          ? "Saving your progress…"
-                          : pointsEarned !==
-                              null
-                            ? `+${pointsEarned} points earned`
-                            : "Progress saved"}
-                      </p>
-
-                    </div>
-
-                  </div>
-
-                </div>
-              )}
-
+            {/* Glowing Emerald Progress Bar */}
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#12281a] p-0.5">
+              <div
+                className="h-full rounded-full bg-[#10b981] shadow-[0_0_12px_rgba(16,185,129,0.7)] transition-all duration-700 ease-out"
+                style={{
+                  width: `${progressPercent}%`,
+                }}
+              />
             </div>
 
-            {/* =================================================
-                NEXT
-            ================================================== */}
-
-            <button
-              type="button"
-              onClick={
-                handleNext
-              }
-              disabled={
-                status !== "complete" ||
-                isSavingResult ||
-                !hasNextPuzzle
-              }
-              className={[
-                "flex w-full items-center justify-between rounded-2xl px-4 py-3.5 text-left transition",
-                status === "complete" &&
-                !isSavingResult &&
-                hasNextPuzzle
-                  ? "bg-emerald-400 text-slate-950 hover:bg-emerald-300"
-                  : "cursor-not-allowed bg-slate-800 text-slate-500",
-              ].join(" ")}
-            >
-
-              <span>
-
-                <span className="block text-[9px] font-semibold uppercase tracking-[0.14em] opacity-60">
-                  Continue
-                </span>
-
-                <span className="mt-0.5 block text-sm font-bold">
-                  {isSavingResult
-                    ? "Saving progress…"
-                    : status === "complete"
-                      ? "Next challenge"
-                      : "Solve this challenge first"}
-                </span>
-
-              </span>
-
-              <span className="text-lg">
-                →
-              </span>
-
-            </button>
-
-            {/* =================================================
-                TRAINING STATS
-            ================================================== */}
-
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-4">
-
-              <div className="grid grid-cols-3 gap-2">
-
-                <div>
-
-                  <p className="text-[9px] uppercase tracking-wider text-slate-600">
-                    Streak
-                  </p>
-
-                  <p className="mt-1 text-lg font-bold text-emerald-400">
-                    {practiceStats.currentStreak}
-                  </p>
-
-                  <p className="text-[9px] text-slate-600">
-                    days
-                  </p>
-
-                </div>
-
-                <div>
-
-                  <p className="text-[9px] uppercase tracking-wider text-slate-600">
-                    Points
-                  </p>
-
-                  <p className="mt-1 text-lg font-bold text-white">
-                    {practiceStats.points}
-                  </p>
-
-                  <p className="text-[9px] text-slate-600">
-                    total
-                  </p>
-
-                </div>
-
-                <div>
-
-                  <p className="text-[9px] uppercase tracking-wider text-slate-600">
-                    Rank
-                  </p>
-
-                  <p className="mt-1 text-lg font-bold text-white">
-                    {weeklyRank
-                      ? `#${weeklyRank}`
-                      : "—"}
-                  </p>
-
-                  <p className="text-[9px] text-slate-600">
-                    weekly
-                  </p>
-
-                </div>
-
-              </div>
-
-              {/* Daily goal */}
-
-              <div className="mt-4">
-
-                <div className="flex items-center justify-between">
-
-                  <p className="text-[10px] text-slate-500">
-                    Today's training
-                  </p>
-
-                  <p className="text-[10px] text-slate-500">
-                    {
-                      practiceStats.dailyCompleted
-                    }{" "}
-                    /{" "}
-                    {
-                      practiceStats.dailyGoal
-                    }
-                  </p>
-
-                </div>
-
-                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-950">
-
-                  <div
-                    className="h-full rounded-full bg-emerald-400 transition-all duration-500"
-                    style={{
-                      width: `${Math.min(
-                        100,
-                        (practiceStats.dailyCompleted /
-                          Math.max(
-                            1,
-                            practiceStats.dailyGoal,
-                          )) *
-                          100,
-                      )}%`,
-                    }}
-                  />
-
-                </div>
-
-              </div>
-
-              {/* Accuracy */}
-
-              <div className="mt-3 flex items-center justify-between border-t border-slate-800 pt-3">
-
-                <span className="text-[10px] text-slate-600">
-                  Accuracy
-                </span>
-
-                <span className="text-xs font-semibold text-slate-300">
-                  {
-                    practiceStats.accuracy
-                  }
-                  %
-                </span>
-
-              </div>
-
+            {/* Bottom Range */}
+            <div className="flex items-center justify-between text-[11px] font-semibold text-white/60 pt-0.5">
+              <span className="transition-all duration-300 text-white font-bold">{currentLevelXp}</span>
+              <span>{targetLevelXp}</span>
             </div>
-
-            {/* =================================================
-                HOW TO PLAY
-            ================================================== */}
-
-            <div className="hidden rounded-2xl border border-slate-800 bg-slate-900 p-4 xl:block">
-
-              <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-                How to play
-              </p>
-
-              <div className="mt-3 space-y-2.5">
-
-                <div className="flex gap-2.5">
-
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-800 text-[10px] font-bold">
-                    1
-                  </span>
-
-                  <p className="text-[11px] leading-5 text-slate-500">
-                    Select one of your pieces.
-                  </p>
-
-                </div>
-
-                <div className="flex gap-2.5">
-
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-800 text-[10px] font-bold">
-                    2
-                  </span>
-
-                  <p className="text-[11px] leading-5 text-slate-500">
-                    Green markers show legal moves.
-                  </p>
-
-                </div>
-
-                <div className="flex gap-2.5">
-
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-800 text-[10px] font-bold">
-                    3
-                  </span>
-
-                  <p className="text-[11px] leading-5 text-slate-500">
-                    Find the strongest move.
-                  </p>
-
-                </div>
-
-                <div className="flex gap-2.5">
-
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-800 text-[10px] font-bold">
-                    4
-                  </span>
-
-                  <p className="text-[11px] leading-5 text-slate-500">
-                    Continue until the full solution is complete.
-                  </p>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          </aside>
-
+          </div>
         </div>
-
-      </main>
+      </div>
     </div>
   );
 };

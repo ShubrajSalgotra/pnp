@@ -30,6 +30,12 @@ Details report accuracy improvements: excluding material blunders/missed materia
 ### 6. [6_WHATSAPP_CONTACT_FIELD.md](file:///d:/F%20drive/client%20projects/pnp/pawns-poses-insight/developer_docs/6_WHATSAPP_CONTACT_FIELD.md)
 Documents the addition of a WhatsApp phone number field with an international country code select dropdown (`countryCodes`), mandatory field enforcement (Name, Email, WhatsApp), email format validation, public email display (`contact@pawnsposes.com`), and FormSubmit integration.
 
+### 7. [7_STUDENT_PLATFORM_REDESIGN.md](file:///d:/F%20drive/client%20projects/pnp/pawns-poses-insight/developer_docs/7_STUDENT_PLATFORM_REDESIGN.md)
+Documents the comprehensive Student Platform UI/UX redesign: persistent collapsible left navigation sidebar (`AppLayout`), single reusable shared chessboard UI component (`ChessboardView` & `ChessboardControls`), personalized student command center dashboard, focused practice arena, structured study curriculum library, and competitive leaderboard with podium standings.
+
+### 8. [8_PUZZLE_TRAINER_UI_AND_XP_SYSTEM.md](file:///d:/F%20drive/client%20projects/pnp/pawns-poses-insight/developer_docs/8_PUZZLE_TRAINER_UI_AND_XP_SYSTEM.md)
+Documents the puzzle trainer UI/UX refinements: internal board coordinates alignment matching reference screenshots, decluttering puzzle panels, interactive Hint/Show move flow with green solution arrows and checkmate glows, vector SVG chess pieces, dynamic XP tracker bar with levels and +5 animations, and opponent auto-reply synchronization in Study mode.
+
 ---
 
 ## 🛠️ General System Architecture & Context
