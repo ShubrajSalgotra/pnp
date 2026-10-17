@@ -64,7 +64,6 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
   });
   const [isValidating, setIsValidating] = useState(false);
   const [validationResult, setValidationResult] = useState<boolean | null>(null);
-  const [cachedPdfUrl, setCachedPdfUrl] = useState<string | null>(null);
 
   const isOpponent = mode === 'opponent';
 
@@ -75,7 +74,6 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
       setViewMode('viewer');
       setValidationResult(null);
       setIsValidating(false);
-      setCachedPdfUrl(null);
       return;
     }
 
@@ -91,7 +89,6 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
       });
       setValidationResult(null);
       setIsValidating(false);
-      setCachedPdfUrl(null);
       return;
     }
 
@@ -109,10 +106,8 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
     const cached = pdfCache.get(reportCacheKey(report));
     if (cached) {
       setPdfFilename(cached.filename);
-      setCachedPdfUrl(cached.url);
     } else {
       setPdfFilename(`${report.username}-chess-report.pdf`);
-      setCachedPdfUrl(null);
     }
   }, [isOpen, report, initialPlatform, initialUsername]);
 
@@ -170,7 +165,6 @@ const ReportPopup: React.FC<ReportPopupProps> = ({
     };
     pdfCache.set(key, cached);
     setPdfFilename(cached.filename);
-    setCachedPdfUrl(cached.url);
     return cached;
   }, [report]);
 

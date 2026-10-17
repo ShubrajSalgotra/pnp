@@ -5,12 +5,13 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import Navbar from './components/Navbar';
 import UserPrefsSync from './components/UserPrefsSync';
 import WhatsAppFloatingButton from './components/WhatsAppFloatingButton';
+import { AppLayout } from './components/layout/AppLayout';
 
 // Keep the lightest entry routes eager for first paint.
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 
-// Everything else is code-split so reloads don't download unused feature code.
+// Code-split pages for performance
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const GameAnalysisPage = lazy(() => import('./pages/GameAnalysisPage'));
@@ -20,36 +21,57 @@ const ReportsPage = lazy(() => import('./pages/ReportsPage'));
 const PuzzlesPage = lazy(() => import('./pages/PuzzlesPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const PremiumPage = lazy(() => import('./pages/PremiumPage'));
+const PracticePage = lazy(() => import('./pages/PracticePage'));
+const StudyPage = lazy(() => import('./pages/StudyPage'));
+const LeaderboardPage = lazy(() => import('./components/Leaderboard'));
 
 const RouteFallback: React.FC = () => (
   <div className="flex min-h-[50vh] items-center justify-center">
-    <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-primary-600" />
+    <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-primary-600 dark:border-slate-700 dark:border-t-emerald-400" />
   </div>
 );
 
-// Protected Route Component
+// Protected Student Route: wraps authenticated views in the persistent AppLayout shell
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
-  return currentUser ? <>{children}</> : <Navigate to="/login" />;
+  if (!currentUser) {
+    return <Navigate to="/login" />;
+  }
+  return <AppLayout>{children}</AppLayout>;
 };
 
 // Public Route Component (redirect to dashboard if logged in)
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { currentUser } = useAuth();
   const location = useLocation();
-  const isSignupOnboarding = location.pathname === '/register' && sessionStorage.getItem('signupOnboardingInProgress') === 'true';
+  const isSignupOnboarding =
+    location.pathname === '/register' &&
+    sessionStorage.getItem('signupOnboardingInProgress') === 'true';
 
   return !currentUser || isSignupOnboarding ? <>{children}</> : <Navigate to="/dashboard" />;
 };
 
 const AppShell: React.FC = () => {
   const location = useLocation();
+  const { currentUser } = useAuth();
   const isLandingPage = location.pathname === '/';
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+  const isPublicView = !currentUser || isLandingPage || isAuthPage;
 
   return (
     <div className="app-canvas min-h-screen">
-      <Navbar />
-      <div className={isLandingPage ? undefined : 'pt-[4.75rem] sm:pt-20'}>
+      {/* Show floating top Navbar only on landing & auth pages, or when unauthenticated */}
+      {isPublicView && <Navbar />}
+
+      <div
+        className={
+          isPublicView
+            ? isLandingPage
+              ? undefined
+              : 'pt-[4.75rem] sm:pt-20'
+            : undefined
+        }
+      >
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             {/* Public Routes */}
@@ -71,7 +93,7 @@ const AppShell: React.FC = () => {
               }
             />
 
-            {/* Protected Routes */}
+            {/* Protected Student Routes (with persistent sidebar layout) */}
             <Route
               path="/dashboard"
               element={
@@ -109,10 +131,37 @@ const AppShell: React.FC = () => {
             />
 
             <Route
+              path="/practice"
+              element={
+                <ProtectedRoute>
+                  <PracticePage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/leaderboard"
+              element={
+                <ProtectedRoute>
+                  <LeaderboardPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
               path="/puzzles"
               element={
                 <ProtectedRoute>
                   <PuzzlesPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/study"
+              element={
+                <ProtectedRoute>
+                  <StudyPage />
                 </ProtectedRoute>
               }
             />

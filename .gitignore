@@ -26,3 +26,7 @@ yarn-error.log*
 
 
 /.cursor.tmp-backfill/
+
+# Firebase Admin SDK credentials
+serviceAccountKey.json
+*.firebase-adminsdk*.json

@@ -1,0 +1,1022 @@
+[Event "GRANDMASTER GAMES IDEAS: Chess Structures: Exercises: Chapter 23: Introduction"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Chess Structures: Exercises: Chapter 23: Introduction"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/nNnb8BTY"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "8/8/8/8/8/8/8/8 w - - 0 1"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] [Last Modified: 9/8/2025]
+-
+This study contains the exercises from Chapter 23 of the book
+"Chess Structures: A Grandmaster Guide", by Mauricio Flores Rios. The solutions to the exercises are in Chapter 24 of the book. }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 1: Granda Zuniga – Vega, Bahia Feliz 2011"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 1: Granda Zuniga – Vega, Bahia Feliz 2011"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/VphdqSkU"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "2rr2k1/1b1qbppp/p1p1pn2/1p4B1/3P4/1QN1P1P1/PP3PBP/2RR2K1 w - - 0 17"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] How should White consolidate his positional advantage?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 2: Granda Zuniga – Vega, Bahia Feliz 2012"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 2: Granda Zuniga – Vega, Bahia Feliz 2012"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/hlDRI8g6"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "2r2rk1/1p2qp2/p1b1p1p1/2npP2p/P2N1P2/1PP5/2B2QPP/4RR1K w - - 0 26"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Find White's best continuation.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 3: Mareco – Werjivker, Montevideo 2013"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 3: Mareco – Werjivker, Montevideo 2013"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/ckOahl9z"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "q4rk1/pbr1bppp/1pn1pn2/8/2PP4/P2B1N2/1B1NQPPP/2RR2K1 w - - 0 16"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Find White's strongest continuation.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 4: Zvjaginsev – Cvitan, Vienna 1996"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 4: Zvjaginsev – Cvitan, Vienna 1996"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/MeJftUxq"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "4rrn1/1pp2qbk/3p3p/pNnP1p2/2P1pP1N/4B1PP/PP2Q1R1/R5K1 w - - 0 24"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Find White's best continuation.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 5: Khairullin – Goganov, St Petersburg 2012"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 5: Khairullin – Goganov, St Petersburg 2012"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/lFvNMIMP"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r4rk1/1b3ppp/pqn1p3/2npP3/1p3P2/3B1N2/PPP1NQPP/R4R1K w - - 0 16"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Find White's best continuation.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 6: Iturrizaga Bonelli – Papin, Moscow 2010"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 6: Iturrizaga Bonelli – Papin, Moscow 2010"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/aMVC30Pz"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r3r1k1/qb2bppp/ppn1pn2/4N3/2NP4/1P1B4/PB2QPPP/2RR2K1 w - - 0 16"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] How should White proceed?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 7: Naroditsky – Kamsky, Saint Louis 2011"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 7: Naroditsky – Kamsky, Saint Louis 2011"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/rsb56FP9"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "2r2k2/5pp1/4p2p/pprpP2P/5P2/P1PK2R1/1P4P1/5R2 b - - 0 28"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] What is your evaluation of the position? How should Black proceed?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 8: Leitao – Robledo, Mar del Plata 2009"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 8: Leitao – Robledo, Mar del Plata 2009"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/LZSQyXUI"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r1b1r1k1/1pq2pbp/1npp2p1/p1n5/2PNPP2/1PN1B1PP/P1Q3B1/3RR1K1 w - - 0 17"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Find three moves which each obtain a big advantage for White.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 9: Leitao – Di Berardino, Manaus 2013"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 9: Leitao – Di Berardino, Manaus 2013"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/4HLJBjO8"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "2r2rk1/p1q1bppp/2p1pn2/8/2PP2N1/2BR1QP1/P4PKP/4R3 w - - 0 22"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] How should White proceed?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 10: Vuckovic – Damljanovic, Valjevo 2000"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 10: Vuckovic – Damljanovic, Valjevo 2000"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/uOOpbwgy"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r1r2qk1/1p2pp1p/3p2p1/p1nPb3/4P3/PP2BP2/2RQ2PP/1R3BK1 b - - 0 21"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Evaluate the position. How should Black proceed?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 11: Braun – Polzin, Germany 2008"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 11: Braun – Polzin, Germany 2008"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/iDqrzzWM"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r1b2rk1/3nqpbp/p1pp1np1/1p2p3/2PPP3/2N2NPP/PPQ2PB1/R1BR2K1 w - - 0 12"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] How should White proceed?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 12: Rosell – Nikolic, Barcelona 2012"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 12: Rosell – Nikolic, Barcelona 2012"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/4cD0fb3S"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r2q1rk1/pb1n2pp/1pp1pb2/3p1p2/NPPPn3/5NP1/PBQ1PPBP/R2R2K1 b - - 0 14"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] How should Black proceed?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 13: Dzieczkaniec – Macieja, Wroclaw 2011"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 13: Dzieczkaniec – Macieja, Wroclaw 2011"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/iXTJV4LN"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r2qr1k1/pb2bp1p/1pn1p1pB/8/3PB3/2P2N2/P1Q2PPP/3R1RK1 w - - 0 16"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] What should White play?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 14: Mista – Navara, Czech Republic 2005"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 14: Mista – Navara, Czech Republic 2005"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/35IFZg6v"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r4rk1/1p1b2qp/p1nbp1p1/3p3n/3P3B/2N2N2/PPR2PPP/1B1QR1K1 b - - 0 18"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] White’s last move was 18.Rc1-c2. How should Black respond?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 15: Akesson – Gabrielian, Pardubice 2010"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 15: Akesson – Gabrielian, Pardubice 2010"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/7xPA5XHG"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "2bqr1k1/4rpbp/pp1p1np1/2pP4/PnB1PP2/1QN2N1P/1P1B2P1/R3R1K1 w - - 0 18"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Black’s last move was 17...Ra7-e7. How should White reply?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 16: Cordova – Cabrera, Yucay 2001"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 16: Cordova – Cabrera, Yucay 2001"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/RY6hlNv1"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r1b2rk1/pp1nqpb1/2p1p1pp/8/2PPN3/3B1N2/PP3PPP/R2QR1K1 w - - 0 13"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] What is White’s thematic continuation in this position?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 17: Cvek – Navara, Ledec nad Sazavou 2013"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 17: Cvek – Navara, Ledec nad Sazavou 2013"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/wmug8GqV"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r2r2k1/pp2qppp/4b3/3p4/3Q4/1PN1P3/P4PPP/R4K1R b - - 0 19"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Evaluate the position and suggest a continuation for Black.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 18: Sprenger – Navara, Sibenik 2012"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 18: Sprenger – Navara, Sibenik 2012"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/Wn2XiH4Z"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "2r1k2r/1pq1bpp1/p2pb2p/4p3/4P3/3QN3/PPP2PPP/R1B2RK1 b - - 0 15"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Find Black’s best continuation.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 19: Granda Zuniga – Latorre Lopez Moreira, Cochabamba 2013"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 19: Granda Zuniga – Latorre Lopez Moreira, Cochabamba 2013"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/WYMJNGkX"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "1b3rk1/pb1n1ppp/2rq1n2/2pp1B2/N7/1P2P1P1/PB1N1P1P/2RQR1K1 w - - 0 19"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Find White’s strongest continuation.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 20: Szabo – Flores Rios, Belfort 2005"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 20: Szabo – Flores Rios, Belfort 2005"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/Awj6wepA"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "2rq1rk1/1b1nbppp/pp2pn2/3p4/2PNPP2/2NB4/PP1BQ1PP/4RRK1 w - - 0 15"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Black’s last move was 14...d5. Analyze the position and find White’s best reaction.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 21: Harikrishna – Dominguez, Melilla 2011"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 21: Harikrishna – Dominguez, Melilla 2011"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/02i7w0iO"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "6k1/pb3p1p/1p2pbpP/n3P3/3P4/3B4/P3NPP1/2B3K1 b - - 0 23"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] White’s last move was 23.e4-e5. Evaluate this move and describe how the game may develop.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 22: Landa – Ponomariov, Sochi 2012"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 22: Landa – Ponomariov, Sochi 2012"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/MWPHNIR7"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "2rq1rk1/3b1pbp/p1n1p1p1/1p6/3PP3/3BB3/P2QNPPP/2R2RK1 w - - 0 16"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] White now played 16.a4. Is this a good move? If not, how should White have played instead?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 23: Kramnik – Van Wely, Wijk aan Zee 2010"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 23: Kramnik – Van Wely, Wijk aan Zee 2010"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/BF1ZMWoH"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "2R5/prn2n1k/3p1b2/2pPp3/2P1Pp2/P1NN4/5BP1/5K2 w - - 0 40"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] How should White proceed?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 24: Mareco – Ivanov, Buenos Aires 2009"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 24: Mareco – Ivanov, Buenos Aires 2009"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/ALnx496s"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r5k1/1rq1n1b1/p2p1n2/2pPp1pp/N1P1Pp2/P4P2/3BQNPP/1R3RK1 w - - 0 22"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Black’s last move was 21...Rb8-b7. Was this a good move? How should White reply?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 25: Collins – Macieja, Freemont 2012"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 25: Collins – Macieja, Freemont 2012"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/fgRt1mnk"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r2q1rk1/pp2ppbp/2n3p1/8/3P4/2PB1Q1P/P4PP1/R1B1R1K1 b - - 0 13"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Evaluate the position and find Black’s strongest continuation.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 26: Ftacnik – Cvitan, Germany 1997"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 26: Ftacnik – Cvitan, Germany 1997"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/1DMOh6gp"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r1b3k1/ppp2rbn/1P1P2n1/P3p2p/2N1Pp1q/2N2Pp1/4B1PP/R2Q1RBK b - - 0 22"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] How should Black continue, and what is the evaluation of the position?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 27: Bachmann – Britez, Foz do Iguacu 2013"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 27: Bachmann – Britez, Foz do Iguacu 2013"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/gLOQp5Sa"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r4rk1/pb1n1ppp/1ppqp3/8/2PPQ3/5NP1/PP3PBP/R2R2K1 w - - 0 15"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Find White’s thematic response in this position.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 28: Geller – Khismatullin, Taganrog 2013"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 28: Geller – Khismatullin, Taganrog 2013"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/KeMMayIS"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "2r1k2r/2q1bpp1/p1bp1n2/1p2pP1p/2n1P3/P1NN1B2/1PP1QBPP/3R1RK1 b k - 0 18"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Find the strongest continuation for Black.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 29: Vasquez – Rios, Santiago 2010"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 29: Vasquez – Rios, Santiago 2010"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/jnfe3F24"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r2qr1k1/pbp2pbp/1p1p1np1/2n5/2PNP3/2N2PPP/PP4B1/1RBQR1K1 b - - 0 13"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] How should Black create counter-play?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 30: Gharamian – Mamedov, Aix-les-Bains 2011"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 30: Gharamian – Mamedov, Aix-les-Bains 2011"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/3azKIwnb"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "1rq2rk1/1pp2p2/p1np1bp1/7p/2P1PP2/6PP/PP3QB1/2BRR2K w - - 0 24"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] How should White use his spatial advantage?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 31: Quintiliano – Mareco, Maringa 2012"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 31: Quintiliano – Mareco, Maringa 2012"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/Wp8fOUQE"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "2bqr1k1/1pbn1ppp/2pp1n2/8/2P1PP2/1PN1B1PP/2N3BK/Q3R3 b - - 0 20"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] How can Black find counter-play?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 32: Arencibia – Vera, Havana 1986"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 32: Arencibia – Vera, Havana 1986"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/HuNqSwQu"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "3qr1k1/3n1pbp/3p2p1/1p1P4/2p1PPP1/1r2BB1P/1P2RQK1/R7 b - - 0 23"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Black has an excellent position. How can he consolidate his lead?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 33: Kramnik – Polgar, Dortmund 1997"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 33: Kramnik – Polgar, Dortmund 1997"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/3x6gcaw4"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "b1r2rk1/p2q1ppp/1pp1pn2/2Pp4/Q2P4/6P1/PP1NPPBP/2R2RK1 w - - 0 15"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] How should White proceed?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 34: Granda Zuniga – Milos, Quito 2012"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 34: Granda Zuniga – Milos, Quito 2012"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/pz4aVkB0"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r1b3qk/p1p3r1/3p1n1b/PP1Pp1pp/R3Pp1n/2N2P1P/4BNPK/3QBR2 b - - 0 24"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Find Black’s strongest continuation.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 35: Epishin – Cvitan, Switzerland 1997"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 35: Epishin – Cvitan, Switzerland 1997"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/2yleYtj2"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r5k1/ppp2rbn/1P4n1/PN1Pp2p/2N1Pp1q/5Ppb/4B1PP/R2Q1RBK w - - 0 23"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Black’s last move was 22...Bh3. What is your evaluation of the position? How should White proceed?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 36: Ehlvest – Kuipers, Gibraltar 2013"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 36: Ehlvest – Kuipers, Gibraltar 2013"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/Mj98VpYB"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r1bq1rk1/1p3pbp/2n1p1p1/p2pP3/3P2n1/5NP1/PP1N1PBP/R1BQR1K1 b - - 0 12"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] How should Black play?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 37: Qingnan Liu – Bu Xiangzhi, Qinhuangdao 2011"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 37: Qingnan Liu – Bu Xiangzhi, Qinhuangdao 2011"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/zkrsYuEs"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "2r5/rp2ppkp/3pbnp1/3N4/1PP1P3/p4P2/P3B1PP/R1R3K1 b - - 0 19"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Evaluate the position and suggest a move for Black.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 38: Leitao – Diamant, Rio de Janeiro 2009"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 38: Leitao – Diamant, Rio de Janeiro 2009"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/AYBZPVeQ"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "4r1k1/3n1pb1/bq1p2p1/2pP2Pp/1r2PP2/2N3QP/1P3RK1/1BB1R3 w - - 0 37"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Evaluate the position and find White’s best reaction.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 39: Kunin – Volokitin, Austria 2012"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 39: Kunin – Volokitin, Austria 2012"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/g2W9BgmD"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r3k2r/1p2ppbp/2pn2p1/p7/Pn1P4/4P1P1/1P1N1PBP/R1B2RK1 b kq - 0 16"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Find Black’s strongest move.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 40: Agrest – Caruana, Arvier 2007"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 40: Agrest – Caruana, Arvier 2007"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/gTRyABUK"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "1rbqr2k/2n3bp/p2p1pp1/1ppP4/P3P2P/5NB1/BP1Q1PP1/2R1R1K1 w - - 0 25"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Black’s last move was 24...b5. How should White respond?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 41: Flores Rios – Alonso, Magistral Endesa 2007"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 41: Flores Rios – Alonso, Magistral Endesa 2007"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/cWkNDNZH"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r1rq2k1/1p2ppbp/2bp2p1/p1n5/2P1P3/PPN1BP2/3QB1PP/1RR4K b - - 0 18"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] White’s last move was 18.a3. How would you rate this move?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 42: Almasi – Macieja, Khanty-Mansiysk (ol) 2010"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 42: Almasi – Macieja, Khanty-Mansiysk (ol) 2010"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/HCARYmQG"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "2r2rk1/1p2ppbp/3pbnp1/q7/p1PBPP2/P1N1Q3/1P2B1PP/3R1RK1 w - - 0 17"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] How should White proceed?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 43: Edouard – Cebalo, Biel 2012"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 43: Edouard – Cebalo, Biel 2012"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/sscv4IFi"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r1r3k1/1p1bppbp/3p1np1/5P2/1qPBP3/1PN5/3QB1PP/3R1RK1 w - - 0 18"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Find a strong continuation for White.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 44: Gelashvili – Timman, Saint Vincent 2000"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 44: Gelashvili – Timman, Saint Vincent 2000"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/lbsbUFSm"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r4rk1/ppqb2pp/2nbpn2/3p2B1/3P4/2NB1N2/PP3PPP/R2QR1K1 b - - 0 14"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] White’s last move was 12.Ne2-c3. How should Black respond?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 45: Lemos – Larrea, Asuncion 2011"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 45: Lemos – Larrea, Asuncion 2011"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/qnL2P0Zf"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "rn3rk1/pp1b2p1/2pbpq1p/3p1p2/2PP4/2N2NP1/PPQ1PPBP/R4RK1 w - - 0 11"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Find a good continuation for White.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 46: Radjabov – Guseinov, Baku 2010"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 46: Radjabov – Guseinov, Baku 2010"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/IQ1KRtOm"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r2qr1k1/1pnn1pbp/p2p2p1/2pp4/P1P1P3/2N1B2P/1P1QBPP1/4RRK1 w - - 0 16"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Black's last move was 16...exd5. How should White reply?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 47:  Leitao – Barreto, Campinas 2009"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 47:  Leitao – Barreto, Campinas 2009"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/QahBhUvv"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r1bqr1k1/3n1pbp/pp2p1p1/3p4/P2P4/1Q1BPN2/1P1B1PPP/R4RK1 w - - 0 14"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] How should White continue?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 48: Cori Tello – Melkumyan, Moscow 2012"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 48: Cori Tello – Melkumyan, Moscow 2012"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/oOKaSQwd"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "r2q1rk1/pb2nppp/1p1bpn2/3pN3/3P4/PP1B4/1BPN1PPP/R2Q1RK1 w - - 0 12"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Evaluate the position and suggest a plan for White.
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 49: Garcia – Henriquez, Punta Arenas 2014"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 49: Garcia – Henriquez, Punta Arenas 2014"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/ELmGNIiy"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "2rq1rk1/1p2bpp1/p2pbn1p/3Np3/4P3/3QN3/PPP2PPP/R1B1R1K1 b - - 0 14"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] Black is to play and will surely choose 14...Nxd5. How should White respond? What is the evaluation?
+- }
+ *
+
+
+[Event "GRANDMASTER GAMES IDEAS: Exercise 50: Nielsen – Berzinsh, Eretria 2011"]
+[Date "2026.09.27"]
+[Result "*"]
+[Variant "Standard"]
+[ECO "?"]
+[Opening "?"]
+[StudyName "GRANDMASTER GAMES IDEAS"]
+[ChapterName "Exercise 50: Nielsen – Berzinsh, Eretria 2011"]
+[ChapterURL "https://lichess.org/study/DYH5jgp8/vHqCu7fs"]
+[Annotator "https://lichess.org/@/The_karan01"]
+[FEN "rr4k1/2pbqpp1/3b1n1p/p1BPp3/1p2Pn2/4QN1P/PPRN1PP1/2R2BK1 w - - 0 20"]
+[SetUp "1"]
+[UTCDate "2026.09.27"]
+[UTCTime "06:43:30"]
+
+{ [%anno "jomega", jomega] How should White continue?
+- }
+ *
+
+
