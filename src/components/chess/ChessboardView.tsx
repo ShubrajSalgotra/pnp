@@ -25,7 +25,7 @@ export interface ChessboardViewProps {
   showNotation?: boolean;
   showExternalCoordinates?: boolean;
   animationDuration?: number;
-  theme?: 'purple' | 'forest' | 'wood' | 'classic' | 'gold';
+  theme?: 'purple' | 'forest' | 'wood' | 'classic';
   className?: string;
   autoCheckHighlight?: boolean;
   isLoading?: boolean;
@@ -56,11 +56,9 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
       case 'purple':
         return { lightColor: '#9ea4f6', darkColor: '#554de0' };
       case 'forest':
-        return { lightColor: '#dee7d9', darkColor: '#2d6a4f' };
+        return { lightColor: '#dee7d9', darkColor: '#5a8b6e' };
       case 'wood':
         return { lightColor: '#f0d9b5', darkColor: '#b58863' };
-      case 'gold':
-        return { lightColor: '#fef3c7', darkColor: '#854d0e' };
       case 'classic':
       default:
         return { lightColor: '#eeeed2', darkColor: '#769656' };
@@ -217,12 +215,12 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
           lightSquareStyle: { backgroundColor: lightColor },
           darkSquareStyle: { backgroundColor: darkColor },
           lightSquareNotationStyle: {
-            color: darkColor,
+            color: 'rgba(255, 255, 255, 0.75)',
             fontWeight: 700,
             fontSize: '0.72rem',
           },
           darkSquareNotationStyle: {
-            color: lightColor,
+            color: 'rgba(255, 255, 255, 0.75)',
             fontWeight: 700,
             fontSize: '0.72rem',
           },

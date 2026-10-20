@@ -36,9 +36,6 @@ Documents the comprehensive Student Platform UI/UX redesign: persistent collapsi
 ### 8. [8_PUZZLE_TRAINER_UI_AND_XP_SYSTEM.md](file:///d:/F%20drive/client%20projects/pnp/pawns-poses-insight/developer_docs/8_PUZZLE_TRAINER_UI_AND_XP_SYSTEM.md)
 Documents the puzzle trainer UI/UX refinements: internal board coordinates alignment matching reference screenshots, decluttering puzzle panels, interactive Hint/Show move flow with green solution arrows and checkmate glows, vector SVG chess pieces, dynamic XP tracker bar with levels and +5 animations, and opponent auto-reply synchronization in Study mode.
 
-### 9. [9_COIN_SYSTEM_AND_BOARD_UNLOCKS.md](file:///d:/F%20drive/client%20projects/pnp/pawns-poses-insight/developer_docs/9_COIN_SYSTEM_AND_BOARD_UNLOCKS.md)
-Documents the gamified Coin System, progressive board UI unlocking milestones (400, 600, 800 Coins) enabling students to unlock and equip unique custom chessboard skins (Royal Amethyst, Tournament Green, Emerald Forest, Master Walnut, Obsidian Gold), and fixes for light-mode text readability and board coordinate contrast.
-
 ---
 
 ## 🛠️ General System Architecture & Context

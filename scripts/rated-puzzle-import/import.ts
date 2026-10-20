@@ -64,7 +64,7 @@ const main = async () => {
     process.cwd(),
     "scripts",
     "rated-puzzle-import",
-    "pawnsposes_puzzles_rated_with_keyIdea.csv",
+    "pawnsposes_puzzles_rated_specific_hints.csv",
   );
 
   if (!fs.existsSync(csvPath)) {
