@@ -70,10 +70,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!isCollapsed && (
             <div className="flex flex-col">
               <span className="font-display text-lg font-bold tracking-tight text-slate-900 dark:text-white">
-                Pawnposes
+                Pawnsposes 
               </span>
               <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary-600 dark:text-emerald-400">
-                Academy
+                Chess
               </span>
             </div>
           )}
