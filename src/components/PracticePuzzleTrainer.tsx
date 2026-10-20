@@ -5,7 +5,70 @@ import { getPracticeStats, recordPracticeResult } from '../services/practiceServ
 import type { PracticePuzzle } from '../types/practice';
 import { ChessboardView, type ChessArrow } from './chess/ChessboardView';
 import { useChessSounds } from '../hooks/useChessSounds';
-import { ArrowLeft, Lightbulb, ScanSearch } from 'lucide-react';
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  Coins,
+  Lightbulb,
+  Lock,
+  Palette,
+  ScanSearch,
+} from 'lucide-react';
+
+export type BoardThemeId = 'purple' | 'classic' | 'forest' | 'wood' | 'gold';
+
+export interface BoardThemeConfig {
+  id: BoardThemeId;
+  name: string;
+  subtitle: string;
+  requiredCoins: number;
+  lightColor: string;
+  darkColor: string;
+}
+
+export const AVAILABLE_BOARD_THEMES: BoardThemeConfig[] = [
+  {
+    id: 'purple',
+    name: 'Royal Amethyst',
+    subtitle: 'Signature vibrant purple',
+    requiredCoins: 0,
+    lightColor: '#9ea4f6',
+    darkColor: '#554de0',
+  },
+  {
+    id: 'classic',
+    name: 'Tournament Green',
+    subtitle: 'Classic championship match',
+    requiredCoins: 0,
+    lightColor: '#eeeed2',
+    darkColor: '#769656',
+  },
+  {
+    id: 'forest',
+    name: 'Emerald Forest',
+    subtitle: 'Deep woodland & mint',
+    requiredCoins: 400,
+    lightColor: '#dee7d9',
+    darkColor: '#2d6a4f',
+  },
+  {
+    id: 'wood',
+    name: 'Master Walnut',
+    subtitle: 'Handcrafted wood finish',
+    requiredCoins: 600,
+    lightColor: '#f0d9b5',
+    darkColor: '#b58863',
+  },
+  {
+    id: 'gold',
+    name: 'Obsidian Gold',
+    subtitle: 'Grandmaster luxury gold',
+    requiredCoins: 800,
+    lightColor: '#fef3c7',
+    darkColor: '#854d0e',
+  },
+];
 
 interface PracticePuzzleTrainerProps {
   puzzle: PracticePuzzle;
@@ -16,9 +79,9 @@ interface PracticePuzzleTrainerProps {
   onNext: () => void;
 }
 
-// Minimalist Mascot Icon matching screenshots (dark rounded square with two white capsule eyes)
+// Minimalist Mascot Icon matching screenshots (high contrast in light & dark modes)
 const RobotMascot: React.FC<{ isCelebrating?: boolean }> = ({ isCelebrating }) => (
-  <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10 border border-white/15 shadow-sm">
+  <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-900 dark:bg-slate-800 border border-slate-700/20 dark:border-white/15 shadow-sm">
     <div className="flex items-center justify-center gap-1.5">
       <span
         className={`w-1.5 rounded-full bg-white transition-all duration-300 ${
@@ -61,33 +124,88 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
   const [isCompleted, setIsCompleted] = useState(false);
   const [isMuted] = useState(false);
 
-  const XP_PER_LEVEL = 75;
-
-  const [totalPoints, setTotalPoints] = useState<number>(() => {
+  // Coins & Theme unlock milestones (0, 400, 600, 800)
+  const [totalCoins, setTotalCoins] = useState<number>(() => {
     try {
-      const saved = localStorage.getItem('pnp_practice_xp');
-      if (saved) {
-        const parsed = parseInt(saved, 10);
+      const savedCoins = localStorage.getItem('pnp_practice_coins');
+      if (savedCoins) {
+        const parsed = parseInt(savedCoins, 10);
+        if (!isNaN(parsed) && parsed >= 0) return parsed;
+      }
+      const savedXp = localStorage.getItem('pnp_practice_xp');
+      if (savedXp) {
+        const parsed = parseInt(savedXp, 10);
         if (!isNaN(parsed) && parsed >= 0) return parsed;
       }
     } catch {
       // ignore
     }
-    return 25; // Default 25 XP matching the screenshot
+    return 25; // Default starter coins
   });
 
-  const { level, currentLevelXp, targetLevelXp, progressPercent } = useMemo(() => {
-    const lvl = Math.floor(totalPoints / XP_PER_LEVEL) + 1;
-    const current = totalPoints % XP_PER_LEVEL;
-    const target = XP_PER_LEVEL;
-    const pct = Math.min(100, Math.max(6, Math.round((current / target) * 100)));
-    return {
-      level: lvl,
-      currentLevelXp: current,
-      targetLevelXp: target,
-      progressPercent: pct,
-    };
-  }, [totalPoints]);
+  const [selectedTheme, setSelectedTheme] = useState<BoardThemeId>(() => {
+    try {
+      const saved = localStorage.getItem('pnp_board_theme');
+      if (saved && ['purple', 'classic', 'forest', 'wood', 'gold'].includes(saved)) {
+        return saved as BoardThemeId;
+      }
+    } catch {
+      // ignore
+    }
+    return 'purple';
+  });
+
+  const [isThemePickerOpen, setIsThemePickerOpen] = useState(false);
+
+  // Milestone progression for board unlocks (400, 600, 800)
+  const { nextMilestone, nextThemeName, progressPercent } = useMemo(() => {
+    if (totalCoins < 400) {
+      const pct = Math.min(100, Math.max(5, Math.round((totalCoins / 400) * 100)));
+      return {
+        nextMilestone: 400,
+        nextThemeName: 'Emerald Forest',
+        progressPercent: pct,
+      };
+    } else if (totalCoins < 600) {
+      const pct = Math.min(100, Math.max(5, Math.round(((totalCoins - 400) / 200) * 100)));
+      return {
+        nextMilestone: 600,
+        nextThemeName: 'Master Walnut',
+        progressPercent: pct,
+      };
+    } else if (totalCoins < 800) {
+      const pct = Math.min(100, Math.max(5, Math.round(((totalCoins - 600) / 200) * 100)));
+      return {
+        nextMilestone: 800,
+        nextThemeName: 'Obsidian Gold',
+        progressPercent: pct,
+      };
+    } else {
+      return {
+        nextMilestone: 800,
+        nextThemeName: 'All Themes Unlocked',
+        progressPercent: 100,
+      };
+    }
+  }, [totalCoins]);
+
+  const currentThemeObj = useMemo(() => {
+    return AVAILABLE_BOARD_THEMES.find((t) => t.id === selectedTheme) || AVAILABLE_BOARD_THEMES[0];
+  }, [selectedTheme]);
+
+  const handleEquipTheme = (themeId: BoardThemeId) => {
+    const target = AVAILABLE_BOARD_THEMES.find((t) => t.id === themeId);
+    if (!target) return;
+    if (totalCoins < target.requiredCoins) {
+      return;
+    }
+    setSelectedTheme(themeId);
+    try {
+      localStorage.setItem('pnp_board_theme', themeId);
+    } catch {
+      // ignore
+    }
+  };
 
   const opponentTimerRef = useRef<number | null>(null);
   const resultSavedRef = useRef(false);
@@ -110,8 +228,9 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
       try {
         const stats = await getPracticeStats(user.uid);
         if (typeof stats.points === 'number' && stats.points > 0) {
-          setTotalPoints(stats.points);
+          setTotalCoins(stats.points);
           try {
+            localStorage.setItem('pnp_practice_coins', stats.points.toString());
             localStorage.setItem('pnp_practice_xp', stats.points.toString());
           } catch {
             // ignore
@@ -171,7 +290,13 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
       try {
         const result = await recordPracticeResult(user.uid, puzzle, attempts, hints);
         if (result.stats?.points) {
-          setTotalPoints(result.stats.points);
+          setTotalCoins(result.stats.points);
+          try {
+            localStorage.setItem('pnp_practice_coins', result.stats.points.toString());
+            localStorage.setItem('pnp_practice_xp', result.stats.points.toString());
+          } catch {
+            // ignore
+          }
         }
       } catch (err) {
         console.error('Error saving practice result:', err);
@@ -213,9 +338,10 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
           if (updatedIndex >= puzzle.requiredSolutionUci.length) {
             setIsCompleted(true);
             setCoachMessage('Nice, keep that pattern in mind.');
-            setTotalPoints((prev) => {
-              const nextVal = prev + 5;
+            setTotalCoins((prev) => {
+              const nextVal = prev + 10;
               try {
+                localStorage.setItem('pnp_practice_coins', nextVal.toString());
                 localStorage.setItem('pnp_practice_xp', nextVal.toString());
               } catch {
                 // ignore
@@ -316,9 +442,10 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
         // Puzzle fully completed!
         setIsCompleted(true);
         setCoachMessage('Nice, keep that pattern in mind.');
-        setTotalPoints((prev) => {
-          const nextVal = prev + 5;
+        setTotalCoins((prev) => {
+          const nextVal = prev + 10;
           try {
+            localStorage.setItem('pnp_practice_coins', nextVal.toString());
             localStorage.setItem('pnp_practice_xp', nextVal.toString());
           } catch {
             // ignore
@@ -481,17 +608,17 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
         <button
           type="button"
           onClick={onBack}
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 transition shadow-xs cursor-pointer"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:border-white/10 dark:bg-white/5 dark:text-white/80 dark:hover:bg-white/10 transition shadow-xs cursor-pointer"
           title="Back to menu"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
       </div>
 
-      {/* Top Coach Banner matching reference images */}
+      {/* Top Coach Banner matching reference images (high contrast in light & dark modes) */}
       <div className="mb-5 flex items-center gap-3.5">
         <RobotMascot isCelebrating={isCompleted} />
-        <p className="text-sm sm:text-base font-medium text-white/95 leading-snug">
+        <p className="text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-100 leading-snug">
           {coachMessage}
         </p>
       </div>
@@ -514,12 +641,12 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
               customSquareStyles={hintSquareStyles}
               showNotation={true}
               showExternalCoordinates={false}
-              theme="purple"
+              theme={selectedTheme}
             />
           </div>
         </div>
 
-        {/* Right: Minimalist Controls & XP Card matching reference images */}
+        {/* Right: Minimalist Controls, Coin Card & Theme Unlocker */}
         <div className="lg:col-span-4 xl:col-span-4 space-y-4 pt-1">
           {/* Top Actions: Hint button or Completed Next button */}
           {!isCompleted ? (
@@ -528,9 +655,9 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
                 type="button"
                 onClick={handleHintClick}
                 disabled={isOpponentThinking}
-                className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/20 transition shadow-sm cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 px-5 py-2.5 text-sm font-semibold transition shadow-xs cursor-pointer disabled:opacity-50"
               >
-                <Lightbulb className="h-4 w-4 text-amber-400" />
+                <Lightbulb className="h-4 w-4 text-amber-500 dark:text-amber-400" />
                 <span>{hintStage === 0 ? 'Hint' : hintStage === 1 ? 'Show Move' : 'Hint'}</span>
               </button>
             </div>
@@ -541,7 +668,7 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
                 type="button"
                 onClick={handleReset}
                 title="Review / Reset position"
-                className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white hover:bg-white/15 transition cursor-pointer shadow-md"
+                className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 hover:text-slate-900 dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15 transition cursor-pointer shadow-md"
               >
                 <ScanSearch className="h-5 w-5" />
               </button>
@@ -550,48 +677,161 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
               <button
                 type="button"
                 onClick={onNext}
-                className="flex-1 rounded-2xl bg-[#6366f1] hover:bg-[#5255e4] text-white font-bold py-3.5 px-6 shadow-lg shadow-indigo-950/40 cursor-pointer transition text-center text-sm"
+                className="flex-1 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-6 shadow-lg shadow-indigo-950/20 dark:shadow-indigo-950/40 cursor-pointer transition text-center text-sm"
               >
                 Next puzzle
               </button>
             </div>
           )}
 
-          {/* XP Card matching reference images */}
-          <div className="rounded-2xl border border-white/10 bg-[#1e2025] p-4 text-white shadow-md space-y-2.5">
+          {/* Coin Card with Milestones towards Board Unlocks */}
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 text-slate-900 shadow-sm space-y-3 dark:border-white/10 dark:bg-[#1e2025] dark:text-white">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-white/90">
-                <span>XP</span>
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-white/90">
+                <span className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-extrabold">
+                  <Coins className="h-4 w-4 text-amber-500" />
+                  <span>Coins</span>
+                </span>
                 {isCompleted && (
-                  <span className="text-emerald-400 font-extrabold text-xs animate-in zoom-in-75 duration-300">
-                    +5
+                  <span className="text-emerald-600 dark:text-emerald-400 font-extrabold text-xs animate-in zoom-in-75 duration-300">
+                    +10 🪙
                   </span>
                 )}
               </div>
 
-              {/* Level Flag Badge */}
-              <div className="relative flex items-center justify-center">
-                <span className="rounded bg-black/50 px-2 py-0.5 text-xs font-bold text-white border border-white/15 shadow-inner">
-                  {level}
-                </span>
+              {/* Total Coin Badge */}
+              <div className="flex items-center gap-1.5 rounded-xl bg-amber-50 border border-amber-300/80 dark:bg-black/50 dark:border-white/15 px-2.5 py-0.5 text-xs font-extrabold text-amber-800 dark:text-amber-300 shadow-xs">
+                <span>🪙</span>
+                <span className="tabular-nums font-mono">{totalCoins}</span>
               </div>
             </div>
 
-            {/* Glowing Emerald Progress Bar */}
-            <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#12281a] p-0.5">
+            {/* Glowing Emerald-Gold Progress Bar toward Next Board Unlock */}
+            <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-[#12281a] p-0.5 border border-slate-200/60 dark:border-transparent">
               <div
-                className="h-full rounded-full bg-[#10b981] shadow-[0_0_12px_rgba(16,185,129,0.7)] transition-all duration-700 ease-out"
+                className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-teal-400 to-amber-400 shadow-[0_0_12px_rgba(16,185,129,0.7)] transition-all duration-700 ease-out"
                 style={{
                   width: `${progressPercent}%`,
                 }}
               />
             </div>
 
-            {/* Bottom Range */}
-            <div className="flex items-center justify-between text-[11px] font-semibold text-white/60 pt-0.5">
-              <span className="transition-all duration-300 text-white font-bold">{currentLevelXp}</span>
-              <span>{targetLevelXp}</span>
+            {/* Bottom Range: Current coins & Next milestone */}
+            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500 dark:text-white/60 pt-0.5">
+              <span className="transition-all duration-300 text-slate-900 dark:text-white font-bold">
+                {totalCoins} 🪙
+              </span>
+              <span className="text-right">
+                {totalCoins < 800 ? (
+                  <>
+                    Next unlock: <strong className="text-emerald-600 dark:text-emerald-400">{nextMilestone} 🪙</strong> ({nextThemeName})
+                  </>
+                ) : (
+                  <span className="text-amber-600 dark:text-amber-300 font-bold">All Boards Unlocked! 🏆</span>
+                )}
+              </span>
             </div>
+          </div>
+
+          {/* Board Themes Unlock & Equip Selector */}
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4 text-slate-900 shadow-sm dark:border-white/10 dark:bg-[#1e2025] dark:text-white space-y-3">
+            <button
+              type="button"
+              onClick={() => setIsThemePickerOpen((prev) => !prev)}
+              className="flex w-full items-center justify-between cursor-pointer text-left outline-none group"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-white/10 dark:text-emerald-400">
+                  <Palette className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-white/90">
+                      Board Themes
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.2 text-[10px] font-bold text-slate-600 dark:bg-white/10 dark:text-white/70">
+                      {AVAILABLE_BOARD_THEMES.filter((t) => totalCoins >= t.requiredCoins).length}/{AVAILABLE_BOARD_THEMES.length}
+                    </span>
+                  </div>
+                  <p className="text-[11px] font-medium text-slate-500 dark:text-white/60">
+                    Active: <strong className="text-primary-700 dark:text-emerald-400 font-semibold">{currentThemeObj.name}</strong>
+                  </p>
+                </div>
+              </div>
+              <ChevronDown
+                className={`h-4 w-4 text-slate-400 dark:text-white/50 transition-transform duration-200 ${
+                  isThemePickerOpen ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+
+            {/* List of Board Themes with 400, 600, 800 Unlock Milestones */}
+            {isThemePickerOpen && (
+              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/10 animate-in fade-in duration-200">
+                {AVAILABLE_BOARD_THEMES.map((item) => {
+                  const isUnlocked = totalCoins >= item.requiredCoins;
+                  const isActive = selectedTheme === item.id;
+
+                  return (
+                    <div
+                      key={item.id}
+                      className={`flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+                        isActive
+                          ? 'border-emerald-500/50 bg-emerald-50/60 dark:bg-emerald-950/20 dark:border-emerald-500/40'
+                          : isUnlocked
+                          ? 'border-slate-200/80 bg-slate-50/50 hover:bg-slate-100/80 dark:border-white/5 dark:bg-white/5 dark:hover:bg-white/10'
+                          : 'border-dashed border-slate-200 bg-slate-50/30 dark:border-white/5 dark:bg-white/[0.02] opacity-75'
+                      }`}
+                    >
+                      {/* Theme Preview & Name */}
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        {/* 2x2 board color preview swatch */}
+                        <div className="grid grid-cols-2 h-7 w-7 rounded-lg overflow-hidden shrink-0 border border-black/10 dark:border-white/20 shadow-xs">
+                          <div style={{ backgroundColor: item.lightColor }} />
+                          <div style={{ backgroundColor: item.darkColor }} />
+                          <div style={{ backgroundColor: item.darkColor }} />
+                          <div style={{ backgroundColor: item.lightColor }} />
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                            {item.name}
+                          </p>
+                          <p className="text-[10px] text-slate-500 dark:text-white/60 truncate">
+                            {isUnlocked
+                              ? item.subtitle
+                              : `Unlocks at ${item.requiredCoins} 🪙 (need ${item.requiredCoins - totalCoins} more)`}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Action: Active / Equip / Locked */}
+                      <div className="shrink-0 ml-2">
+                        {isActive ? (
+                          <span className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 text-white px-2.5 py-1 text-[11px] font-bold shadow-xs">
+                            <Check className="h-3 w-3" />
+                            Active
+                          </span>
+                        ) : isUnlocked ? (
+                          <button
+                            type="button"
+                            onClick={() => handleEquipTheme(item.id)}
+                            className="inline-flex items-center rounded-lg bg-slate-800 hover:bg-slate-900 text-white dark:bg-white/15 dark:hover:bg-white/25 px-2.5 py-1 text-[11px] font-bold cursor-pointer transition shadow-xs"
+                          >
+                            Equip
+                          </button>
+                        ) : (
+                          <div className="inline-flex items-center gap-1 rounded-lg bg-slate-200/70 dark:bg-black/40 px-2 py-1 text-[10px] font-bold text-slate-500 dark:text-white/40">
+                            <Lock className="h-3 w-3" />
+                            <span>{item.requiredCoins} 🪙</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
