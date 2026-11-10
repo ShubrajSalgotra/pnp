@@ -451,8 +451,8 @@ const DashboardPage: React.FC = () => {
 
   const quickActions = [
     {
-      title: 'Start Practice',
-      description: 'Face rated challenges adapted to your level',
+      title: 'Practice Puzzles',
+      description: 'Practice handpicked chess puzzles based on your level and become a stronger player with every move.',
       href: '/practice',
       icon: Target,
       color: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
@@ -460,8 +460,8 @@ const DashboardPage: React.FC = () => {
       badge: 'Interactive',
     },
     {
-      title: 'Solve Puzzles',
-      description: 'Tactical problems mined from critical game moments',
+      title: 'Learn from Your Games',
+      description: 'Solve puzzles created from your past games and learn from your mistakes.',
       href: '/puzzles',
       icon: Puzzle,
       color: 'bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400',

@@ -1,19 +1,26 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Chess, type Move, type Square } from 'chess.js';
+import type { Arrow } from 'react-chessboard';
 import { auth } from '../services/firebase';
 import { getPracticeStats, recordPracticeResult } from '../services/practiceService';
+import { stockfishService } from '../services/stockfishService';
 import type { PracticePuzzle } from '../types/practice';
 import { ChessboardView, type ChessArrow } from './chess/ChessboardView';
 import { useChessSounds } from '../hooks/useChessSounds';
 import {
   ArrowLeft,
+  BarChart3,
   Check,
+  CheckCircle2,
   ChevronDown,
   Coins,
+  CircleX,
   Lightbulb,
   Lock,
   Palette,
   ScanSearch,
+  Undo2,
+  X,
 } from 'lucide-react';
 
 export type BoardThemeId = 'purple' | 'classic' | 'forest' | 'wood' | 'gold';
@@ -79,23 +86,16 @@ interface PracticePuzzleTrainerProps {
   onNext: () => void;
 }
 
-// Minimalist Mascot Icon matching screenshots (high contrast in light & dark modes)
-const RobotMascot: React.FC<{ isCelebrating?: boolean }> = ({ isCelebrating }) => (
-  <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-900 dark:bg-slate-800 border border-slate-700/20 dark:border-white/15 shadow-sm">
-    <div className="flex items-center justify-center gap-1.5">
-      <span
-        className={`w-1.5 rounded-full bg-white transition-all duration-300 ${
-          isCelebrating ? 'h-1.5' : 'h-3.5'
-        }`}
-      />
-      <span
-        className={`w-1.5 rounded-full bg-white transition-all duration-300 ${
-          isCelebrating ? 'h-1.5' : 'h-3.5'
-        }`}
-      />
-    </div>
-  </div>
-);
+type PuzzleMoveSnapshot = {
+  fen: string;
+  solutionIndex: number;
+  lastMove: { from: string; to: string; toTint?: string } | null;
+};
+
+type PuzzleMoveFeedback = {
+  status: 'wrong' | 'correct';
+  message: string;
+};
 
 const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
   puzzle,
@@ -119,7 +119,12 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
   const [wrongAttempts, setWrongAttempts] = useState(0);
   const [hintsUsed, setHintsUsed] = useState(0);
   const [hintStage, setHintStage] = useState<0 | 1 | 2>(0); // 0 = none, 1 = text hint, 2 = show move arrow
-  const [coachMessage, setCoachMessage] = useState<string>('');
+  const [hintMessage, setHintMessage] = useState('');
+  const [moveFeedback, setMoveFeedback] = useState<PuzzleMoveFeedback | null>(null);
+  const [drawnLineArrows, setDrawnLineArrows] = useState<Arrow[]>([]);
+  const [arrowResetKey, setArrowResetKey] = useState(0);
+  const [isAnalyzingLine, setIsAnalyzingLine] = useState(false);
+  const [lineAnalysisMessage, setLineAnalysisMessage] = useState('');
   const [isOpponentThinking, setIsOpponentThinking] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isMuted] = useState(false);
@@ -209,16 +214,10 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
 
   const opponentTimerRef = useRef<number | null>(null);
   const resultSavedRef = useRef(false);
-
-  // Initial coach message
-  const defaultCoachPrompt = useMemo(() => {
-    return (
-      puzzle.hint1 ||
-      (puzzle.toMove === 'white'
-        ? 'Find the best move for White.'
-        : 'Find the best move for Black.')
-    );
-  }, [puzzle.hint1, puzzle.toMove]);
+  const completedRewardedRef = useRef(false);
+  const engineRequestIdRef = useRef(0);
+  const moveHistoryRef = useRef<PuzzleMoveSnapshot[]>([]);
+  const [moveHistoryLength, setMoveHistoryLength] = useState(0);
 
   // Load user streak and points from Firestore
   useEffect(() => {
@@ -255,15 +254,19 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
     setWrongAttempts(0);
     setHintsUsed(0);
     setHintStage(0);
-    setCoachMessage(
-      puzzle.hint1 ||
-        (puzzle.toMove === 'white'
-          ? 'Not every puzzle ends in checkmate. Can you win a piece here?'
-          : 'Find the best move for Black.')
-    );
+    setHintMessage('');
+    setMoveFeedback(null);
+    setDrawnLineArrows([]);
+    setArrowResetKey((prev) => prev + 1);
+    setIsAnalyzingLine(false);
+    setLineAnalysisMessage('');
+    moveHistoryRef.current = [];
+    setMoveHistoryLength(0);
     setIsOpponentThinking(false);
     setIsCompleted(false);
     resultSavedRef.current = false;
+    completedRewardedRef.current = false;
+    engineRequestIdRef.current += 1;
 
     if (opponentTimerRef.current) {
       window.clearTimeout(opponentTimerRef.current);
@@ -276,6 +279,7 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
       if (opponentTimerRef.current) {
         window.clearTimeout(opponentTimerRef.current);
       }
+      engineRequestIdRef.current += 1;
     };
   }, []);
 
@@ -337,21 +341,23 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
           // Check if solution complete after opponent move
           if (updatedIndex >= puzzle.requiredSolutionUci.length) {
             setIsCompleted(true);
-            setCoachMessage('Nice, keep that pattern in mind.');
-            setTotalCoins((prev) => {
-              const nextVal = prev + 10;
-              try {
-                localStorage.setItem('pnp_practice_coins', nextVal.toString());
-                localStorage.setItem('pnp_practice_xp', nextVal.toString());
-              } catch {
-                // ignore
-              }
-              return nextVal;
-            });
+            setMoveFeedback({ status: 'correct', message: 'Puzzle complete! Great sequence.' });
+            if (!completedRewardedRef.current) {
+              completedRewardedRef.current = true;
+              setTotalCoins((prev) => {
+                const nextVal = prev + 10;
+                try {
+                  localStorage.setItem('pnp_practice_coins', nextVal.toString());
+                  localStorage.setItem('pnp_practice_xp', nextVal.toString());
+                } catch {
+                  // ignore
+                }
+                return nextVal;
+              });
+            }
             void saveCompletedPuzzle(wrongAttempts, hintsUsed);
           } else {
-            // Opponent finished move: Clear thinking status, prompt user to continue
-            setCoachMessage('Your turn to continue the attack!');
+            setMoveFeedback({ status: 'correct', message: 'Good! Now continue the combination.' });
           }
         }
       } catch (err) {
@@ -404,8 +410,7 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
         // Wrong move
         setWrongAttempts((prev) => prev + 1);
         if (!isMuted) playIllegal();
-
-        setCoachMessage('Not quite. Try another move.');
+        setMoveFeedback({ status: 'wrong', message: 'Not quite.' });
 
         setLastMove({
           from,
@@ -416,14 +421,30 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
         setSelectedSquare(null);
         setLegalMoves([]);
 
-        window.setTimeout(() => {
-          setCoachMessage(defaultCoachPrompt);
-        }, 1500);
-
         return false;
       }
 
       // Correct move
+      engineRequestIdRef.current += 1;
+      setIsAnalyzingLine(false);
+      setDrawnLineArrows([]);
+      setLineAnalysisMessage('');
+      setMoveFeedback({
+        status: 'correct',
+        message: 'Correct move!',
+      });
+      moveHistoryRef.current = [
+        ...moveHistoryRef.current,
+        {
+          fen: game.fen(),
+          solutionIndex,
+          lastMove: lastMove?.toTint ? null : lastMove,
+        },
+      ];
+      setMoveHistoryLength(moveHistoryRef.current.length);
+      setHintStage(0);
+      setHintMessage('');
+
       if (!isMuted) {
         if (playedMove.captured) playCapture();
         else if (nextGame.inCheck()) playCheck();
@@ -441,23 +462,26 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
       if (nextIndex >= puzzle.requiredSolutionUci.length) {
         // Puzzle fully completed!
         setIsCompleted(true);
-        setCoachMessage('Nice, keep that pattern in mind.');
-        setTotalCoins((prev) => {
-          const nextVal = prev + 10;
-          try {
-            localStorage.setItem('pnp_practice_coins', nextVal.toString());
-            localStorage.setItem('pnp_practice_xp', nextVal.toString());
-          } catch {
-            // ignore
-          }
-          return nextVal;
-        });
+        setMoveFeedback({ status: 'correct', message: 'Puzzle complete! Great move.' });
+        if (!completedRewardedRef.current) {
+          completedRewardedRef.current = true;
+          setTotalCoins((prev) => {
+            const nextVal = prev + 10;
+            try {
+              localStorage.setItem('pnp_practice_coins', nextVal.toString());
+              localStorage.setItem('pnp_practice_xp', nextVal.toString());
+            } catch {
+              // ignore
+            }
+            return nextVal;
+          });
+        }
         void saveCompletedPuzzle(wrongAttempts, hintsUsed);
         return true;
       }
 
       // Correct move, now opponent replies
-      setCoachMessage('Opponent is responding…');
+      setMoveFeedback({ status: 'correct', message: 'Correct! Your opponent is responding…' });
       setIsOpponentThinking(true);
 
       if (opponentTimerRef.current) {
@@ -470,7 +494,6 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
       return true;
     },
     [
-      defaultCoachPrompt,
       game,
       hintsUsed,
       isCompleted,
@@ -481,6 +504,7 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
       playIllegal,
       playOpponentReply,
       playSoundMove,
+      lastMove,
       puzzle.requiredSolutionUci,
       saveCompletedPuzzle,
       solutionIndex,
@@ -534,47 +558,181 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
   const hintFromSquare = currentExpectedUci ? currentExpectedUci.slice(0, 2) : null;
   const hintToSquare = currentExpectedUci ? currentExpectedUci.slice(2, 4) : null;
 
-  // Hint button click behavior:
-  // Click 1: Display text hint at the top
-  // Click 2: "Show" displays arrow on the board and "There it is. Play the move!" at the top
+  const handleDrawnArrowsChange = (arrows: Arrow[]) => {
+    setDrawnLineArrows(arrows);
+    engineRequestIdRef.current += 1;
+    setIsAnalyzingLine(false);
+    setLineAnalysisMessage('');
+  };
+
   const handleHintClick = () => {
     if (isCompleted || isOpponentThinking) return;
+
+    engineRequestIdRef.current += 1;
+    setIsAnalyzingLine(false);
+    setLineAnalysisMessage('');
 
     if (hintStage === 0) {
       setHintsUsed((prev) => prev + 1);
       setHintStage(1);
-      setCoachMessage(
-        puzzle.hint2 ||
-          `Look closely at the square ${hintFromSquare?.toUpperCase() || ''}. Can you spot the idea?`
+      setHintMessage(
+        puzzle.hint1 ||
+          puzzle.hint2 ||
+          `Look for a move starting from ${hintFromSquare?.toUpperCase() || 'the key square'}.`
       );
     } else {
       setHintStage(2);
-      setCoachMessage('There it is. Play the move!');
+      setHintMessage(
+        `The solution starts with ${hintFromSquare?.toUpperCase()} to ${hintToSquare?.toUpperCase()}. Play the move!`
+      );
     }
   };
 
+  const handleClearLine = () => {
+    engineRequestIdRef.current += 1;
+    setDrawnLineArrows([]);
+    setArrowResetKey((prev) => prev + 1);
+    setIsAnalyzingLine(false);
+    setLineAnalysisMessage('');
+  };
+
+  const handleUndo = () => {
+    const previousPosition = moveHistoryRef.current.pop();
+    if (!previousPosition) return;
+
+    if (opponentTimerRef.current) {
+      window.clearTimeout(opponentTimerRef.current);
+      opponentTimerRef.current = null;
+    }
+
+    engineRequestIdRef.current += 1;
+    setGame(new Chess(previousPosition.fen));
+    setSolutionIndex(previousPosition.solutionIndex);
+    setLastMove(previousPosition.lastMove);
+    setSelectedSquare(null);
+    setLegalMoves([]);
+    setIsOpponentThinking(false);
+    setIsCompleted(false);
+    setHintStage(0);
+    setHintMessage('');
+    setMoveFeedback(null);
+    setDrawnLineArrows([]);
+    setArrowResetKey((prev) => prev + 1);
+    setIsAnalyzingLine(false);
+    setLineAnalysisMessage('');
+    setMoveHistoryLength(moveHistoryRef.current.length);
+  };
+
   const handleReset = () => {
+    if (opponentTimerRef.current) {
+      window.clearTimeout(opponentTimerRef.current);
+      opponentTimerRef.current = null;
+    }
+    engineRequestIdRef.current += 1;
     setGame(new Chess(puzzle.fen));
     setSelectedSquare(null);
     setLegalMoves([]);
     setLastMove(null);
     setSolutionIndex(0);
     setHintStage(0);
-    setCoachMessage(defaultCoachPrompt);
+    setHintMessage('');
+    setMoveFeedback(null);
+    setDrawnLineArrows([]);
+    setArrowResetKey((prev) => prev + 1);
+    setIsAnalyzingLine(false);
+    setLineAnalysisMessage('');
+    moveHistoryRef.current = [];
+    setMoveHistoryLength(0);
     setIsOpponentThinking(false);
     setIsCompleted(false);
-    if (opponentTimerRef.current) {
-      window.clearTimeout(opponentTimerRef.current);
-    }
   };
 
-  // Custom arrows on board: When hintStage === 2 (Show), render vibrant green arrow
+  // Hint arrows are overlays; students draw their own line directly on the board.
   const customArrows = useMemo((): ChessArrow[] => {
     if (hintStage === 2 && hintFromSquare && hintToSquare) {
       return [{ startSquare: hintFromSquare, endSquare: hintToSquare, color: '#34d399' }];
     }
     return [];
   }, [hintFromSquare, hintStage, hintToSquare]);
+
+  const handleAnalyzeLine = async () => {
+    if (isCompleted || isOpponentThinking || isAnalyzingLine) return;
+
+    if (drawnLineArrows.length === 0) {
+      setLineAnalysisMessage('Draw a move line on the board first.');
+      return;
+    }
+
+    const analysisGame = new Chess(game.fen());
+    const lineUci: string[] = [];
+    const lineSan: string[] = [];
+
+    try {
+      drawnLineArrows.forEach(({ startSquare, endSquare }) => {
+        const move = analysisGame.move({
+          from: startSquare as Square,
+          to: endSquare as Square,
+          promotion: 'q',
+        });
+        lineUci.push(`${move.from}${move.to}${move.promotion || ''}`);
+        lineSan.push(move.san);
+      });
+    } catch {
+      setLineAnalysisMessage('That arrow line is not a legal sequence from this position.');
+      return;
+    }
+
+    const requestId = ++engineRequestIdRef.current;
+    const finalFen = analysisGame.fen();
+    setLineAnalysisMessage('');
+    setIsAnalyzingLine(true);
+
+    try {
+      const { evaluation } = await stockfishService.evaluatePosition(finalFen, 12);
+      if (requestId !== engineRequestIdRef.current) return;
+
+      const expectedLine = puzzle.requiredSolutionUci.slice(
+        solutionIndex,
+        solutionIndex + lineUci.length
+      );
+      const followsSolution =
+        expectedLine.length === lineUci.length &&
+        lineUci.every((move, index) => move === expectedLine[index]);
+      let positionEvaluation: string;
+
+      if (Math.abs(evaluation) >= 99000) {
+        const mateIn =
+          evaluation > 0
+            ? Math.max(1, Math.round((100000 - evaluation) / 100))
+            : Math.max(1, Math.round((-100000 - evaluation) / 100));
+        positionEvaluation = `The position leads to mate in ${mateIn} for ${
+          evaluation > 0 ? 'White' : 'Black'
+        }.`;
+      } else if (Math.abs(evaluation) < 25) {
+        positionEvaluation = 'The position is roughly equal.';
+      } else {
+        positionEvaluation = `${evaluation > 0 ? 'White' : 'Black'} is ahead by about ${(
+          Math.abs(evaluation) / 100
+        ).toFixed(1)} pawns after this line.`;
+      }
+
+      setLineAnalysisMessage(
+        `Your line: ${lineSan.join(' ')}. ${
+          followsSolution
+            ? 'It matches the puzzle solution so far.'
+            : 'It does not match the puzzle solution.'
+        } ${positionEvaluation}`
+      );
+    } catch (error: unknown) {
+      if (requestId !== engineRequestIdRef.current) return;
+      console.error('Puzzle line analysis failed:', error);
+      setLineAnalysisMessage('This line could not be analyzed right now. Please try again.');
+    } finally {
+      if (requestId === engineRequestIdRef.current) {
+        setIsAnalyzingLine(false);
+      }
+    }
+  };
 
   // Custom square styles for hints
   const hintSquareStyles = useMemo(() => {
@@ -615,14 +773,6 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
         </button>
       </div>
 
-      {/* Top Coach Banner matching reference images (high contrast in light & dark modes) */}
-      <div className="mb-5 flex items-center gap-3.5">
-        <RobotMascot isCelebrating={isCompleted} />
-        <p className="text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-100 leading-snug">
-          {coachMessage}
-        </p>
-      </div>
-
       {/* Main Grid: Prominent Board on Left, Minimalist Card on Right */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start">
         {/* Left: The Chessboard */}
@@ -634,6 +784,10 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
               isInteractive={!isCompleted && !isOpponentThinking}
               onPieceDrop={handleMoveAttempt}
               onSquareClick={handleSquareClick}
+              onArrowsChange={handleDrawnArrowsChange}
+              allowDrawingArrows={!isCompleted && !isOpponentThinking && !isAnalyzingLine}
+              clearArrowsOnClick={false}
+              arrowResetKey={arrowResetKey}
               lastMove={lastMove}
               selectedSquare={selectedSquare}
               legalTargets={legalTargets}
@@ -648,21 +802,72 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
 
         {/* Right: Minimalist Controls, Coin Card & Theme Unlocker */}
         <div className="lg:col-span-4 xl:col-span-4 space-y-4 pt-1">
-          {/* Top Actions: Hint button or Completed Next button */}
+          <div className="rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-xs leading-relaxed text-slate-600 dark:border-white/10 dark:bg-[#1e2025] dark:text-white/65">
+            Draw a line on the board by right-clicking and dragging from square to square, then analyze your line.
+            {drawnLineArrows.length > 0 && (
+              <span className="ml-1 font-semibold text-slate-800 dark:text-white">
+                {drawnLineArrows.length} {drawnLineArrows.length === 1 ? 'move' : 'moves'} drawn
+              </span>
+            )}
+          </div>
+
+          {/* Puzzle controls */}
           {!isCompleted ? (
-            <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleUndo}
+                disabled={moveHistoryLength === 0}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-xs transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+                title="Go back one solution step"
+              >
+                <Undo2 className="h-4 w-4" />
+                <span>Back</span>
+              </button>
               <button
                 type="button"
                 onClick={handleHintClick}
-                disabled={isOpponentThinking}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 px-5 py-2.5 text-sm font-semibold transition shadow-xs cursor-pointer disabled:opacity-50"
+                disabled={isOpponentThinking || hintStage === 2}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-xs transition hover:bg-slate-50 disabled:opacity-50 dark:border-white/20 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
               >
                 <Lightbulb className="h-4 w-4 text-amber-500 dark:text-amber-400" />
-                <span>{hintStage === 0 ? 'Hint' : hintStage === 1 ? 'Show Move' : 'Hint'}</span>
+                <span>{hintStage === 0 ? 'Hint' : hintStage === 1 ? 'Show Move' : 'Move Shown'}</span>
               </button>
+              <button
+                type="button"
+                onClick={() => void handleAnalyzeLine()}
+                disabled={isOpponentThinking || isAnalyzingLine}
+                className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 shadow-xs transition hover:bg-emerald-100 disabled:cursor-wait disabled:opacity-60 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-200 dark:hover:bg-emerald-400/15"
+              >
+                <BarChart3 className="h-4 w-4" />
+                <span>{isAnalyzingLine ? 'Analyzing line…' : 'Analyze line'}</span>
+              </button>
+              {drawnLineArrows.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearLine}
+                  disabled={isAnalyzingLine}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-600 shadow-xs transition hover:bg-slate-50 disabled:opacity-50 dark:border-white/15 dark:bg-white/5 dark:text-white/75 dark:hover:bg-white/10"
+                  title="Clear your drawn line"
+                >
+                  <X className="h-4 w-4" />
+                  <span>Clear line</span>
+                </button>
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-3 animate-in fade-in duration-300">
+              <button
+                type="button"
+                onClick={handleUndo}
+                disabled={moveHistoryLength === 0}
+                title="Go back one solution step"
+                className="flex h-12 items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 text-slate-700 shadow-md transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-white/15 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+              >
+                <Undo2 className="h-4 w-4" />
+                <span className="text-sm font-semibold">Back</span>
+              </button>
+
               {/* Reset/Inspect Icon Button */}
               <button
                 type="button"
@@ -681,6 +886,64 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
               >
                 Next puzzle
               </button>
+            </div>
+          )}
+
+          {hintMessage && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm leading-relaxed text-amber-950 shadow-sm dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-100">
+              <div className="mb-1 flex items-center gap-2 font-bold">
+                <Lightbulb className="h-4 w-4 shrink-0 text-amber-500" />
+                <span>{hintStage === 2 ? 'Solution hint' : 'Hint'}</span>
+              </div>
+              <p>{hintMessage}</p>
+            </div>
+          )}
+
+          {moveFeedback && (
+            <div
+              role="status"
+              aria-live="polite"
+              className={`rounded-xl border p-3.5 text-sm shadow-sm transition-colors ${
+                moveFeedback.status === 'wrong'
+                  ? 'border-rose-200 bg-white text-slate-800 dark:border-rose-400/25 dark:bg-[#1e2025] dark:text-white'
+                  : 'border-emerald-200 bg-white text-slate-800 dark:border-emerald-400/25 dark:bg-[#1e2025] dark:text-white'
+              }`}
+            >
+              <div className="flex items-start gap-2.5">
+                <span
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
+                    moveFeedback.status === 'wrong'
+                      ? 'bg-rose-100 text-rose-600 dark:bg-rose-400/15 dark:text-rose-300'
+                      : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-300'
+                  }`}
+                >
+                  {moveFeedback.status === 'wrong' ? (
+                    <CircleX className="h-[18px] w-[18px]" />
+                  ) : (
+                    <CheckCircle2 className="h-[18px] w-[18px]" />
+                  )}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold leading-5">
+                    {moveFeedback.status === 'wrong' ? 'Not quite' : moveFeedback.message}
+                  </p>
+                  {moveFeedback.status === 'wrong' && (
+                    <p className="mt-0.5 text-xs leading-5 text-slate-600 dark:text-white/65">
+                      That move doesn’t match the solution. Try again.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {(isAnalyzingLine || lineAnalysisMessage) && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-xs leading-relaxed text-slate-600 shadow-sm dark:border-white/10 dark:bg-[#1e2025] dark:text-white/65"
+            >
+              {isAnalyzingLine ? 'Analyzing the position after your line…' : lineAnalysisMessage}
             </div>
           )}
 

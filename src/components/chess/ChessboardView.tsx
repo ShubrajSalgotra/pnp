@@ -22,6 +22,10 @@ export interface ChessboardViewProps {
   legalTargets?: Array<{ to: string; isCapture?: boolean }>;
   customSquareStyles?: Record<string, React.CSSProperties>;
   customArrows?: ChessArrow[];
+  onArrowsChange?: (arrows: Arrow[]) => void;
+  allowDrawingArrows?: boolean;
+  clearArrowsOnClick?: boolean;
+  arrowResetKey?: number;
   showNotation?: boolean;
   showExternalCoordinates?: boolean;
   animationDuration?: number;
@@ -42,6 +46,10 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
   legalTargets = [],
   customSquareStyles = {},
   customArrows = [],
+  onArrowsChange,
+  allowDrawingArrows = true,
+  clearArrowsOnClick = true,
+  arrowResetKey,
   showNotation = true,
   showExternalCoordinates = false,
   animationDuration = 200,
@@ -203,6 +211,7 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
   const boardContent = (
     <div className="relative h-full w-full rounded-2xl overflow-hidden review-chessboard shadow-2xl ring-1 ring-white/10">
       <Chessboard
+        key={arrowResetKey}
         options={{
           position: fen,
           boardOrientation,
@@ -214,6 +223,9 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
           showNotation,
           squareStyles: computedSquareStyles,
           arrows: normalizedArrows,
+          allowDrawingArrows,
+          clearArrowsOnClick,
+          clearArrowsOnPositionChange: true,
           lightSquareStyle: { backgroundColor: lightColor },
           darkSquareStyle: { backgroundColor: darkColor },
           lightSquareNotationStyle: {
@@ -243,6 +255,9 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
           },
           onPieceDrop: handleDrop,
           onSquareClick: handleSquare,
+          onArrowsChange: onArrowsChange
+            ? ({ arrows }) => onArrowsChange(arrows)
+            : undefined,
         }}
       />
 
