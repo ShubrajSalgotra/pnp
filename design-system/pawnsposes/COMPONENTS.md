@@ -45,6 +45,16 @@
   - Crown turn indicator pill badge ("White to move" / "Black to move").
   - Square rounded icon buttons for Undo, Reset position, Flip board orientation, and Sound mute toggle.
 
+- `src/components/PracticePuzzleTrainer.tsx`
+  - Keeps puzzle hints and move feedback in the right-side controls panel.
+  - Shows only wrong-move feedback after an incorrect move; it does not reveal a suggested move.
+  - Lets students draw a continuous move line on the board and analyze that exact line and its resulting position.
+  - Shows a check icon after a correct solution move.
+  - Provides a Back action that restores the prior student decision position in multi-step puzzles.
+
+- `src/components/chess/ChessboardView.tsx`
+  - Supports opt-in manual arrow drawing and reports the drawn arrows to callers for line analysis.
+
 - `src/components/ui/PawnMascot.tsx`
   - Delightful SVG student mascot character: friendly crowned wooden pawn with rosy cheeks.
   - Configurable mood states (`happy`, `thinking`, `celebrating`) and sizes.

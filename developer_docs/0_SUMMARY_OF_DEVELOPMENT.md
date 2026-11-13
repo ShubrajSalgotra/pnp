@@ -39,6 +39,9 @@ Documents the puzzle trainer UI/UX refinements: internal board coordinates align
 ### 9. [9_COIN_SYSTEM_AND_BOARD_UNLOCKS.md](file:///d:/F%20drive/client%20projects/pnp/pawns-poses-insight/developer_docs/9_COIN_SYSTEM_AND_BOARD_UNLOCKS.md)
 Documents the gamified Coin System, progressive board UI unlocking milestones (400, 600, 800 Coins) enabling students to unlock and equip unique custom chessboard skins (Royal Amethyst, Tournament Green, Emerald Forest, Master Walnut, Obsidian Gold), and fixes for light-mode text readability and board coordinate contrast.
 
+### 10. [10_PUZZLE_MOVE_FEEDBACK_AND_NAVIGATION.md](file:///d:/F%20drive/client%20projects/pnp/pawns-poses-insight/developer_docs/10_PUZZLE_MOVE_FEEDBACK_AND_NAVIGATION.md)
+Documents wrong-move-only feedback, student-drawn line analysis, right-panel hint placement, and undo navigation for multi-step puzzle solutions.
+
 ---
 
 ## 🛠️ General System Architecture & Context
@@ -46,7 +49,7 @@ Documents the gamified Coin System, progressive board UI unlocking milestones (4
 The application is built with a React frontend using `react-chessboard` and a node-based background engine:
 - **Authentication & User Profiles**: Handled via Firebase and synced through context/local providers.
 - **AI Analysis**: Uses Google Gemini models (`gemini-2.5-flash` with dynamic fallback and config downgrades) to generate structured analysis of PGN formats.
-- **Engine Analytics**: Employs Stockfish locally via `stockfishService` to calculate move recommendations and check legal moves.
+- **Engine Analytics**: Employs Stockfish locally via `stockfishService` to calculate move recommendations, check legal moves, and provide puzzle feedback after incorrect moves.
 - **UI/UX Design System**: Visual rules, design overrides, typography, and premium component specs are separate and managed in the [**`design-system/`**](file:///d:/F%20drive/client%20projects/pnp/pawns-poses-insight/design-system) folder.
 
 ---
