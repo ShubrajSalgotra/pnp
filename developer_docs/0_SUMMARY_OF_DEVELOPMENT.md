@@ -42,6 +42,9 @@ Documents the gamified Coin System, progressive board UI unlocking milestones (4
 ### 10. [10_PUZZLE_MOVE_FEEDBACK_AND_NAVIGATION.md](file:///d:/F%20drive/client%20projects/pnp/pawns-poses-insight/developer_docs/10_PUZZLE_MOVE_FEEDBACK_AND_NAVIGATION.md)
 Documents wrong-move-only feedback, student-drawn line analysis, right-panel hint placement, and undo navigation for multi-step puzzle solutions.
 
+### 11. [11_OPPONENT_REPERTOIRE_PRACTICE.md](./11_OPPONENT_REPERTOIRE_PRACTICE.md)
+Documents chunked Firestore persistence for opponent opening repertoires, per-position historical move counts in Practice as Bot, proportional move selection, and Stockfish fallback when the opponent has no recorded continuation.
+
 ---
 
 ## 🛠️ General System Architecture & Context
@@ -50,6 +53,7 @@ The application is built with a React frontend using `react-chessboard` and a no
 - **Authentication & User Profiles**: Handled via Firebase and synced through context/local providers.
 - **AI Analysis**: Uses Google Gemini models (`gemini-2.5-flash` with dynamic fallback and config downgrades) to generate structured analysis of PGN formats.
 - **Engine Analytics**: Employs Stockfish locally via `stockfishService` to calculate move recommendations, check legal moves, and provide puzzle feedback after incorrect moves.
+- **Opponent Practice**: Opponent opening repertoires are aggregated from imported games and stored as private, chunked Firestore subcollections under each user's account. Practice loads and caches the repertoire for the selected opponent; Stockfish handles positions without historical moves.
 - **UI/UX Design System**: Visual rules, design overrides, typography, and premium component specs are separate and managed in the [**`design-system/`**](file:///d:/F%20drive/client%20projects/pnp/pawns-poses-insight/design-system) folder.
 
 ---
