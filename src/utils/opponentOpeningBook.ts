@@ -21,6 +21,22 @@ export function positionKeyFromFen(fen: string): string {
   return fen.split(' ').slice(0, 4).join(' ');
 }
 
+function recordOpponentMove(
+  counts: Map<string, Map<string, number>>,
+  indexedSamples: Set<string>,
+  key: string,
+  san: string
+): boolean {
+  const sampleKey = `${key}\u0000${san}`;
+  if (indexedSamples.has(sampleKey)) return false;
+  indexedSamples.add(sampleKey);
+
+  const bucket = counts.get(key) || new Map<string, number>();
+  bucket.set(san, (bucket.get(san) || 0) + 1);
+  counts.set(key, bucket);
+  return true;
+}
+
 /**
  * Build a frequency opening book from the opponent's moves in their past games.
  * Only indexes moves made by `opponentUsername`.
@@ -41,6 +57,8 @@ export function buildOpponentOpeningBook(
 
     const opponentColor = asWhite ? 'w' : 'b';
     const chess = new Chess();
+    const indexedSamples = new Set<string>();
+    let indexedThisGame = false;
 
     try {
       if (game.pgn) {
@@ -48,7 +66,6 @@ export function buildOpponentOpeningBook(
         const history = chess.history({ verbose: true });
         chess.reset();
 
-        let indexedThisGame = false;
         for (const move of history) {
           const key = positionKeyFromFen(chess.fen());
           const played = chess.move({
@@ -59,11 +76,10 @@ export function buildOpponentOpeningBook(
           if (!played) break;
 
           if (played.color === opponentColor) {
-            const bucket = counts.get(key) || new Map<string, number>();
-            bucket.set(played.san, (bucket.get(played.san) || 0) + 1);
-            counts.set(key, bucket);
-            movesIndexed += 1;
-            indexedThisGame = true;
+            if (recordOpponentMove(counts, indexedSamples, key, played.san)) {
+              movesIndexed += 1;
+              indexedThisGame = true;
+            }
           }
         }
         if (indexedThisGame) gamesUsed += 1;
@@ -72,18 +88,16 @@ export function buildOpponentOpeningBook(
 
       // Fallback: replay SAN move list
       if (!game.moves?.length) continue;
-      let indexedThisGame = false;
       for (const san of game.moves) {
         const key = positionKeyFromFen(chess.fen());
         const turn = chess.turn();
         const played = chess.move(san);
         if (!played) break;
         if (turn === opponentColor) {
-          const bucket = counts.get(key) || new Map<string, number>();
-          bucket.set(played.san, (bucket.get(played.san) || 0) + 1);
-          counts.set(key, bucket);
-          movesIndexed += 1;
-          indexedThisGame = true;
+          if (recordOpponentMove(counts, indexedSamples, key, played.san)) {
+            movesIndexed += 1;
+            indexedThisGame = true;
+          }
         }
       }
       if (indexedThisGame) gamesUsed += 1;
@@ -104,28 +118,24 @@ export function buildOpponentOpeningBook(
 }
 
 /**
- * Weighted sample from book moves. Requires minCount total samples in the position.
- * Returns null when out of book / too sparse.
+ * Sample a historical move in proportion to its observed game count.
+ * Returns null when the opponent has no recorded move from the position.
  */
 export function pickBookMove(
   book: OpponentOpeningBook,
   fen: string,
-  options?: { minSamples?: number; temperature?: number }
+  options?: { minSamples?: number }
 ): { san: string; count: number; total: number } | null {
-  const minSamples = options?.minSamples ?? 2;
-  const temperature = options?.temperature ?? 0.85;
+  const minSamples = options?.minSamples ?? 1;
   const moves = book.positions.get(positionKeyFromFen(fen));
   if (!moves?.length) return null;
 
   const total = moves.reduce((sum, m) => sum + m.count, 0);
   if (total < minSamples) return null;
 
-  // Softmax-ish weighting so the modal move wins often but alternatives appear.
-  const weights = moves.map((m) => Math.pow(m.count, 1 / Math.max(0.35, temperature)));
-  const weightSum = weights.reduce((sum, w) => sum + w, 0);
-  let roll = Math.random() * weightSum;
+  let roll = Math.random() * total;
   for (let i = 0; i < moves.length; i++) {
-    roll -= weights[i];
+    roll -= moves[i].count;
     if (roll <= 0) {
       return { san: moves[i].san, count: moves[i].count, total };
     }
