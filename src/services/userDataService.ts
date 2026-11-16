@@ -7,12 +7,14 @@ import {
   orderBy,
   query,
   setDoc,
+  where,
   writeBatch,
 } from 'firebase/firestore';
 import { deleteObject, getDownloadURL, ref, uploadString } from 'firebase/storage';
 import { db, storage } from './firebase';
 import type { ChessReport } from '../types/report';
 import type { GameAnalysis } from '../types/analysis';
+import type { BookMove, OpponentOpeningBook } from '../utils/opponentOpeningBook';
 import {
   DEFAULT_PUZZLE_PROGRESS,
   DEFAULT_USER_PREFERENCES,
@@ -55,6 +57,21 @@ class UserDataService {
 
   private opponentReportsCollection(userId: string) {
     return collection(db, 'users', userId, 'opponentReports');
+  }
+
+  private opponentOpeningBookCollection(userId: string, reportId: string) {
+    return collection(
+      db,
+      'users',
+      userId,
+      'opponentReports',
+      reportId,
+      'openingBook'
+    );
+  }
+
+  private opponentOpeningBookMetadataRef(userId: string, reportId: string) {
+    return doc(this.opponentOpeningBookCollection(userId, reportId), 'metadata');
   }
 
   private reportsCollection(userId: string) {
@@ -201,6 +218,10 @@ class UserDataService {
       const keepIds = new Set(reports.map((report) => report.id));
       const deletions = existing.docs.filter((item) => !keepIds.has(item.id));
 
+      await Promise.all(
+        deletions.map((item) => this.deleteOpponentOpeningBook(userId, item.id))
+      );
+
       for (let i = 0; i < deletions.length; i += 400) {
         const batch = writeBatch(db);
         deletions.slice(i, i + 400).forEach((item) => batch.delete(item.ref));
@@ -218,6 +239,133 @@ class UserDataService {
       }
     } catch (error) {
       console.error('Error saving opponent reports to Firestore:', error);
+    }
+  }
+
+  async saveOpponentOpeningBook(
+    userId: string,
+    reportId: string,
+    book: OpponentOpeningBook
+  ): Promise<void> {
+    const entries = Array.from(book.positions.entries());
+    const chunks: Array<Record<string, BookMove[]>> = [];
+    for (let i = 0; i < entries.length; i += 200) {
+      chunks.push(Object.fromEntries(entries.slice(i, i + 200)));
+    }
+
+    const existing = await getDocs(this.opponentOpeningBookCollection(userId, reportId));
+    const generation = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+
+    for (let i = 0; i < chunks.length; i += 400) {
+      const batch = writeBatch(db);
+      chunks.slice(i, i + 400).forEach((positions, offset) => {
+        const chunkIndex = i + offset;
+        batch.set(doc(this.opponentOpeningBookCollection(userId, reportId), `${generation}_${chunkIndex}`), {
+          generation,
+          positions,
+        });
+      });
+      await batch.commit();
+    }
+
+    await setDoc(this.opponentOpeningBookMetadataRef(userId, reportId), {
+      version: 1,
+      activeGeneration: generation,
+      chunkCount: chunks.length,
+      gamesUsed: book.gamesUsed,
+      movesIndexed: book.movesIndexed,
+    });
+
+    const staleChunks = existing.docs.filter(
+      (item) => item.id !== 'metadata' && item.data().generation !== generation
+    );
+    for (let i = 0; i < staleChunks.length; i += 400) {
+      const batch = writeBatch(db);
+      staleChunks.slice(i, i + 400).forEach((item) => batch.delete(item.ref));
+      await batch.commit();
+    }
+  }
+
+  async loadOpponentOpeningBook(
+    userId: string,
+    reportId: string
+  ): Promise<OpponentOpeningBook | null> {
+    const metadataSnapshot = await getDoc(
+      this.opponentOpeningBookMetadataRef(userId, reportId)
+    );
+    if (!metadataSnapshot.exists()) return null;
+
+    const data = metadataSnapshot.data() as {
+      version?: unknown;
+      activeGeneration?: unknown;
+      chunkCount?: unknown;
+      gamesUsed?: unknown;
+      movesIndexed?: unknown;
+    };
+    if (
+      data.version !== 1 ||
+      typeof data.activeGeneration !== 'string' ||
+      typeof data.chunkCount !== 'number' ||
+      typeof data.gamesUsed !== 'number' ||
+      typeof data.movesIndexed !== 'number'
+    ) {
+      throw new Error('Saved opponent opening book is invalid.');
+    }
+
+    const positions = new Map<string, BookMove[]>();
+    const chunksSnapshot = await getDocs(
+      query(
+        this.opponentOpeningBookCollection(userId, reportId),
+        where('generation', '==', data.activeGeneration)
+      )
+    );
+
+    for (const chunk of chunksSnapshot.docs) {
+      const chunkData = chunk.data() as { positions?: unknown };
+      if (
+        !chunkData.positions ||
+        typeof chunkData.positions !== 'object' ||
+        Array.isArray(chunkData.positions)
+      ) {
+        throw new Error('Saved opponent opening book is invalid.');
+      }
+
+      for (const [key, moves] of Object.entries(chunkData.positions)) {
+        if (
+          !Array.isArray(moves) ||
+          !moves.every(
+            (move: unknown) =>
+              Boolean(move) &&
+              typeof move === 'object' &&
+              typeof (move as BookMove).san === 'string' &&
+              Number.isInteger((move as BookMove).count) &&
+              (move as BookMove).count > 0
+          )
+        ) {
+          throw new Error('Saved opponent opening book is invalid.');
+        }
+
+        positions.set(key, moves as BookMove[]);
+      }
+    }
+
+    if (chunksSnapshot.size !== data.chunkCount) {
+      throw new Error('Saved opponent opening book is incomplete.');
+    }
+
+    return {
+      positions,
+      gamesUsed: data.gamesUsed,
+      movesIndexed: data.movesIndexed,
+    };
+  }
+
+  async deleteOpponentOpeningBook(userId: string, reportId: string): Promise<void> {
+    const existing = await getDocs(this.opponentOpeningBookCollection(userId, reportId));
+    for (let i = 0; i < existing.docs.length; i += 400) {
+      const batch = writeBatch(db);
+      existing.docs.slice(i, i + 400).forEach((item) => batch.delete(item.ref));
+      await batch.commit();
     }
   }
 
@@ -581,4 +729,3 @@ class UserDataService {
 }
 
 export const userDataService = new UserDataService();
-

@@ -52,6 +52,11 @@
   - Shows a check icon after a correct solution move.
   - Provides a Back action that restores the prior student decision position in multi-step puzzles.
 
+- `src/pages/OpponentPracticePage.tsx`
+  - Shows the selected opponent's recorded replies for the current practice position in the existing right-side panel.
+  - Displays per-move game counts and relative frequency; shows when Stockfish takes over because no historical reply exists.
+  - Uses the established rounded, bordered surface-card treatment and responsive board/sidebar layout.
+
 - `src/components/chess/ChessboardView.tsx`
   - Supports opt-in manual arrow drawing and reports the drawn arrows to callers for line analysis.
 

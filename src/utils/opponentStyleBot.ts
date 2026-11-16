@@ -34,6 +34,7 @@ export function createOpponentStyleBot(
   opponentUsername: string,
   options?: {
     report?: ChessReport | null;
+    book?: OpponentOpeningBook;
     liveRatings?: {
       rapid: number | null;
       blitz: number | null;
@@ -49,7 +50,7 @@ export function createOpponentStyleBot(
   });
 
   return {
-    book: buildOpponentOpeningBook(games, opponentUsername),
+    book: options?.book || buildOpponentOpeningBook(games, opponentUsername),
     opponentUsername,
     targetElo: rating.elo,
     ratingSource: rating.source,
@@ -89,7 +90,7 @@ export async function chooseOpponentStyleMove(
 
   if (probe.isGameOver()) return null;
 
-  const bookPick = pickBookMove(bot.book, fen, { minSamples: 2, temperature: 0.9 });
+  const bookPick = pickBookMove(bot.book, fen);
   if (bookPick) {
     const played = probe.move(bookPick.san);
     if (played) {

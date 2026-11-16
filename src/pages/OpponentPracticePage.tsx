@@ -5,10 +5,16 @@ import { Chessboard } from 'react-chessboard';
 import { ArrowLeft, Loader2, RotateCcw, ChevronLeft, ChevronRight, SkipBack, SkipForward, X } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ChessReport } from '../types/report';
+import { userDataService } from '../services/userDataService';
 import { useChessboardInteraction } from '../hooks/useChessboardInteraction';
 import { useChessSounds } from '../hooks/useChessSounds';
 import { BoardLastMove } from '../utils/chessboardTheme';
 import { loadPracticeOpponent } from '../utils/practiceOpponent';
+import {
+  buildOpponentOpeningBook,
+  positionKeyFromFen,
+  type OpponentOpeningBook,
+} from '../utils/opponentOpeningBook';
 import {
   BotMoveResult,
   OpponentStyleBot,
@@ -49,6 +55,7 @@ const OpponentPracticePage: React.FC = () => {
   const [showResultModal, setShowResultModal] = useState(false);
   const [engineReady, setEngineReady] = useState(false);
   const [engineError, setEngineError] = useState<string | null>(null);
+  const [setupError, setSetupError] = useState<string | null>(null);
 
   const botJobRef = useRef(0);
 
@@ -57,13 +64,47 @@ const OpponentPracticePage: React.FC = () => {
 
     const setup = async () => {
       const loaded = loadPracticeOpponent();
-      if (!loaded?.rawGameData?.length) {
+      if (!loaded) {
         navigate('/analyze', { replace: true });
         return;
       }
 
-      setReport(loaded);
-      const games = loaded.rawGameData as ChessGame[];
+      const games = Array.isArray(loaded.rawGameData)
+        ? (loaded.rawGameData as ChessGame[])
+        : [];
+      let book: OpponentOpeningBook | null = null;
+
+      if (loaded.userId) {
+        try {
+          book = await userDataService.loadOpponentOpeningBook(loaded.userId, loaded.id);
+        } catch (error) {
+          console.error('Failed to load saved opponent repertoire:', error);
+          if (!cancelled) {
+            setEngineError('Saved repertoire could not be loaded; rebuilding it from the imported games.');
+          }
+        }
+      }
+
+      if (!book && games.length > 0) {
+        book = buildOpponentOpeningBook(games, loaded.username);
+        if (loaded.userId) {
+          try {
+            await userDataService.saveOpponentOpeningBook(loaded.userId, loaded.id, book);
+          } catch (error) {
+            console.error('Failed to save opponent repertoire:', error);
+            if (!cancelled) {
+              setEngineError('Using this opponent’s imported games locally; their repertoire could not be saved.');
+            }
+          }
+        }
+      }
+
+      if (!book) {
+        if (!cancelled) {
+          setSetupError('This opponent has no saved repertoire or imported games to practice against.');
+        }
+        return;
+      }
 
       let liveRatings: {
         rapid: number | null;
@@ -80,9 +121,11 @@ const OpponentPracticePage: React.FC = () => {
 
       if (cancelled) return;
 
+      setReport(loaded);
       setBot(
         createOpponentStyleBot(games, loaded.username, {
           report: loaded,
+          book,
           liveRatings,
         })
       );
@@ -295,6 +338,24 @@ const OpponentPracticePage: React.FC = () => {
 
   const tempGame = useMemo(() => new Chess(currentFen), [currentFen]);
   const isPlayerTurn = tempGame.turn() === playerColor;
+  const opponentColor: PlayerColor = playerColor === 'w' ? 'b' : 'w';
+  const opponentBookFen = useMemo(() => {
+    if (tempGame.turn() === opponentColor) return currentFen;
+
+    if (historyIndex > 0) {
+      const previousPosition = history[historyIndex - 1];
+      if (previousPosition && new Chess(previousPosition.fen).turn() === opponentColor) {
+        return previousPosition.fen;
+      }
+    }
+
+    return null;
+  }, [currentFen, history, historyIndex, opponentColor, tempGame]);
+  const opponentBookMoves = useMemo(() => {
+    if (!bot || !opponentBookFen) return [];
+    return bot.book.positions.get(positionKeyFromFen(opponentBookFen)) || [];
+  }, [bot, opponentBookFen]);
+  const opponentBookTotal = opponentBookMoves.reduce((sum, move) => sum + move.count, 0);
 
   const boardEnabled = status === 'playing' && !isBotThinking && (!botActive || isPlayerTurn);
 
@@ -369,6 +430,20 @@ const OpponentPracticePage: React.FC = () => {
       };
     }
   }, []);
+
+  if (setupError) {
+    return (
+      <div className="section-shell flex min-h-[50vh] flex-col items-center justify-center gap-4 py-16">
+        <p role="alert" className="text-center text-sm text-rose-700 dark:text-rose-300">
+          {setupError}
+        </p>
+        <Button type="button" variant="outline" onClick={() => navigate('/analyze')}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Analyze
+        </Button>
+      </div>
+    );
+  }
 
   if (!report || !bot) {
     return (
@@ -543,6 +618,48 @@ const OpponentPracticePage: React.FC = () => {
               </p>
               {lastBotSource && (
                 <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">Last bot move: {lastBotSource}</p>
+              )}
+            </div>
+
+            <div className="rounded-xl border border-primary-100 bg-primary-50/50 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+                Opponent moves in this position
+              </h3>
+              {opponentBookFen ? (
+                opponentBookMoves.length > 0 ? (
+                  <div className="mt-3 max-h-64 space-y-3 overflow-y-auto">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {opponentBookTotal} recorded move sample{opponentBookTotal === 1 ? '' : 's'}
+                    </p>
+                    {opponentBookMoves.map((move) => {
+                      const percentage = Math.round((move.count / opponentBookTotal) * 100);
+                      return (
+                        <div key={move.san}>
+                          <div className="flex items-center justify-between gap-2 text-sm">
+                            <span className="font-semibold text-slate-900 dark:text-white">{move.san}</span>
+                            <span className="text-xs text-slate-600 dark:text-slate-400">
+                              {move.count} game{move.count === 1 ? '' : 's'} · {percentage}%
+                            </span>
+                          </div>
+                          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                            <div
+                              className="h-full rounded-full bg-primary-600 dark:bg-emerald-500"
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-400">
+                    No recorded move from this position. Stockfish will choose the opponent’s reply.
+                  </p>
+                )
+              ) : (
+                <p className="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-400">
+                  Make a move to see the opponent’s recorded replies.
+                </p>
               )}
             </div>
 
