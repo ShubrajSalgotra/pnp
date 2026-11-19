@@ -115,6 +115,24 @@ export function useChessSounds() {
     });
   }, [tone]);
 
+  const playWrong = useCallback(() => {
+    tone(310, 0.16, {
+      type: 'triangle',
+      volume: 0.055,
+      attack: 0.008,
+      release: 0.1,
+      slideTo: 190,
+    });
+    tone(165, 0.18, {
+      type: 'sine',
+      volume: 0.045,
+      attack: 0.008,
+      release: 0.1,
+      delay: 0.12,
+      slideTo: 115,
+    });
+  }, [tone]);
+
   const playSuccess = useCallback(() => {
     tone(523.25, 0.14, { type: 'sine', volume: 0.028, release: 0.08 });
     tone(659.25, 0.16, { type: 'sine', volume: 0.024, delay: 0.1, release: 0.09 });
@@ -149,6 +167,7 @@ export function useChessSounds() {
     playCapture,
     playCheck,
     playIllegal,
+    playWrong,
     playSuccess,
     playFromMove,
   };

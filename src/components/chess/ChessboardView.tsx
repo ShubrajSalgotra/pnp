@@ -6,7 +6,6 @@ import {
   LAST_MOVE_TINT,
   LEGAL_CAPTURE_RING,
   LEGAL_MOVE_DOT,
-  SELECTED_SQUARE_TINT,
 } from '../../utils/chessboardTheme';
 
 export type ChessArrow = Arrow | [string, string, string?];
@@ -15,8 +14,13 @@ export interface ChessboardViewProps {
   fen: string;
   boardOrientation?: 'white' | 'black';
   isInteractive?: boolean;
+  allowPieceDragging?: boolean;
   onPieceDrop?: (sourceSquare: string, targetSquare: string) => boolean;
+  onPieceClick?: (square: string) => void;
   onSquareClick?: (square: string) => void;
+  onBoardMouseDown?: (square: string, event: React.MouseEvent<HTMLDivElement>) => void;
+  onBoardMouseUp?: (square: string, event: React.MouseEvent<HTMLDivElement>) => void;
+  onSquareRightClick?: (square: string) => void;
   lastMove?: { from: string; to: string; toTint?: string } | null;
   selectedSquare?: string | null;
   legalTargets?: Array<{ to: string; isCapture?: boolean }>;
@@ -39,8 +43,13 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
   fen,
   boardOrientation = 'white',
   isInteractive = true,
+  allowPieceDragging = true,
   onPieceDrop,
+  onPieceClick,
   onSquareClick,
+  onBoardMouseDown,
+  onBoardMouseUp,
+  onSquareRightClick,
   lastMove = null,
   selectedSquare = null,
   legalTargets = [],
@@ -147,7 +156,8 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
     if (selectedSquare) {
       styles[selectedSquare] = {
         ...(styles[selectedSquare] || {}),
-        backgroundColor: SELECTED_SQUARE_TINT,
+        backgroundColor: 'rgba(255, 235, 59, 0.62)',
+        boxShadow: 'inset 0 0 0 4px rgba(245, 158, 11, 0.95), inset 0 0 18px rgba(255, 193, 7, 0.7)',
       };
     }
 
@@ -194,9 +204,40 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
     return onPieceDrop(sourceSquare, targetSquare);
   };
 
-  const handleSquare = ({ square }: { square: string }) => {
-    if (!isInteractive || !onSquareClick) return;
+  const handleSquare = ({ square, piece }: { square: string; piece?: unknown }) => {
+    if (!isInteractive || !onSquareClick || (piece && onPieceClick)) return;
     onSquareClick(square);
+  };
+
+  const squareFromPointer = (event: React.MouseEvent<HTMLDivElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const column = Math.max(
+      0,
+      Math.min(7, Math.floor(((event.clientX - bounds.left) / bounds.width) * 8))
+    );
+    const row = Math.max(
+      0,
+      Math.min(7, Math.floor(((event.clientY - bounds.top) / bounds.height) * 8))
+    );
+    const fileIndex = boardOrientation === 'white' ? column : 7 - column;
+    const rank = boardOrientation === 'white' ? 7 - row : row;
+    return `${String.fromCharCode(97 + fileIndex)}${rank + 1}`;
+  };
+
+  const handleBoardMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!isInteractive || event.button !== 0 || !onBoardMouseDown) return;
+    onBoardMouseDown(squareFromPointer(event), event);
+  };
+
+  const handleBoardMouseUp = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!isInteractive || event.button !== 0 || !onBoardMouseUp) return;
+    onBoardMouseUp(squareFromPointer(event), event);
+  };
+
+  const handleBoardContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    if (!isInteractive || !onSquareRightClick) return;
+    onSquareRightClick(squareFromPointer(event));
   };
 
   const ranks =
@@ -209,13 +250,18 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
       : ['h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'];
 
   const boardContent = (
-    <div className="relative h-full w-full rounded-2xl overflow-hidden review-chessboard shadow-2xl ring-1 ring-white/10">
+    <div
+      className="relative h-full w-full rounded-2xl overflow-hidden review-chessboard shadow-2xl ring-1 ring-white/10"
+      onMouseDown={handleBoardMouseDown}
+      onMouseUp={handleBoardMouseUp}
+      onContextMenu={handleBoardContextMenu}
+    >
       <Chessboard
         key={arrowResetKey}
         options={{
           position: fen,
           boardOrientation,
-          allowDragging: isInteractive,
+          allowDragging: isInteractive && allowPieceDragging,
           allowDragOffBoard: false,
           dragActivationDistance: 2,
           animationDurationInMs: animationDuration,
@@ -254,6 +300,11 @@ export const ChessboardView: React.FC<ChessboardViewProps> = ({
             touchAction: 'none',
           },
           onPieceDrop: handleDrop,
+          onPieceClick: onPieceClick
+            ? ({ square }) => {
+                if (isInteractive && square) onPieceClick(square);
+              }
+            : undefined,
           onSquareClick: handleSquare,
           onArrowsChange: onArrowsChange
             ? ({ arrows }) => onArrowsChange(arrows)

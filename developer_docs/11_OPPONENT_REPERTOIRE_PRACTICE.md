@@ -2,7 +2,7 @@
 
 ## Summary
 
-Practice as Bot uses the selected opponent's moves from their analyzed games. The repertoire is aggregated by chess position and stored in chunked, private Firestore subcollection documents, separate from the report document so it does not increase Firestore document size or require Firebase Storage CORS configuration.
+Practice as Bot uses the selected opponent's moves from their full Chess.com/Lichess game archive. The selected recent games drive the Gemini scouting report; the full archive is fetched only after the user chooses a side in Practice, and is replayed locally with chess.js without sending it to Gemini. Only moves by the bot's chosen color are indexed. The resulting position map stays in browser memory for that practice session; returning to Practice fetches the archive again.
 
 ## Behavior
 
@@ -11,24 +11,23 @@ Practice as Bot uses the selected opponent's moves from their analyzed games. Th
 - The practice bot samples historical moves in proportion to their game counts, including moves seen in only one game.
 - Practice displays the historical move counts and their share of recorded move samples for the position from which the opponent is to play.
 - Stockfish is used only when the selected opponent has no recorded move from the current position.
-- Older saved reports without a stored repertoire rebuild it from their imported game data and attempt to save it for future practice.
+- The full archive is not uploaded to Firestore or persisted in browser storage by this flow.
+- Full-history import reports progress and fails visibly if Chess.com cannot provide an archive, rather than silently treating a partial history as complete.
 
-## Storage and Access
+## Storage
 
-- Firestore path: `users/{userId}/opponentReports/{reportId}/openingBook/{chunkId}`
-- Each chunk stores up to 200 position records; a metadata document points to the active generation so a failed update does not replace the last complete repertoire.
-- `firestore.rules` restricts reading and writing the repertoire to its owning user.
-- The repertoire is loaded once when entering Practice as Bot and retained in the in-memory opening book for the session; moves do not trigger Firebase reads.
-- Replacing or deleting an opponent report also removes its opening-book documents.
+- Opponent reports remain saved in Firestore as before; the full-history practice repertoire is not.
+- Legacy `openingBook` Firestore documents are not read, written, or automatically deleted by the current flow; they remain untouched.
+- The fetched games and move counts exist only in memory while the practice page is active. A later visit fetches fresh history.
 
 ## Files
 
 - `src/utils/opponentOpeningBook.ts`
 - `src/utils/opponentStyleBot.ts`
-- `src/services/userDataService.ts`
+- `src/services/opponentRepertoireService.ts`
+- `src/services/gameImport.ts`
 - `src/pages/GameAnalysisPage.tsx`
 - `src/pages/OpponentPracticePage.tsx`
-- `firestore.rules`
 - `src/utils/opponentOpeningBook.test.ts`
 
 ## Verification

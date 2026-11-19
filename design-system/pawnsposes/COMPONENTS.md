@@ -47,8 +47,10 @@
 
 - `src/components/PracticePuzzleTrainer.tsx`
   - Keeps puzzle hints and move feedback in the right-side controls panel.
-  - Shows only wrong-move feedback after an incorrect move; it does not reveal a suggested move.
-  - Lets students draw a continuous move line on the board and analyze that exact line and its resulting position.
+  - Uses click-to-select and click-to-move with a strong selected-piece/legal-target highlight.
+  - Left-drag draws analysis arrows; right-clicking an arrow removes it individually.
+  - Shows prominent wrong-move feedback with board flash, distinct sound, and vibration where supported, without revealing a suggested move.
+  - Lets students analyze a drawn move line and its resulting position.
   - Shows a check icon after a correct solution move.
   - Provides a Back action that restores the prior student decision position in multi-step puzzles.
 

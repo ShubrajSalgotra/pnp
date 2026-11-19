@@ -111,7 +111,8 @@ class GameImportService {
     username: string,
     count = 20,
     rated?: boolean,
-    allGames = false
+    allGames = false,
+    onProgress?: (gamesFetched: number, completedPages?: number, totalPages?: number) => void
   ): Promise<ChessGame[]> {
     const allFetched: ChessGame[] = [];
     const seenIds = new Set<string>();
@@ -175,6 +176,7 @@ class GameImportService {
         allFetched.push(game);
         added += 1;
       }
+      onProgress?.(allFetched.length);
       
       // Page older than the oldest game in this batch (Lichess `until` is exclusive ms).
       const oldest = parsedGames[parsedGames.length - 1];
@@ -255,7 +257,8 @@ class GameImportService {
     username: string,
     count = 20,
     rated?: boolean,
-    allGames = false
+    allGames = false,
+    onProgress?: (gamesFetched: number, completedPages?: number, totalPages?: number) => void
   ): Promise<ChessGame[]> {
     // Get user's current games archive
     const archiveResponse = await fetch(`${CHESS_COM_API_BASE}/player/${username}/games/archives`);
@@ -296,6 +299,14 @@ class GameImportService {
         const gamesResponse = await fetch(archive);
         
         if (!gamesResponse.ok) {
+          if (allGames) {
+            throw new GameImportError(
+              gamesResponse.status === 429
+                ? 'Chess.com rate-limited the full game-history import. Please try again later.'
+                : `Could not fetch a Chess.com game archive (${gamesResponse.status}).`,
+              gamesResponse.status === 429 ? 'RATE_LIMIT' : 'NETWORK_ERROR'
+            );
+          }
           console.warn(`Failed to fetch archive: ${archive}`);
           continue;
         }
@@ -313,6 +324,7 @@ class GameImportService {
         fetchedGames.push(
           ...filteredGames.sort((a: any, b: any) => b.end_time - a.end_time)
         );
+        onProgress?.(fetchedGames.length, archiveIndex + 1, archivesNewestFirst.length);
 
         console.log(
           `Chess.com: ${fetchedGames.length} matching games after ${archiveIndex + 1}/${archivesNewestFirst.length} archives`
@@ -324,6 +336,14 @@ class GameImportService {
         
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
+        if (allGames) {
+          if (error instanceof GameImportError) throw error;
+          throw new GameImportError(
+            'Could not fetch the complete Chess.com game history. Please try again.',
+            'NETWORK_ERROR',
+            error
+          );
+        }
         console.warn(`Error fetching archive ${archive}:`, error);
         continue;
       }
@@ -379,7 +399,7 @@ class GameImportService {
 
   async importGames(request: ImportGameRequest): Promise<ImportGameResponse> {
     try {
-      const { platform, username, count = 20, rated, allGames = false } = request;
+      const { platform, username, count = 20, rated, allGames = false, onProgress } = request;
       
       // Validate count (full-history imports skip the capped limit)
       if (!allGames && count > 500) {
@@ -400,8 +420,8 @@ class GameImportService {
         : Math.max(30000, count * 100);
       
       const importPromise = platform === 'lichess' 
-        ? this.fetchLichessGames(username, count, rated, allGames)
-        : this.fetchChessComGames(username, count, rated, allGames);
+        ? this.fetchLichessGames(username, count, rated, allGames, onProgress)
+        : this.fetchChessComGames(username, count, rated, allGames, onProgress);
       
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => {

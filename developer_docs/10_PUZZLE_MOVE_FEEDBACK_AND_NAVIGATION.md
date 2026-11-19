@@ -8,7 +8,9 @@ Improved the practice puzzle experience with optional multi-move analysis and ri
 
 - Moved tactical hint text from the banner above the board into a card directly below the Hint / Show Move controls.
 - Incorrect legal moves only show a red cross and retry guidance; no move is suggested.
-- Students can draw their own continuous move line on the board using right-click-and-drag arrows, then analyze that exact line.
+- Students can draw their own continuous move line on the board using left-drag arrows, then analyze that exact line.
+- Puzzle moves use click-a-piece then click-a-destination so selection and legal-target highlights are explicit; left-drag draws analysis arrows, and right-clicking an arrow removes it without clearing the full line.
+- Incorrect puzzle moves trigger a red board flash, strong error styling, a distinct sound, and device vibration where supported.
 - The engine replays the drawn moves, validates that the sequence is legal, checks it against the puzzle solution, and evaluates the resulting position without suggesting a move.
 - Correct solution moves show a green check indicator.
 - Added a Back control for multi-step puzzles. It restores the position and solution index from before the student's previous move, including when undoing while an opponent reply is pending.

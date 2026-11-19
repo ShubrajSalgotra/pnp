@@ -244,3 +244,24 @@
 .practice-content-animate {
   animation: practice-modal-content 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
+
+@keyframes puzzle-wrong-flash {
+  0% {
+    background-color: rgba(239, 68, 68, 0.42);
+    opacity: 1;
+  }
+  100% {
+    background-color: rgba(239, 68, 68, 0);
+    opacity: 0;
+  }
+}
+
+.puzzle-wrong-flash {
+  animation: puzzle-wrong-flash 0.55s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .puzzle-wrong-flash {
+    animation-duration: 0.01ms;
+  }
+}

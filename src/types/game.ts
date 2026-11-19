@@ -42,6 +42,8 @@ export interface ImportGameRequest {
   count?: number;
   /** When true, fetch the player's full game history from the platform API. */
   allGames?: boolean;
+  /** Reports the number of games fetched so far during full-history imports. */
+  onProgress?: (gamesFetched: number, completedPages?: number, totalPages?: number) => void;
   rated?: boolean;
   variant?: string;
 }
