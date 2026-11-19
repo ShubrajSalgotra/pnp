@@ -5,15 +5,14 @@ import { Chessboard } from 'react-chessboard';
 import { ArrowLeft, Loader2, RotateCcw, ChevronLeft, ChevronRight, SkipBack, SkipForward, X } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { ChessReport } from '../types/report';
-import { userDataService } from '../services/userDataService';
+import { fetchFullOpponentOpeningBook } from '../services/opponentRepertoireService';
 import { useChessboardInteraction } from '../hooks/useChessboardInteraction';
 import { useChessSounds } from '../hooks/useChessSounds';
 import { BoardLastMove } from '../utils/chessboardTheme';
 import { loadPracticeOpponent } from '../utils/practiceOpponent';
 import {
-  buildOpponentOpeningBook,
+  type ChessColor,
   positionKeyFromFen,
-  type OpponentOpeningBook,
 } from '../utils/opponentOpeningBook';
 import {
   BotMoveResult,
@@ -25,7 +24,7 @@ import { stockfishService } from '../services/stockfishService';
 import { ChessGame } from '../types/game';
 import { fetchOpponentLiveProfile } from '../utils/opponentStats';
 
-type PlayerColor = 'w' | 'b';
+type PlayerColor = ChessColor;
 type GameStatus = 'setup' | 'playing' | 'ended';
 
 const BOT_THINK_DELAY_MS = 450;
@@ -48,104 +47,31 @@ const OpponentPracticePage: React.FC = () => {
   const [historyIndex, setHistoryIndex] = useState(0);
   const [botActive, setBotActive] = useState(true);
   const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>('white');
+  const [rightPanelTab, setRightPanelTab] = useState<'stats' | 'tree'>('stats');
 
   const [isBotThinking, setIsBotThinking] = useState(false);
   const [lastBotSource, setLastBotSource] = useState<string | null>(null);
   const [resultText, setResultText] = useState<string | null>(null);
   const [showResultModal, setShowResultModal] = useState(false);
-  const [engineReady, setEngineReady] = useState(false);
+  const [isPreparing, setIsPreparing] = useState(false);
   const [engineError, setEngineError] = useState<string | null>(null);
   const [setupError, setSetupError] = useState<string | null>(null);
+  const [loadingMessage, setLoadingMessage] = useState('Loading opponent dossier...');
 
   const botJobRef = useRef(0);
+  const setupJobRef = useRef(0);
 
   useEffect(() => {
-    let cancelled = false;
+    const loaded = loadPracticeOpponent();
+    if (!loaded) {
+      navigate('/analyze', { replace: true });
+      return;
+    }
 
-    const setup = async () => {
-      const loaded = loadPracticeOpponent();
-      if (!loaded) {
-        navigate('/analyze', { replace: true });
-        return;
-      }
-
-      const games = Array.isArray(loaded.rawGameData)
-        ? (loaded.rawGameData as ChessGame[])
-        : [];
-      let book: OpponentOpeningBook | null = null;
-
-      if (loaded.userId) {
-        try {
-          book = await userDataService.loadOpponentOpeningBook(loaded.userId, loaded.id);
-        } catch (error) {
-          console.error('Failed to load saved opponent repertoire:', error);
-          if (!cancelled) {
-            setEngineError('Saved repertoire could not be loaded; rebuilding it from the imported games.');
-          }
-        }
-      }
-
-      if (!book && games.length > 0) {
-        book = buildOpponentOpeningBook(games, loaded.username);
-        if (loaded.userId) {
-          try {
-            await userDataService.saveOpponentOpeningBook(loaded.userId, loaded.id, book);
-          } catch (error) {
-            console.error('Failed to save opponent repertoire:', error);
-            if (!cancelled) {
-              setEngineError('Using this opponent’s imported games locally; their repertoire could not be saved.');
-            }
-          }
-        }
-      }
-
-      if (!book) {
-        if (!cancelled) {
-          setSetupError('This opponent has no saved repertoire or imported games to practice against.');
-        }
-        return;
-      }
-
-      let liveRatings: {
-        rapid: number | null;
-        blitz: number | null;
-        bullet: number | null;
-      } | null = null;
-
-      try {
-        const live = await fetchOpponentLiveProfile(loaded.platform, loaded.username);
-        liveRatings = live.ratings;
-      } catch {
-        // fall back to game/report ratings
-      }
-
-      if (cancelled) return;
-
-      setReport(loaded);
-      setBot(
-        createOpponentStyleBot(games, loaded.username, {
-          report: loaded,
-          book,
-          liveRatings,
-        })
-      );
-
-      try {
-        await stockfishService.init();
-        if (!cancelled) setEngineReady(true);
-      } catch (error) {
-        console.error(error);
-        if (!cancelled) {
-          setEngineError('Engine failed to start. Book moves still work; middlegame may be limited.');
-          setEngineReady(true);
-        }
-      }
-    };
-
-    void setup();
+    setReport(loaded);
 
     return () => {
-      cancelled = true;
+      setupJobRef.current += 1;
       botJobRef.current += 1;
       void stockfishService.clearStrengthLimit().catch(() => undefined);
     };
@@ -214,6 +140,9 @@ const OpponentPracticePage: React.FC = () => {
           isCheck: game.inCheck(),
           isCheckmate: game.isCheckmate(),
         });
+        if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+          navigator.vibrate(12);
+        }
 
         if (game.isGameOver()) {
           setStatus('ended');
@@ -227,29 +156,104 @@ const OpponentPracticePage: React.FC = () => {
     [bot, describeResult, playFromMove]
   );
 
+  const resetGame = useCallback((color: PlayerColor) => {
+    botJobRef.current += 1;
+    const fresh = new Chess();
+    setPlayerColor(color);
+    setBoardOrientation(color === 'w' ? 'white' : 'black');
+
+    const initialHistory = [{ fen: fresh.fen(), lastMove: null, san: null }];
+    setHistory(initialHistory);
+    setHistoryIndex(0);
+
+    setLastBotSource(null);
+    setResultText(null);
+    setShowResultModal(false);
+    setStatus('playing');
+    void stockfishService.newGame().catch(() => undefined);
+  }, []);
+
   const startGame = useCallback(
     (color: PlayerColor) => {
       if (!bot) return;
-      botJobRef.current += 1;
-      const fresh = new Chess();
-      setPlayerColor(color);
-      setBoardOrientation(color === 'w' ? 'white' : 'black');
-      
-      const initialHistory = [{ fen: fresh.fen(), lastMove: null, san: null }];
-      setHistory(initialHistory);
-      setHistoryIndex(0);
-      
-      setLastBotSource(null);
-      setResultText(null);
-      setShowResultModal(false);
-      setStatus('playing');
-      void stockfishService.newGame().catch(() => undefined);
+      resetGame(color);
+    },
+    [bot, resetGame]
+  );
 
-      if (color === 'b') {
-        void applyBotMove(color, initialHistory);
+  const prepareGame = useCallback(
+    async (color: PlayerColor) => {
+      if (!report || isPreparing) return;
+
+      const jobId = ++setupJobRef.current;
+      const opponentColor: PlayerColor = color === 'w' ? 'b' : 'w';
+      setIsPreparing(true);
+      setSetupError(null);
+      setEngineError(null);
+      setBot(null);
+      setLoadingMessage(`Fetching ${report.username}'s full game history...`);
+
+      const engineTask = stockfishService.init().then(
+        () => ({ ready: true as const }),
+        (error: unknown) => ({ ready: false as const, error })
+      );
+      const ratingsTask = fetchOpponentLiveProfile(report.platform, report.username)
+        .then((profile) => profile.ratings)
+        .catch((error: unknown) => {
+          console.warn('Could not load live opponent ratings; using saved game ratings.', error);
+          return null;
+        });
+
+      try {
+        const [book, liveRatings, engine] = await Promise.all([
+          fetchFullOpponentOpeningBook(
+            report.platform,
+            report.username,
+            (gamesFetched, completedPages, totalPages) => {
+              if (setupJobRef.current !== jobId) return;
+              setLoadingMessage(
+                totalPages
+                  ? `Fetched ${gamesFetched} games (${completedPages}/${totalPages} archives)...`
+                  : `Fetched ${gamesFetched} games; preparing ${opponentColor === 'w' ? 'White' : 'Black'} moves...`
+              );
+            },
+            opponentColor
+          ),
+          ratingsTask,
+          engineTask,
+        ]);
+        if (setupJobRef.current !== jobId) return;
+
+        if (!engine.ready) {
+          console.error('Stockfish failed to start:', engine.error);
+          setEngineError('Stockfish could not start. Historical moves still work; other positions may use a fallback move.');
+        }
+
+        const games = Array.isArray(report.rawGameData)
+          ? (report.rawGameData as ChessGame[])
+          : [];
+        setBot(
+          createOpponentStyleBot(games, report.username, {
+            report,
+            book,
+            liveRatings,
+          })
+        );
+        resetGame(color);
+      } catch (error) {
+        console.error('Could not prepare full opponent repertoire:', error);
+        if (setupJobRef.current === jobId) {
+          setSetupError(
+            error instanceof Error
+              ? `Could not fetch the full game history: ${error.message}`
+              : 'Could not fetch the full game history. Please try again later.'
+          );
+        }
+      } finally {
+        if (setupJobRef.current === jobId) setIsPreparing(false);
       }
     },
-    [applyBotMove, bot]
+    [isPreparing, report, resetGame]
   );
 
   const handlePlayerMove = useCallback(
@@ -406,6 +410,27 @@ const OpponentPracticePage: React.FC = () => {
   const stepBack = () => goToMove(historyIndex - 1);
   const stepForward = () => goToMove(historyIndex + 1);
 
+  useEffect(() => {
+    if (status !== 'playing' && status !== 'ended') return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.altKey || event.ctrlKey || event.metaKey || isBotThinking) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.isContentEditable || target?.closest('input, textarea, select, [contenteditable="true"]')) return;
+
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        setHistoryIndex((index) => Math.max(0, index - 1));
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        setHistoryIndex((index) => Math.min(history.length - 1, index + 1));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [history.length, isBotThinking, status]);
+
   const getGameOutcome = useCallback((outcomeText: string | null) => {
     if (!outcomeText) return { type: 'draw', title: 'Game Over', subtitle: '' };
     
@@ -431,31 +456,26 @@ const OpponentPracticePage: React.FC = () => {
     }
   }, []);
 
-  if (setupError) {
+  if (!report) {
     return (
-      <div className="section-shell flex min-h-[50vh] flex-col items-center justify-center gap-4 py-16">
-        <p role="alert" className="text-center text-sm text-rose-700 dark:text-rose-300">
-          {setupError}
-        </p>
-        <Button type="button" variant="outline" onClick={() => navigate('/analyze')}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Analyze
-        </Button>
-      </div>
-    );
-  }
-
-  if (!report || !bot) {
-    return (
-      <div className="section-shell flex min-h-[50vh] items-center justify-center py-16">
+      <div className="section-shell flex min-h-[50vh] flex-col items-center justify-center gap-3 py-16">
         <Loader2 className="h-6 w-6 animate-spin text-primary-600" />
+        <p className="max-w-md text-center text-sm text-slate-600 dark:text-slate-400">
+          Loading opponent dossier…
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="section-shell space-y-8 py-8">
-      <section className="aurora-panel">
+    <div
+      className={`section-shell ${
+        status === 'setup'
+          ? 'space-y-8 py-8'
+          : 'space-y-3 py-0 lg:flex lg:h-[calc(100dvh-8rem)] lg:flex-col lg:gap-10 lg:overflow-hidden lg:space-y-0'
+      }`}
+    >
+      <section className={`aurora-panel ${status === 'setup' ? '' : 'lg:shrink-0'}`}>
         <button
           type="button"
           onClick={() => navigate('/analyze')}
@@ -464,26 +484,26 @@ const OpponentPracticePage: React.FC = () => {
           <ArrowLeft className="h-4 w-4" />
           Back to dossiers
         </button>
-        <p className="mt-4 text-xs font-semibold uppercase tracking-[0.18em] text-primary-700 dark:text-primary-300">
+        <p className={`text-xs font-semibold uppercase tracking-[0.18em] text-primary-700 dark:text-primary-300 ${status === 'setup' ? 'mt-4' : 'mt-1'}`}>
           Practice
         </p>
-        <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">
+        <h1 className={`font-display font-semibold tracking-tight text-slate-900 dark:text-white ${status === 'setup' ? 'mt-2 text-3xl' : 'mt-0.5 text-2xl'}`}>
           vs {report.username}
         </h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-400">
-          Plays their openings from {bot.book.gamesUsed} games ({bot.book.movesIndexed} moves indexed).
-          Out of book, the engine aims for about {bot.targetElo} Elo
-          {bot.ratingSource === 'live'
-            ? ' (their live rating)'
-            : bot.ratingSource === 'games'
-              ? ' (from recent games)'
-              : bot.ratingSource === 'report'
-                ? ' (from the report estimate)'
-                : ''}
-          {bot.targetElo < 1320
-            ? ' — Stockfish’s floor is 1320, so we add extra weaker moves to match lower ratings.'
-            : ''}
-          .
+        <p className={`max-w-2xl text-slate-600 dark:text-slate-400 ${status === 'setup' ? 'mt-2 text-sm leading-6' : 'mt-1 line-clamp-1 text-xs leading-4'}`}>
+          {bot
+            ? `Opponent moves indexed from ${bot.book.gamesUsed} of ${bot.book.gamesScanned ?? bot.book.gamesUsed} games as ${opponentColor === 'w' ? 'White' : 'Black'} (${bot.book.movesIndexed} moves). Stockfish fills positions with no history.`
+            : 'Choose your color first. We’ll fetch the complete game history for the side the bot will play.'}
+          {bot &&
+            ` Out of book, the engine aims for about ${bot.targetElo} Elo${
+              bot.ratingSource === 'live'
+                ? ' (their live rating)'
+                : bot.ratingSource === 'games'
+                  ? ' (from recent games)'
+                  : bot.ratingSource === 'report'
+                    ? ' (from the report estimate)'
+                    : ''
+            }${bot.targetElo < 1320 ? ' — Stockfish’s floor is 1320, so we add extra weaker moves to match lower ratings.' : ''}.`}
         </p>
         {engineError && (
           <p className="mt-3 text-sm text-amber-800 dark:text-amber-200">{engineError}</p>
@@ -491,69 +511,90 @@ const OpponentPracticePage: React.FC = () => {
       </section>
 
       {status === 'setup' ? (
-        <section className="mx-auto max-w-lg space-y-6">
-          <div>
-            <h2 className="font-display text-xl font-semibold text-slate-900 dark:text-white">
-              Choose your color
+        <section className="mx-auto max-w-3xl space-y-6 rounded-3xl border border-primary-100 bg-gradient-to-br from-white via-primary-50/60 to-white p-6 shadow-sm dark:border-slate-800 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 sm:p-8">
+          <div className="mx-auto max-w-xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700 dark:text-primary-300">
+              Set up your match
+            </p>
+            <h2 className="mt-2 font-display text-2xl font-semibold text-slate-900 dark:text-white">
+              Which side would you like to play?
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-              Face their White repertoire as Black, or their Black repertoire as White.
+              We’ll fetch {report.username}’s games now and make the bot follow their moves for the opposite color.
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             <button
               type="button"
-              disabled={!engineReady}
-              onClick={() => startGame('w')}
-              className="cursor-pointer rounded-xl border border-primary-200/80 bg-white px-4 py-5 text-left transition-colors duration-200 hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900"
+              disabled={isPreparing}
+              onClick={() => void prepareGame('w')}
+              className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-primary-200 bg-white p-5 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary-400 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-primary-500"
             >
-              <p className="font-display text-lg font-semibold text-slate-900 dark:text-white">Play White</p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                Bot uses their Black openings
-              </p>
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-2xl text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-white" aria-hidden="true">♙</span>
+              <span>
+                <span className="block font-display text-lg font-semibold text-slate-900 dark:text-white">Play as White</span>
+                <span className="mt-1 block text-sm text-slate-600 dark:text-slate-400">
+                  Bot plays Black, using {report.username}’s Black games
+                </span>
+              </span>
             </button>
             <button
               type="button"
-              disabled={!engineReady}
-              onClick={() => startGame('b')}
-              className="cursor-pointer rounded-xl border border-primary-200/80 bg-white px-4 py-5 text-left transition-colors duration-200 hover:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900"
+              disabled={isPreparing}
+              onClick={() => void prepareGame('b')}
+              className="group flex cursor-pointer items-center gap-4 rounded-2xl border border-primary-200 bg-white p-5 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-primary-400 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 disabled:cursor-wait disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-primary-500"
             >
-              <p className="font-display text-lg font-semibold text-slate-900 dark:text-white">Play Black</p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-                Bot uses their White openings
-              </p>
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-slate-700 bg-slate-800 text-2xl text-white dark:border-slate-500 dark:bg-slate-700" aria-hidden="true">♟</span>
+              <span>
+                <span className="block font-display text-lg font-semibold text-slate-900 dark:text-white">Play as Black</span>
+                <span className="mt-1 block text-sm text-slate-600 dark:text-slate-400">
+                  Bot plays White, using {report.username}’s White games
+                </span>
+              </span>
             </button>
           </div>
-          {!engineReady && (
-            <p className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+          {isPreparing && (
+            <p role="status" className="flex items-center justify-center gap-2 text-sm font-medium text-primary-700 dark:text-primary-300">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Starting engine…
+              {loadingMessage}
+            </p>
+          )}
+          {setupError && (
+            <p role="alert" className="text-center text-sm text-rose-700 dark:text-rose-300">
+              {setupError}
             </p>
           )}
         </section>
       ) : (
-        <section className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start">
-          <div>
-            <div className="relative mx-auto aspect-square max-w-xl">
-              <div className="review-chessboard h-full w-full overflow-hidden rounded-sm border border-[#8b5a2b]/70 shadow-elevated">
-                <Chessboard
-                  options={{
-                    ...boardOptions,
-                    boardOrientation: boardOrientation,
-                  }}
-                />
-              </div>
-              {isBotThinking && (
-                <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
-                  <span className="rounded-lg bg-white/95 px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm dark:bg-slate-900/95 dark:text-slate-200">
-                    {report.username} is thinking…
-                  </span>
+        <section className="grid gap-4 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1.4fr)_25rem] lg:items-stretch">
+          <div className="flex min-h-0 flex-col mt- gap-3 lg:mt-0">
+            <div className="relative mx-auto flex min-h-0 w-full flex-1 items-center justify-center">
+              <div
+                className="relative aspect-square max-w-full"
+                style={{ width: 'min(100%, calc(100dvh - 17rem))' }}
+              >
+                <div className="review-chessboard h-full w-full overflow-hidden rounded-sm border border-[#8b5a2b]/70 shadow-elevated">
+                  <Chessboard
+                    options={{
+                      ...boardOptions,
+                      boardOrientation: boardOrientation,
+                    }}
+                  />
                 </div>
-              )}
+                {isBotThinking && (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
+                    <span className="animate-pulse rounded-lg bg-white/95 px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm dark:bg-slate-900/95 dark:text-slate-200">
+                      {report.username} is thinking…
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Navigation Controls */}
-            <div className="mt-4 flex items-center justify-center gap-1.5">
+           
+
+           <div className=" mt-5 flex shrink-0 items-center justify-center gap-1.5">
               <button
                 type="button"
                 onClick={() => goToMove(0)}
@@ -568,7 +609,7 @@ const OpponentPracticePage: React.FC = () => {
                 onClick={stepBack}
                 disabled={historyIndex === 0 || isBotThinking}
                 className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-primary-200 text-slate-700 transition hover:bg-primary-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
-                aria-label="Previous"
+                aria-label="Previous move (left arrow key)"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -585,7 +626,7 @@ const OpponentPracticePage: React.FC = () => {
                 onClick={stepForward}
                 disabled={historyIndex === history.length - 1 || isBotThinking}
                 className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl border border-primary-200 text-slate-700 transition hover:bg-primary-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800"
-                aria-label="Next"
+                aria-label="Next move (right arrow key)"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
@@ -599,13 +640,10 @@ const OpponentPracticePage: React.FC = () => {
                 <SkipForward className="h-4 w-4" />
               </button>
             </div>
-            <p className="mt-2 text-center text-xs text-slate-500 dark:text-slate-400">
-              Analysis Mode: Drag/drop to play moves. Making a move at a past position forks a new line.
-            </p>
           </div>
 
-          <aside className="space-y-6">
-            <div>
+          <aside className="flex min-h-0 flex-col gap-3 lg:min-h-0">
+            <div className="shrink-0">
               <p className="text-xs uppercase tracking-[0.16em] text-primary-700 dark:text-primary-300">
                 Status
               </p>
@@ -621,49 +659,123 @@ const OpponentPracticePage: React.FC = () => {
               )}
             </div>
 
-            <div className="rounded-xl border border-primary-100 bg-primary-50/50 p-4 dark:border-slate-800 dark:bg-slate-900/40">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-                Opponent moves in this position
-              </h3>
-              {opponentBookFen ? (
-                opponentBookMoves.length > 0 ? (
-                  <div className="mt-3 max-h-64 space-y-3 overflow-y-auto">
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      {opponentBookTotal} recorded move sample{opponentBookTotal === 1 ? '' : 's'}
-                    </p>
-                    {opponentBookMoves.map((move) => {
-                      const percentage = Math.round((move.count / opponentBookTotal) * 100);
-                      return (
-                        <div key={move.san}>
-                          <div className="flex items-center justify-between gap-2 text-sm">
-                            <span className="font-semibold text-slate-900 dark:text-white">{move.san}</span>
-                            <span className="text-xs text-slate-600 dark:text-slate-400">
-                              {move.count} game{move.count === 1 ? '' : 's'} · {percentage}%
-                            </span>
-                          </div>
-                          <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-                            <div
-                              className="h-full rounded-full bg-primary-600 dark:bg-emerald-500"
-                              style={{ width: `${percentage}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-400">
-                    No recorded move from this position. Stockfish will choose the opponent’s reply.
-                  </p>
-                )
-              ) : (
-                <p className="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-400">
-                  Make a move to see the opponent’s recorded replies.
-                </p>
-              )}
+            <div className="grid shrink-0 grid-cols-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-800" role="tablist" aria-label="Practice details">
+              <button
+                type="button"
+                role="tab"
+                aria-controls="practice-move-stats"
+                aria-selected={rightPanelTab === 'stats'}
+                onClick={() => setRightPanelTab('stats')}
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                  rightPanelTab === 'stats'
+                    ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-950 dark:text-white'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                }`}
+              >
+                Move stats
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-controls="practice-play-tree"
+                aria-selected={rightPanelTab === 'tree'}
+                onClick={() => setRightPanelTab('tree')}
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                  rightPanelTab === 'tree'
+                    ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-950 dark:text-white'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
+                }`}
+              >
+                Play tree
+              </button>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            {rightPanelTab === 'stats' ? (
+              <div id="practice-move-stats" role="tabpanel" className="min-h-[12rem] flex-1 overflow-y-auto rounded-xl border border-primary-100 bg-primary-50/50 p-4 dark:border-slate-800 dark:bg-slate-900/40 lg:min-h-0">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+                  {report.username}’s {opponentColor === 'w' ? 'White' : 'Black'} moves here
+                </h3>
+                {opponentBookFen ? (
+                  opponentBookMoves.length > 0 ? (
+                    <div className="mt-3 space-y-3">
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {opponentBookTotal} recorded move sample{opponentBookTotal === 1 ? '' : 's'}
+                      </p>
+                      {opponentBookMoves.map((move) => {
+                        const percentage = Math.round((move.count / opponentBookTotal) * 100);
+                        return (
+                          <div key={move.san}>
+                            <div className="flex items-center justify-between gap-2 text-sm">
+                              <span className="font-semibold text-slate-900 dark:text-white">{move.san}</span>
+                              <span className="text-xs text-slate-600 dark:text-slate-400">
+                                {move.count} game{move.count === 1 ? '' : 's'} · {percentage}%
+                              </span>
+                            </div>
+                            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                              <div
+                                className="h-full rounded-full bg-primary-600 dark:bg-emerald-500"
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-400">
+                      No recorded move from this position. Stockfish will choose the opponent’s reply.
+                    </p>
+                  )
+                ) : (
+                  <p className="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-400">
+                    Make a move to see the opponent’s recorded replies.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div id="practice-play-tree" role="tabpanel" className="min-h-[12rem] flex-1 overflow-y-auto rounded-xl border border-primary-100 bg-white p-3 dark:border-slate-800 dark:bg-slate-900/40 lg:min-h-0">
+                <h3 className="mb-2 text-sm font-semibold text-slate-900 dark:text-white">Play tree</h3>
+                {movePairs.length === 0 ? (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">No moves yet.</p>
+                ) : (
+                  <div className="space-y-1 text-sm">
+                    {movePairs.map((pair) => (
+                      <div key={pair.number} className="grid grid-cols-[2rem_1fr_1fr] items-center gap-2 py-0.5 text-slate-700 dark:text-slate-300">
+                        <span className="text-slate-400">{pair.number}.</span>
+                        {pair.white ? (
+                          <button
+                            type="button"
+                            onClick={() => goToMove(pair.white!.index)}
+                            className={`cursor-pointer rounded px-1.5 py-0.5 text-left font-medium transition-colors ${
+                              historyIndex === pair.white.index
+                                ? 'bg-primary-100 text-primary-900 dark:bg-primary-950/70 dark:text-primary-200'
+                                : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            {pair.white.san}
+                          </button>
+                        ) : <span />}
+                        {pair.black ? (
+                          <button
+                            type="button"
+                            onClick={() => goToMove(pair.black!.index)}
+                            className={`cursor-pointer rounded px-1.5 py-0.5 text-left font-medium transition-colors ${
+                              historyIndex === pair.black.index
+                                ? 'bg-primary-100 text-primary-900 dark:bg-primary-950/70 dark:text-primary-200'
+                                : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            {pair.black.san}
+                          </button>
+                        ) : <span />}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex shrink-0 flex-wrap gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -679,7 +791,9 @@ const OpponentPracticePage: React.FC = () => {
                 onClick={() => {
                   botJobRef.current += 1;
                   setStatus('setup');
+                  setBot(null);
                   setIsBotThinking(false);
+                  setSetupError(null);
                 }}
                 className="cursor-pointer"
               >
@@ -688,7 +802,7 @@ const OpponentPracticePage: React.FC = () => {
             </div>
 
             {/* Bot active toggle */}
-            <div className="rounded-xl border border-primary-100 bg-primary-50/50 p-4 dark:border-slate-800 dark:bg-slate-900/40">
+            <div className="shrink-0 rounded-xl border border-primary-100 bg-primary-50/50 p-3 dark:border-slate-800 dark:bg-slate-900/40">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Bot Responses</h3>
@@ -714,47 +828,6 @@ const OpponentPracticePage: React.FC = () => {
               </div>
             </div>
 
-            <div>
-              <p className="text-xs uppercase tracking-[0.16em] text-primary-700 dark:text-primary-300">
-                Moves
-              </p>
-              <div className="mt-3 max-h-72 space-y-1 overflow-y-auto text-sm">
-                {movePairs.length === 0 && (
-                  <p className="text-slate-500 dark:text-slate-400">No moves yet.</p>
-                )}
-                {movePairs.map((pair) => (
-                  <div key={pair.number} className="grid grid-cols-[2rem_1fr_1fr] gap-2 text-slate-700 dark:text-slate-300 items-center py-0.5">
-                    <span className="text-slate-400">{pair.number}.</span>
-                    {pair.white && (
-                      <button
-                        type="button"
-                        onClick={() => goToMove(pair.white!.index)}
-                        className={`px-1.5 py-0.5 rounded text-left transition-colors font-medium cursor-pointer ${
-                          historyIndex === pair.white.index
-                            ? 'bg-primary-100 text-primary-900 dark:bg-primary-950/70 dark:text-primary-200'
-                            : 'hover:bg-slate-100 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        {pair.white.san}
-                      </button>
-                    )}
-                    {pair.black && (
-                      <button
-                        type="button"
-                        onClick={() => goToMove(pair.black!.index)}
-                        className={`px-1.5 py-0.5 rounded text-left transition-colors font-medium cursor-pointer ${
-                          historyIndex === pair.black.index
-                            ? 'bg-primary-100 text-primary-900 dark:bg-primary-950/70 dark:text-primary-200'
-                            : 'hover:bg-slate-100 dark:hover:bg-slate-800'
-                        }`}
-                      >
-                        {pair.black.san}
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
           </aside>
         </section>
       )}
@@ -824,8 +897,12 @@ const OpponentPracticePage: React.FC = () => {
                   type="button"
                   variant="outline"
                   onClick={() => {
+                    botJobRef.current += 1;
                     setStatus('setup');
+                    setBot(null);
+                    setIsBotThinking(false);
                     setShowResultModal(false);
+                    setSetupError(null);
                   }}
                   className="w-full justify-center py-2.5"
                 >

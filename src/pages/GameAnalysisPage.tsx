@@ -13,7 +13,6 @@ import { userDataService } from '../services/userDataService';
 import { profileAnalysisService } from '../services/profileAnalysisService';
 import OpponentDashboardPopup from '../components/OpponentDashboardPopup';
 import { persistPracticeOpponent } from '../utils/practiceOpponent';
-import { buildOpponentOpeningBook } from '../utils/opponentOpeningBook';
 import { useNavigate } from 'react-router-dom';
 
 const GameAnalysisPage: React.FC = () => {
@@ -87,20 +86,13 @@ const GameAnalysisPage: React.FC = () => {
         ...report,
         userId: currentUser.id,
       });
-      const openingBook = buildOpponentOpeningBook(
-        normalizedReport.rawGameData,
-        normalizedReport.username
-      );
-      await userDataService.saveOpponentOpeningBook(
-        currentUser.id,
-        normalizedReport.id,
-        openingBook
-      );
       const nextReports = await userDataService.upsertOpponentReport(currentUser.id, normalizedReport);
       await userDataService.saveReport(currentUser.id, normalizedReport, 'opponent');
       setSavedReports(nextReports);
       setActiveReport(normalizedReport);
-      setAnalysisMessage(`Scouting dossier ready for ${normalizedReport.username}.`);
+      setAnalysisMessage(
+        'Scouting dossier ready. Full opponent history will be fetched locally when you start Practice Bot.'
+      );
     } catch (reportError) {
       setAnalysisError(reportError instanceof Error ? reportError.message : 'Could not analyze opponent.');
     } finally {

@@ -97,6 +97,31 @@ type PuzzleMoveFeedback = {
   message: string;
 };
 
+function squarePoint(square: string) {
+  return {
+    x: square.charCodeAt(0) - 97,
+    y: Number(square[1]) - 1,
+  };
+}
+
+function isSquareOnArrow(square: string, arrow: Arrow): boolean {
+  const point = squarePoint(square);
+  const start = squarePoint(arrow.startSquare);
+  const end = squarePoint(arrow.endSquare);
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const lengthSquared = dx * dx + dy * dy;
+  if (lengthSquared === 0) return false;
+
+  const projection = Math.max(
+    0,
+    Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared)
+  );
+  const closestX = start.x + projection * dx;
+  const closestY = start.y + projection * dy;
+  return Math.hypot(point.x - closestX, point.y - closestY) <= 0.7;
+}
+
 const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
   puzzle,
   puzzleNumber: _puzzleNumber,
@@ -104,7 +129,7 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
   onBack,
   onNext,
 }) => {
-  const { playMove: playSoundMove, playCapture, playCheck, playIllegal } = useChessSounds();
+  const { playMove: playSoundMove, playCapture, playCheck, playWrong } = useChessSounds();
 
   const [game, setGame] = useState(() => new Chess(puzzle.fen));
   const [boardOrientation, setBoardOrientation] = useState<'white' | 'black'>(
@@ -122,6 +147,7 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
   const [hintMessage, setHintMessage] = useState('');
   const [moveFeedback, setMoveFeedback] = useState<PuzzleMoveFeedback | null>(null);
   const [drawnLineArrows, setDrawnLineArrows] = useState<Arrow[]>([]);
+  const [wrongMoveSignal, setWrongMoveSignal] = useState(0);
   const [arrowResetKey, setArrowResetKey] = useState(0);
   const [isAnalyzingLine, setIsAnalyzingLine] = useState(false);
   const [lineAnalysisMessage, setLineAnalysisMessage] = useState('');
@@ -217,6 +243,7 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
   const completedRewardedRef = useRef(false);
   const engineRequestIdRef = useRef(0);
   const moveHistoryRef = useRef<PuzzleMoveSnapshot[]>([]);
+  const arrowStartSquareRef = useRef<string | null>(null);
   const [moveHistoryLength, setMoveHistoryLength] = useState(0);
 
   // Load user streak and points from Firestore
@@ -257,6 +284,8 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
     setHintMessage('');
     setMoveFeedback(null);
     setDrawnLineArrows([]);
+    setWrongMoveSignal(0);
+    arrowStartSquareRef.current = null;
     setArrowResetKey((prev) => prev + 1);
     setIsAnalyzingLine(false);
     setLineAnalysisMessage('');
@@ -379,6 +408,22 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
   );
 
   // Move validation logic
+  const showWrongMoveFeedback = useCallback(
+    (from: string, to: string) => {
+      setWrongAttempts((prev) => prev + 1);
+      if (!isMuted) playWrong();
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        navigator.vibrate([100, 45, 130]);
+      }
+      setMoveFeedback({ status: 'wrong', message: 'Try a different move.' });
+      setLastMove({ from, to, toTint: 'rgba(239, 68, 68, 0.78)' });
+      setSelectedSquare(null);
+      setLegalMoves([]);
+      setWrongMoveSignal((previous) => previous + 1);
+    },
+    [isMuted, playWrong]
+  );
+
   const handleMoveAttempt = useCallback(
     (from: string, to: string): boolean => {
       if (isCompleted || isOpponentThinking) return false;
@@ -399,28 +444,19 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
           promotion: expectedUci[4] || 'q',
         });
       } catch {
+        showWrongMoveFeedback(from, to);
         return false;
       }
 
-      if (!playedMove) return false;
+      if (!playedMove) {
+        showWrongMoveFeedback(from, to);
+        return false;
+      }
 
       const isCorrect = from === expectedFrom && to === expectedTo;
 
       if (!isCorrect) {
-        // Wrong move
-        setWrongAttempts((prev) => prev + 1);
-        if (!isMuted) playIllegal();
-        setMoveFeedback({ status: 'wrong', message: 'Not quite.' });
-
-        setLastMove({
-          from,
-          to,
-          toTint: 'rgba(239, 68, 68, 0.65)',
-        });
-
-        setSelectedSquare(null);
-        setLegalMoves([]);
-
+        showWrongMoveFeedback(from, to);
         return false;
       }
 
@@ -501,7 +537,7 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
       isOpponentThinking,
       playCapture,
       playCheck,
-      playIllegal,
+      showWrongMoveFeedback,
       playOpponentReply,
       playSoundMove,
       lastMove,
@@ -519,6 +555,11 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
 
       const currentPiece = game.get(square as Square);
       const studentColor = puzzle.toMove === 'white' ? 'w' : 'b';
+
+      if (currentPiece && currentPiece.color === studentColor) {
+        setMoveFeedback(null);
+        if (lastMove?.toTint) setLastMove(null);
+      }
 
       if (!selectedSquare) {
         if (currentPiece && currentPiece.color === studentColor) {
@@ -542,15 +583,17 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
         return;
       }
 
-      // Try playing move from selectedSquare to square
-      if (legalMoves.includes(square)) {
-        handleMoveAttempt(selectedSquare, square);
-      } else {
-        setSelectedSquare(null);
-        setLegalMoves([]);
-      }
+      handleMoveAttempt(selectedSquare, square);
     },
-    [game, handleMoveAttempt, isCompleted, isOpponentThinking, legalMoves, puzzle.toMove, selectedSquare]
+    [
+      game,
+      handleMoveAttempt,
+      isCompleted,
+      isOpponentThinking,
+      lastMove,
+      puzzle.toMove,
+      selectedSquare,
+    ]
   );
 
   // Expected move coordinates for hints/arrows
@@ -558,12 +601,71 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
   const hintFromSquare = currentExpectedUci ? currentExpectedUci.slice(0, 2) : null;
   const hintToSquare = currentExpectedUci ? currentExpectedUci.slice(2, 4) : null;
 
-  const handleDrawnArrowsChange = (arrows: Arrow[]) => {
-    setDrawnLineArrows(arrows);
+  const invalidateLineAnalysis = useCallback(() => {
     engineRequestIdRef.current += 1;
     setIsAnalyzingLine(false);
     setLineAnalysisMessage('');
-  };
+  }, []);
+
+  const handleBoardMouseDown = useCallback(
+    (square: string, event: React.MouseEvent) => {
+      if (event.button === 0 && !isCompleted && !isOpponentThinking && !isAnalyzingLine) {
+        arrowStartSquareRef.current = square;
+      }
+    },
+    [isAnalyzingLine, isCompleted, isOpponentThinking]
+  );
+
+  const handleBoardMouseUp = useCallback(
+    (square: string, event: React.MouseEvent) => {
+      if (event.button !== 0 || isCompleted || isOpponentThinking || isAnalyzingLine) {
+        arrowStartSquareRef.current = null;
+        return;
+      }
+      const startSquare = arrowStartSquareRef.current;
+      arrowStartSquareRef.current = null;
+      if (!startSquare || startSquare === square) return;
+
+      setDrawnLineArrows((previous) => {
+        const existingIndex = previous.findIndex(
+          (arrow) => arrow.startSquare === startSquare && arrow.endSquare === square
+        );
+        if (existingIndex >= 0) {
+          return previous.filter((_, index) => index !== existingIndex);
+        }
+        return [
+          ...previous,
+          {
+            startSquare,
+            endSquare: square,
+            color: 'rgba(255, 170, 0, 0.9)',
+          },
+        ];
+      });
+      invalidateLineAnalysis();
+    },
+    [invalidateLineAnalysis, isAnalyzingLine, isCompleted, isOpponentThinking]
+  );
+
+  const handleSquareRightClick = useCallback(
+    (square: string) => {
+      if (isCompleted || isOpponentThinking || isAnalyzingLine) return;
+      let removeIndex = -1;
+      for (let index = drawnLineArrows.length - 1; index >= 0; index -= 1) {
+        const arrow = drawnLineArrows[index];
+        if (isSquareOnArrow(square, arrow)) {
+          removeIndex = index;
+          break;
+        }
+      }
+      if (removeIndex < 0) return;
+
+      const arrowToRemove = drawnLineArrows[removeIndex];
+      setDrawnLineArrows((previous) => previous.filter((arrow) => arrow !== arrowToRemove));
+      invalidateLineAnalysis();
+    },
+    [drawnLineArrows, invalidateLineAnalysis, isAnalyzingLine, isCompleted, isOpponentThinking]
+  );
 
   const handleHintClick = () => {
     if (isCompleted || isOpponentThinking) return;
@@ -649,11 +751,16 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
 
   // Hint arrows are overlays; students draw their own line directly on the board.
   const customArrows = useMemo((): ChessArrow[] => {
+    const arrows: ChessArrow[] = drawnLineArrows.map((arrow) => ({
+      startSquare: arrow.startSquare,
+      endSquare: arrow.endSquare,
+      color: arrow.color,
+    }));
     if (hintStage === 2 && hintFromSquare && hintToSquare) {
-      return [{ startSquare: hintFromSquare, endSquare: hintToSquare, color: '#34d399' }];
+      arrows.push({ startSquare: hintFromSquare, endSquare: hintToSquare, color: '#34d399' });
     }
-    return [];
-  }, [hintFromSquare, hintStage, hintToSquare]);
+    return arrows;
+  }, [drawnLineArrows, hintFromSquare, hintStage, hintToSquare]);
 
   const handleAnalyzeLine = async () => {
     if (isCompleted || isOpponentThinking || isAnalyzingLine) return;
@@ -752,6 +859,18 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
     return styles;
   }, [hintFromSquare, hintStage, hintToSquare]);
 
+  const wrongMoveSquareStyles = useMemo(() => {
+    if (moveFeedback?.status !== 'wrong' || !lastMove) return {};
+    const style: React.CSSProperties = {
+      backgroundColor: 'rgba(239, 68, 68, 0.62)',
+      boxShadow: 'inset 0 0 0 4px rgba(220, 38, 38, 0.95), inset 0 0 22px rgba(239, 68, 68, 0.8)',
+    };
+    return {
+      [lastMove.from]: style,
+      [lastMove.to]: style,
+    };
+  }, [lastMove, moveFeedback]);
+
   const legalTargets = useMemo(() => {
     return legalMoves.map((to) => ({
       to,
@@ -782,28 +901,38 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
               fen={game.fen()}
               boardOrientation={boardOrientation}
               isInteractive={!isCompleted && !isOpponentThinking}
-              onPieceDrop={handleMoveAttempt}
+              allowPieceDragging={false}
+              onPieceClick={handleSquareClick}
               onSquareClick={handleSquareClick}
-              onArrowsChange={handleDrawnArrowsChange}
-              allowDrawingArrows={!isCompleted && !isOpponentThinking && !isAnalyzingLine}
+              onBoardMouseDown={handleBoardMouseDown}
+              onBoardMouseUp={handleBoardMouseUp}
+              onSquareRightClick={handleSquareRightClick}
+              allowDrawingArrows={false}
               clearArrowsOnClick={false}
               arrowResetKey={arrowResetKey}
               lastMove={lastMove}
               selectedSquare={selectedSquare}
               legalTargets={legalTargets}
               customArrows={customArrows}
-              customSquareStyles={hintSquareStyles}
+              customSquareStyles={{ ...hintSquareStyles, ...wrongMoveSquareStyles }}
               showNotation={true}
               showExternalCoordinates={false}
               theme={selectedTheme}
             />
+            {wrongMoveSignal > 0 && (
+              <div
+                key={wrongMoveSignal}
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 z-10 rounded-2xl bg-rose-500/30 puzzle-wrong-flash"
+              />
+            )}
           </div>
         </div>
 
         {/* Right: Minimalist Controls, Coin Card & Theme Unlocker */}
         <div className="lg:col-span-4 xl:col-span-4 space-y-4 pt-1">
           <div className="rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-xs leading-relaxed text-slate-600 dark:border-white/10 dark:bg-[#1e2025] dark:text-white/65">
-            Draw a line on the board by right-clicking and dragging from square to square, then analyze your line.
+            Click a piece, then click its destination to move. Left-drag between squares to draw an analysis arrow; right-click an arrow to remove it.
             {drawnLineArrows.length > 0 && (
               <span className="ml-1 font-semibold text-slate-800 dark:text-white">
                 {drawnLineArrows.length} {drawnLineArrows.length === 1 ? 'move' : 'moves'} drawn
@@ -901,11 +1030,11 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
 
           {moveFeedback && (
             <div
-              role="status"
-              aria-live="polite"
+              role={moveFeedback.status === 'wrong' ? 'alert' : 'status'}
+              aria-live={moveFeedback.status === 'wrong' ? 'assertive' : 'polite'}
               className={`rounded-xl border p-3.5 text-sm shadow-sm transition-colors ${
                 moveFeedback.status === 'wrong'
-                  ? 'border-rose-200 bg-white text-slate-800 dark:border-rose-400/25 dark:bg-[#1e2025] dark:text-white'
+                  ? 'border-rose-400 bg-rose-50 text-rose-950 shadow-md shadow-rose-900/15 dark:border-rose-400/50 dark:bg-rose-950/50 dark:text-rose-50'
                   : 'border-emerald-200 bg-white text-slate-800 dark:border-emerald-400/25 dark:bg-[#1e2025] dark:text-white'
               }`}
             >
@@ -913,7 +1042,7 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
                 <span
                   className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
                     moveFeedback.status === 'wrong'
-                      ? 'bg-rose-100 text-rose-600 dark:bg-rose-400/15 dark:text-rose-300'
+                      ? 'bg-rose-600 text-white shadow-sm dark:bg-rose-500'
                       : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-300'
                   }`}
                 >
@@ -925,11 +1054,11 @@ const PracticePuzzleTrainer: React.FC<PracticePuzzleTrainerProps> = ({
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="font-bold leading-5">
-                    {moveFeedback.status === 'wrong' ? 'Not quite' : moveFeedback.message}
+                    {moveFeedback.status === 'wrong' ? 'Oops! Try another move.' : moveFeedback.message}
                   </p>
                   {moveFeedback.status === 'wrong' && (
-                    <p className="mt-0.5 text-xs leading-5 text-slate-600 dark:text-white/65">
-                      That move doesn’t match the solution. Try again.
+                    <p className="mt-0.5 text-xs leading-5 text-rose-800 dark:text-rose-100/85">
+                      That move isn’t the puzzle answer. Choose a different move.
                     </p>
                   )}
                 </div>

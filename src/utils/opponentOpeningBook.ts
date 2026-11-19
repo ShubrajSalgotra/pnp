@@ -12,7 +12,11 @@ export type OpponentOpeningBook = {
   positions: Map<string, BookMove[]>;
   gamesUsed: number;
   movesIndexed: number;
+  gamesScanned?: number;
+  source?: 'full-archive' | 'report-sample';
 };
+
+export type ChessColor = 'w' | 'b';
 
 const normalizeUsername = (value: string) => value.trim().toLowerCase();
 
@@ -43,7 +47,11 @@ function recordOpponentMove(
  */
 export function buildOpponentOpeningBook(
   games: ChessGame[],
-  opponentUsername: string
+  opponentUsername: string,
+  options?: {
+    source?: OpponentOpeningBook['source'];
+    opponentColor?: ChessColor;
+  }
 ): OpponentOpeningBook {
   const counts = new Map<string, Map<string, number>>();
   let gamesUsed = 0;
@@ -56,6 +64,7 @@ export function buildOpponentOpeningBook(
     if (!asWhite && !asBlack) continue;
 
     const opponentColor = asWhite ? 'w' : 'b';
+    if (options?.opponentColor && opponentColor !== options.opponentColor) continue;
     const chess = new Chess();
     const indexedSamples = new Set<string>();
     let indexedThisGame = false;
@@ -114,7 +123,13 @@ export function buildOpponentOpeningBook(
     positions.set(key, moves);
   });
 
-  return { positions, gamesUsed, movesIndexed };
+  return {
+    positions,
+    gamesUsed,
+    movesIndexed,
+    gamesScanned: games.length,
+    source: options?.source || 'report-sample',
+  };
 }
 
 /**

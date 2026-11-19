@@ -408,7 +408,7 @@ const FormView: React.FC<{
   <div className="mx-auto max-w-lg">
     <h3 className="font-display text-xl font-semibold text-slate-900 dark:text-white">Scout an opponent</h3>
     <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">
-      Pull recent games and generate a battle plan, opening targets, and full analysis.
+      Analyze the selected recent games. Practice Bot fetches the opponent’s full history after you choose your color.
     </p>
 
     <div className="mt-8 space-y-5">
@@ -496,7 +496,7 @@ const FormView: React.FC<{
       </div>
 
       <p className="text-xs text-slate-500 dark:text-slate-400">
-        About {Math.ceil(estimatedTime / 60)} min · recommended 20–50 games
+        About {Math.ceil(estimatedTime / 60)} min for the report. Full-history import happens in Practice Bot.
       </p>
 
       {(formError || error) && (
